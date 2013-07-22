@@ -273,7 +273,7 @@ public class CmsVfsSitemapService extends CmsGwtService implements I_CmsSitemapS
             boolean isRoot = root.equals(entryPointUri);
             entry = toClientEntry(navElement, isRoot);
             if ((levels > 0) && (isRoot || (rootRes.isFolder() && (!isSubSitemap(navElement))))) {
-                entry.setSubEntries(getChildren(root, levels, null));
+                entry.setSubEntries(getChildren(root, levels, null), null);
             }
         } catch (Throwable e) {
             error(e);
@@ -331,7 +331,7 @@ public class CmsVfsSitemapService extends CmsGwtService implements I_CmsSitemapS
 
         try {
             String openPath = getRequest().getParameter(CmsCoreData.PARAM_PATH);
-            if (CmsStringUtil.isEmptyOrWhitespaceOnly(openPath)) {
+            if (!isValidOpenPath(cms, openPath)) {
                 // if no path is supplied, start from root
                 openPath = "/";
             }
@@ -419,6 +419,9 @@ public class CmsVfsSitemapService extends CmsGwtService implements I_CmsSitemapS
             }
             List<String> allPropNames = getPropertyNames(cms);
             String returnCode = getRequest().getParameter(CmsCoreData.PARAM_RETURNCODE);
+            if (!isValidReturnCode(returnCode)) {
+                returnCode = null;
+            }
             cms.getRequestContext().getSiteRoot();
             result = new CmsSitemapData(
                 (new CmsTemplateFinder(cms)).getTemplates(),
@@ -913,7 +916,7 @@ public class CmsVfsSitemapService extends CmsGwtService implements I_CmsSitemapS
                 newEntry = toClientEntry(
                     getNavBuilder().getNavigationForResource(sitePath, CmsResourceFilter.ONLY_VISIBLE),
                     false);
-                newEntry.setSubEntries(getChildren(sitePath, 1, null));
+                newEntry.setSubEntries(getChildren(sitePath, 1, null), null);
                 newEntry.setChildrenLoadedInitially(true);
             }
             if (newRes != null) {
@@ -1199,7 +1202,7 @@ public class CmsVfsSitemapService extends CmsGwtService implements I_CmsSitemapS
                 }
                 if (child.isFolderType() && ((nextLevels > 1) || (nextLevels == -1)) && !isSubSitemap(navElement)) {
 
-                    child.setSubEntries(getChildren(child.getSitePath(), nextLevels - 1, targetPath));
+                    child.setSubEntries(getChildren(child.getSitePath(), nextLevels - 1, targetPath), null);
                     child.setChildrenLoadedInitially(true);
                 }
                 i++;
@@ -1506,7 +1509,7 @@ public class CmsVfsSitemapService extends CmsGwtService implements I_CmsSitemapS
         if (result != null) {
             result.setPosition(0);
             result.setChildrenLoadedInitially(true);
-            result.setSubEntries(getChildren(sitePath, 2, targetPath));
+            result.setSubEntries(getChildren(sitePath, 2, targetPath), null);
         }
         return result;
     }
@@ -1660,6 +1663,50 @@ public class CmsVfsSitemapService extends CmsGwtService implements I_CmsSitemapS
     private boolean isSubSitemap(CmsJspNavElement navElement) throws CmsException {
 
         return navElement.getResource().getTypeId() == getEntryPointType();
+    }
+
+    /**
+     * Checks if the given open path is valid.<p>
+     * 
+     * @param cms the cms context
+     * @param openPath the open path
+     * 
+     * @return <code>true</code> if the given open path is valid
+     */
+    private boolean isValidOpenPath(CmsObject cms, String openPath) {
+
+        if (CmsStringUtil.isEmptyOrWhitespaceOnly(openPath)) {
+            return false;
+        }
+        if (!cms.existsResource(openPath)) {
+            // in case of a detail-page check the parent folder
+            String parent = CmsResource.getParentFolder(openPath);
+            if (CmsStringUtil.isEmptyOrWhitespaceOnly(parent) || !cms.existsResource(parent)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Returns if the given return code is valid.<p>
+     * 
+     * @param returnCode the return code to check
+     * 
+     * @return <code>true</code> if the return code is valid
+     */
+    private boolean isValidReturnCode(String returnCode) {
+
+        if (CmsStringUtil.isEmptyOrWhitespaceOnly(returnCode)) {
+            return false;
+        }
+        int pos = returnCode.indexOf(":");
+        if (pos > 0) {
+            return CmsUUID.isValidUUID(returnCode.substring(0, pos))
+                && CmsUUID.isValidUUID(returnCode.substring(pos + 1));
+        } else {
+            return CmsUUID.isValidUUID(returnCode);
+        }
     }
 
     /**
@@ -1934,11 +1981,22 @@ public class CmsVfsSitemapService extends CmsGwtService implements I_CmsSitemapS
             clientEntry.setName(entryPage.getName());
             if (isRedirectType(entryPage.getTypeId())) {
                 clientEntry.setEntryType(EntryType.redirect);
-                CmsFile file = getCmsObject().readFile(entryPage);
-                I_CmsXmlDocument content = CmsXmlContentFactory.unmarshal(getCmsObject(), file);
-                String link = content.getValue(
-                    REDIRECT_LINK_TARGET_XPATH,
-                    getCmsObject().getRequestContext().getLocale()).getStringValue(getCmsObject());
+                CmsFile file = cms.readFile(entryPage);
+                I_CmsXmlDocument content = CmsXmlContentFactory.unmarshal(cms, file);
+                Locale contentLocale = OpenCms.getLocaleManager().getDefaultLocale(cms, entryPage);
+                // ensure the content contains the default locale
+                contentLocale = content.getBestMatchingLocale(contentLocale);
+                if (contentLocale == null) {
+                    // no best matching locale, use the first available
+                    List<Locale> locales = content.getLocales();
+                    if (!locales.isEmpty()) {
+                        contentLocale = locales.get(0);
+                    }
+                }
+                String link = "";
+                if (contentLocale != null) {
+                    link = content.getValue(REDIRECT_LINK_TARGET_XPATH, contentLocale).getStringValue(getCmsObject());
+                }
                 clientEntry.setRedirectTarget(link);
             } else {
                 clientEntry.setEntryType(EntryType.leaf);
@@ -1996,7 +2054,7 @@ public class CmsVfsSitemapService extends CmsGwtService implements I_CmsSitemapS
             parentPath,
             CmsResourceFilter.ONLY_VISIBLE);
         CmsClientSitemapEntry entry = toClientEntry(navElement, navElement.isInNavigation());
-        entry.setSubEntries(getChildren(parentPath, 2, null));
+        entry.setSubEntries(getChildren(parentPath, 2, null), null);
         change.setUpdatedEntry(entry);
         return change;
     }

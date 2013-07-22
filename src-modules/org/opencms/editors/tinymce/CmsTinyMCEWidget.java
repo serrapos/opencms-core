@@ -33,6 +33,9 @@ import org.apache.commons.logging.Log;
  */
 public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
 
+    /** Path of the base content CSS. */
+    public static final String BASE_CONTENT_CSS = "/system/workplace/editors/tinymce/base_content.css";
+
     /** The translation of the generic widget button names to TinyMCE specific button names. */
     public static final String BUTTON_TRANSLATION =
     /* Row 1*/
@@ -122,16 +125,14 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
         String id = param.getId();
         String value = param.getStringValue(cms);
         StringBuilder result = new StringBuilder();
-
+        CmsTinyMCEConfiguration configuration = CmsTinyMCEConfiguration.get(cms);
         result.append("<td class=\"cmsTinyMCE xmlTd\">");
-
         result.append("<textarea class=\"xmlInput maxwidth\" name=\"ta_");
         result.append(id);
         result.append("\" id=\"ta_");
         result.append(id);
-        result.append("\" style=\"height: ");
-        result.append(getHtmlWidgetOption().getEditorHeight());
-        result.append(";\" rows=\"20\" cols=\"60\">");
+        result.append("\" style=\"");
+        result.append("\" rows=\"20\" cols=\"60\">");
         result.append(CmsEncoder.escapeXml(value));
         result.append("</textarea>");
         result.append("<input type=\"hidden\" name=\"");
@@ -145,13 +146,23 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
         result.append("<script type=\"text/javascript\">\n");
         CmsEditorDisplayOptions options = OpenCms.getWorkplaceManager().getEditorDisplayOptions();
         Properties displayOptions = options.getDisplayOptions(cms);
-        result.append("tinyMCE.init({\n");
+        String preprocessorFunction = configuration.generateOptionPreprocessor("cms_preprocess_options");
+        result.append(preprocessorFunction);
+        result.append("tinyMCE.init(cms_preprocess_options({\n");
         result.append("	// General options\n");
         result.append("relative_urls: false,\n");
         result.append("remove_script_host: false,\n");
+        // the flexible menu bars produced by the special CSS throw off the height calculations
+        // of TinyMCE; the following setting corrects this 
+        result.append("theme_advanced_row_height: 0,\n");
         result.append("skin_variant: 'ocms',\n");
         result.append("	mode : \"exact\",\n");
         result.append("	elements : \"ta_" + id + "\",\n");
+        String editorHeight = getHtmlWidgetOption().getEditorHeight();
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(editorHeight)) {
+            editorHeight = editorHeight.replaceAll("px", "");
+            result.append("height: \"" + editorHeight + "\",\n");
+        }
         result.append("	theme : \"advanced\",\n");
         result.append(" file_browser_callback : 'cmsTinyMceFileBrowser',\n");
         result.append("setup : function(editor) { setupTinyMCE(editor); },\n");
@@ -176,6 +187,7 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
         result.append("	theme_advanced_toolbar_location : \"top\",\n");
         result.append("	theme_advanced_toolbar_align : \"left\",\n");
         result.append("	theme_advanced_statusbar_location : \"bottom\",\n");
+        result.append("paste_retain_style_properties : '*',\n");
         result.append("width: '100%',");
         result.append("language: '" + OpenCms.getWorkplaceManager().getWorkplaceLocale(cms).getLanguage() + "',\n");
 
@@ -208,11 +220,15 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
                 // ignore, CSS could not be set
             }
         }
+
+        List<String> contentCssLinks = new ArrayList<String>();
+        contentCssLinks.add(OpenCms.getLinkManager().substituteLink(cms, BASE_CONTENT_CSS));
         if (cssConfigured) {
-            result.append("content_css : \"");
-            result.append(OpenCms.getLinkManager().substituteLink(cms, cssPath));
-            result.append("\",\n");
+            contentCssLinks.add(OpenCms.getLinkManager().substituteLink(cms, cssPath));
         }
+        result.append("content_css : \"");
+        result.append(CmsStringUtil.listAsString(contentCssLinks, ","));
+        result.append("\",\n");
 
         if (getHtmlWidgetOption().showStylesFormat()) {
             try {
@@ -236,7 +252,7 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
 
         result.append("theme_advanced_resizing : false,\n");
         result.append("theme_advanced_resizing_use_cookie : false");
-        result.append("});\n");
+        result.append("}));\n");
 
         result.append("contentFields[contentFields.length] = document.getElementById(\"").append(id).append("\");\n");
 

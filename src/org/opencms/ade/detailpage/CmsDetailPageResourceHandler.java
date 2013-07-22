@@ -34,6 +34,7 @@ import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.CmsResourceInitException;
 import org.opencms.main.I_CmsResourceInit;
+import org.opencms.main.OpenCms;
 import org.opencms.security.CmsPermissionViolationException;
 import org.opencms.security.CmsSecurityException;
 import org.opencms.util.CmsFileUtil;
@@ -127,7 +128,13 @@ public class CmsDetailPageResourceHandler implements I_CmsResourceInit {
                 CmsResource detailRes = cms.readResource(detailId);
                 // change OpenCms request URI to detail page
                 CmsResource detailPage = cms.readDefaultFile(CmsResource.getFolderPath(path));
-                req.setAttribute(ATTR_DETAIL_CONTENT_RESOURCE, detailRes);
+                if (!isValidDetailPage(cms, detailPage, detailRes)) {
+                    return null;
+                }
+                if (res != null) {
+                    // response will be null if this run through the init handler is only for determining the locale
+                    req.setAttribute(ATTR_DETAIL_CONTENT_RESOURCE, detailRes);
+                }
                 // set the resource path
                 cms.getRequestContext().setUri(cms.getSitePath(detailPage));
                 return detailPage;
@@ -145,6 +152,20 @@ public class CmsDetailPageResourceHandler implements I_CmsResourceInit {
         }
 
         return null;
+    }
+
+    /**
+     * Checks whether the given detail page is valid for the given resource.<p>
+     * 
+     * @param cms the CMS context
+     * @param page the detail page 
+     * @param detailRes the detail resource
+     * 
+     * @return true if the given detail page is valid 
+     */
+    protected boolean isValidDetailPage(CmsObject cms, CmsResource page, CmsResource detailRes) {
+
+        return OpenCms.getADEManager().isDetailPage(cms, page);
     }
 
 }

@@ -300,10 +300,21 @@ public class CmsSitemapDNDController implements I_CmsDNDController {
             default:
                 uniqueName = m_controller.ensureUniqueName(parent, CmsSitemapController.NEW_ENTRY_NAME);
                 entry.setName(uniqueName);
+                entry.getOwnProperties().put(
+                    CmsClientProperty.PROPERTY_TITLE,
+                    new CmsClientProperty(
+                        CmsClientProperty.PROPERTY_TITLE,
+                        CmsSitemapController.NEW_ENTRY_NAME,
+                        CmsSitemapController.NEW_ENTRY_NAME));
                 entry.setSitePath(m_insertPath + uniqueName + "/");
                 entry.setResourceTypeName("folder");
         }
-        m_controller.create(entry, typeInfo.getId(), typeInfo.getCopyResourceId(), typeInfo.getCreateParameter());
+        m_controller.create(
+            entry,
+            parent.getId(),
+            typeInfo.getId(),
+            typeInfo.getCopyResourceId(),
+            typeInfo.getCreateParameter());
     }
 
     /**
