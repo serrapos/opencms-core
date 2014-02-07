@@ -113,5 +113,7 @@
 	<classpathentry kind="con" path="com.google.gwt.eclipse.core.GWT_CONTAINER/GWT"/>
 	<classpathentry kind="lib" path="lib/compile/gwtexporter-2.4.0.jar"/>
 	<classpathentry kind="lib" path="lib/compile/acacia-client.jar"/>
+	<classpathentry kind="lib" path="C:/servidores/Tomcat7/lib/jsp-api.jar"/>
+	<classpathentry kind="lib" path="C:/servidores/Tomcat7/lib/servlet-api.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

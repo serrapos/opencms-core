@@ -300,7 +300,7 @@ public class CmsJspTagInfo extends TagSupport {
             case 9: // opencms.request.locale
                 result = controller.getCmsObject().getRequestContext().getLocale().toString();
                 break;
-            case 10: // Invalid info property selected
+            case 10: // opencms.title
                 result = getTitleInfo(controller, req);
                 break;
             case 11: // opencms.description
