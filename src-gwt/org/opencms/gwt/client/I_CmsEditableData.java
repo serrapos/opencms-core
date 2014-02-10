@@ -72,6 +72,13 @@ public interface I_CmsEditableData {
     String getNewTitle();
 
     /**
+     * Returns the no edit reason.<p>
+     * 
+     * @return the no edit reason
+     */
+    String getNoEditReason();
+
+    /**
      * Returns the site path.<p>
      * 
      * @return the site path
@@ -84,6 +91,13 @@ public interface I_CmsEditableData {
      * @return the structure id
      */
     CmsUUID getStructureId();
+
+    /**
+     * Returns if the given resource is unreleased or expired.<p>
+     * 
+     * @return <code>true</code> if the given resource is unreleased or expired
+     */
+    boolean isUnreleasedOrExpired();
 
     /** 
      * Sets the site path.<p>

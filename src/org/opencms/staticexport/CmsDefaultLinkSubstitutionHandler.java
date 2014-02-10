@@ -40,7 +40,9 @@ import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
 import org.opencms.site.CmsSite;
 import org.opencms.site.CmsSiteMatcher;
+import org.opencms.util.CmsFileUtil;
 import org.opencms.util.CmsStringUtil;
+import org.opencms.util.CmsUUID;
 import org.opencms.workplace.CmsWorkplace;
 
 import java.net.URI;
@@ -145,6 +147,7 @@ public class CmsDefaultLinkSubstitutionHandler implements I_CmsLinkSubstitutionH
         String targetSiteRoot = targetSite.getSiteRoot();
         String originalVfsName = vfsName;
         String detailPage = null;
+        CmsResource detailContent = null;
         try {
             String rootVfsName;
             if (!vfsName.startsWith(targetSiteRoot)
@@ -154,8 +157,11 @@ public class CmsDefaultLinkSubstitutionHandler implements I_CmsLinkSubstitutionH
             } else {
                 rootVfsName = vfsName;
             }
-            I_CmsDetailPageFinder finder = OpenCms.getADEManager().getDetailPageFinder();
-            detailPage = finder.getDetailPage(cms, rootVfsName, cms.getRequestContext().getUri());
+            if (!rootVfsName.startsWith(CmsWorkplace.VFS_PATH_WORKPLACE)) {
+                // never use the ADE manager for workplace links, to be sure the workplace stays usable in case of configuration errors
+                I_CmsDetailPageFinder finder = OpenCms.getADEManager().getDetailPageFinder();
+                detailPage = finder.getDetailPage(cms, rootVfsName, cms.getRequestContext().getUri());
+            }
             if (detailPage != null) {
                 if (detailPage.startsWith(targetSiteRoot)) {
                     detailPage = detailPage.substring(targetSiteRoot.length());
@@ -165,6 +171,7 @@ public class CmsDefaultLinkSubstitutionHandler implements I_CmsLinkSubstitutionH
                 }
                 try {
                     CmsResource element = cms.readResource(vfsName);
+                    detailContent = element;
                     Locale locale = cms.getRequestContext().getLocale();
                     List<Locale> defaultLocales = OpenCms.getLocaleManager().getDefaultLocales();
                     vfsName = CmsStringUtil.joinPaths(
@@ -258,7 +265,8 @@ public class CmsDefaultLinkSubstitutionHandler implements I_CmsLinkSubstitutionH
             // check if either the current site or the target site does have a secure server configured
             if (targetSite.hasSecureServer() || currentSite.hasSecureServer()) {
 
-                if (!vfsName.startsWith(CmsWorkplace.VFS_PATH_SYSTEM)) {
+                if (!vfsName.startsWith(CmsWorkplace.VFS_PATH_SYSTEM)
+                    && !OpenCms.getSiteManager().startsWithShared(vfsName)) {
                     // don't make a secure connection to the "/system" folder (why ?)
                     int linkType = -1;
                     try {
@@ -291,8 +299,24 @@ public class CmsDefaultLinkSubstitutionHandler implements I_CmsLinkSubstitutionH
                     }
                     if (linkType != imageId) {
                         // check the secure property of the link
-                        boolean secureLink = exportManager.isSecureLink(cms, vfsName, targetSite.getSiteRoot());
                         boolean secureRequest = exportManager.isSecureLink(cms, oriUri);
+
+                        boolean secureLink;
+                        if (detailContent == null) {
+                            secureLink = exportManager.isSecureLink(
+                                cms,
+                                vfsName,
+                                targetSite.getSiteRoot(),
+                                secureRequest);
+                        } else {
+                            secureLink = isDetailPageLinkSecure(
+                                cms,
+                                detailPage,
+                                detailContent,
+                                targetSite,
+                                secureRequest);
+
+                        }
                         // if we are on a normal server, and the requested resource is secure, 
                         // the server name has to be prepended                        
                         if (secureLink && (forceSecure || !secureRequest)) {
@@ -306,6 +330,12 @@ public class CmsDefaultLinkSubstitutionHandler implements I_CmsLinkSubstitutionH
             // make absolute link relative, if relative links in export are required
             // and if the link does not point to another server
             if (useRelativeLinks && CmsStringUtil.isEmpty(serverPrefix)) {
+                // in case the current page is a detailpage, append another path level
+                if (cms.getRequestContext().getDetailContentId() != null) {
+                    uriBaseName = CmsStringUtil.joinPaths(
+                        CmsResource.getFolderPath(uriBaseName),
+                        cms.getRequestContext().getDetailContentId().toString() + "/index.html");
+                }
                 resultLink = CmsLinkManager.getRelativeUri(uriBaseName, resultLink);
             }
 
@@ -334,6 +364,25 @@ public class CmsDefaultLinkSubstitutionHandler implements I_CmsLinkSubstitutionH
      */
     public String getRootPath(CmsObject cms, String targetUri, String basePath) {
 
+        String result = getSimpleRootPath(cms, targetUri, basePath);
+        String detailRootPath = getDetailRootPath(cms, result);
+        if (detailRootPath != null) {
+            result = detailRootPath;
+        }
+        return result;
+
+    }
+
+    /**
+     * Gets the root path without taking into account detail page links.<p>
+     * 
+     * @param cms - see the getRootPath() method
+     * @param targetUri - see the getRootPath() method
+     * @param basePath - see the getRootPath() method
+     * @return - see the getRootPath() method
+     */
+    protected String getSimpleRootPath(CmsObject cms, String targetUri, String basePath) {
+
         if (cms == null) {
             // required by unit test cases
             return targetUri;
@@ -341,47 +390,51 @@ public class CmsDefaultLinkSubstitutionHandler implements I_CmsLinkSubstitutionH
 
         URI uri;
         String path;
-        String fragment;
-        String query;
-        String suffix;
+        String suffix = "";
 
         // malformed uri
         try {
             uri = new URI(targetUri);
             path = uri.getPath();
-
-            fragment = uri.getFragment();
-            if (fragment != null) {
-                fragment = "#" + fragment;
-            } else {
-                fragment = "";
-            }
-
-            query = uri.getQuery();
-            if (query != null) {
-                query = "?" + query;
-            } else {
-                query = "";
-            }
+            suffix = getSuffix(uri);
         } catch (Exception e) {
             if (LOG.isWarnEnabled()) {
                 LOG.warn(Messages.get().getBundle().key(Messages.LOG_MALFORMED_URI_1, targetUri), e);
             }
             return null;
         }
+<<<<<<< HEAD
 
         // concatenate query and fragment 
         suffix = query.concat(fragment);
 
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         // opaque URI
         if (uri.isOpaque()) {
             return null;
+        }
+
+        CmsStaticExportManager exportManager = OpenCms.getStaticExportManager();
+        if (exportManager.isValidRfsName(path)) {
+            String originalSiteRoot = cms.getRequestContext().getSiteRoot();
+            String vfsName = null;
+            try {
+                cms.getRequestContext().setSiteRoot("");
+                vfsName = exportManager.getVfsName(cms, path);
+                if (vfsName != null) {
+                    return vfsName;
+                }
+            } finally {
+                cms.getRequestContext().setSiteRoot(originalSiteRoot);
+            }
         }
 
         // absolute URI (i.e. URI has a scheme component like http:// ...)
         if (uri.isAbsolute()) {
             CmsSiteMatcher matcher = new CmsSiteMatcher(targetUri);
             if (OpenCms.getSiteManager().isMatching(matcher)) {
+
                 if (path.startsWith(OpenCms.getSystemInfo().getOpenCmsContext())) {
                     path = path.substring(OpenCms.getSystemInfo().getOpenCmsContext().length());
                 }
@@ -391,6 +444,7 @@ public class CmsDefaultLinkSubstitutionHandler implements I_CmsLinkSubstitutionH
                     String pathForMatchedSite = cms.getRequestContext().addSiteRoot(
                         OpenCms.getSiteManager().matchSite(matcher).getSiteRoot(),
                         path);
+<<<<<<< HEAD
                     String originalSiteRoot = cms.getRequestContext().getSiteRoot();
                     String selectedPath = pathForCurrentSite;
                     try {
@@ -403,6 +457,25 @@ public class CmsDefaultLinkSubstitutionHandler implements I_CmsLinkSubstitutionH
                         }
                     } finally {
                         cms.getRequestContext().setSiteRoot(originalSiteRoot);
+=======
+                    String siteRootFromPath = OpenCms.getSiteManager().getSiteRoot(path);
+                    String originalSiteRoot = cms.getRequestContext().getSiteRoot();
+                    String selectedPath = pathForCurrentSite;
+                    if (siteRootFromPath != null) {
+                        selectedPath = CmsStringUtil.joinPaths("/", path);
+                    } else {
+                        try {
+                            cms.getRequestContext().setSiteRoot("");
+                            // the path for the current site normally is preferred, but if it doesn't exist and the path for the matched site
+                            // does exist, then use the path for the matched site 
+                            if (!cms.existsResource(pathForCurrentSite, CmsResourceFilter.ALL)
+                                && cms.existsResource(pathForMatchedSite, CmsResourceFilter.ALL)) {
+                                selectedPath = pathForMatchedSite;
+                            }
+                        } finally {
+                            cms.getRequestContext().setSiteRoot(originalSiteRoot);
+                        }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
                     }
                     return selectedPath + suffix;
                 } else {
@@ -475,12 +548,110 @@ public class CmsDefaultLinkSubstitutionHandler implements I_CmsLinkSubstitutionH
             return null;
         }
 
-        // relative URI (= VFS path relative to currently selected site root)
         if (CmsStringUtil.isNotEmpty(path)) {
+            if (OpenCms.getSiteManager().getSiteRoot(path) != null) {
+                // path already seems to be a root path 
+                return path + suffix;
+            }
+            // relative URI (= VFS path relative to currently selected site root)
             return cms.getRequestContext().addSiteRoot(path) + suffix;
         }
 
         // URI without path (typically local link)
         return suffix;
+    }
+
+    /**
+     * Checks whether a link to a detail page should be secure.<p>
+     * 
+     * @param cms the current CMS context 
+     * @param detailPage the detail page path 
+     * @param detailContent the detail content resource 
+     * @param targetSite the target site containing the detail page 
+     * @param secureRequest true if the currently running request is secure 
+     * 
+     * @return true if the link should be a secure link 
+     */
+    protected boolean isDetailPageLinkSecure(
+        CmsObject cms,
+        String detailPage,
+        CmsResource detailContent,
+        CmsSite targetSite,
+        boolean secureRequest) {
+
+        boolean result = false;
+        CmsStaticExportManager exportManager = OpenCms.getStaticExportManager();
+        try {
+            cms = OpenCms.initCmsObject(cms);
+            if (targetSite.getSiteRoot() != null) {
+                cms.getRequestContext().setSiteRoot(targetSite.getSiteRoot());
+            }
+            CmsResource defaultFile = cms.readDefaultFile(detailPage);
+            if (defaultFile != null) {
+                result = exportManager.isSecureLink(cms, defaultFile.getRootPath(), "", secureRequest);
+            }
+        } catch (Exception e) {
+            LOG.error("Error while checking whether detail page link should be secure: " + e.getLocalizedMessage(), e);
+        }
+        return result;
+    }
+
+    /**
+     * Gets the suffix (query + fragment) of the URI.<p>
+     * 
+     * @param uri the URI 
+     * @return the suffix of the URI 
+     */
+    String getSuffix(URI uri) {
+
+        String fragment = uri.getFragment();
+        if (fragment != null) {
+            fragment = "#" + fragment;
+        } else {
+            fragment = "";
+        }
+
+        String query = uri.getQuery();
+        if (query != null) {
+            query = "?" + query;
+        } else {
+            query = "";
+        }
+        return query.concat(fragment);
+    }
+
+    /**
+     * Tries to interpret the given URI as a detail page URI and returns the detail content's root path if possible.<p>
+     * 
+     * If the given URI is not a detail URI, null will be returned.<p>
+     * 
+     * @param cms the CMS context to use 
+     * @param result the detail root path, or null if the given uri is not a detail page URI
+     *  
+     * @return the detail content root path 
+     */
+    private String getDetailRootPath(CmsObject cms, String result) {
+
+        if (result == null) {
+            return null;
+        }
+        try {
+            URI uri = new URI(result);
+            String path = uri.getPath();
+            if (CmsStringUtil.isEmptyOrWhitespaceOnly(path)) {
+                return null;
+            }
+            String name = CmsFileUtil.removeTrailingSeparator(CmsResource.getName(path));
+            CmsUUID detailId = OpenCms.getADEManager().getDetailIdCache(
+                cms.getRequestContext().getCurrentProject().isOnlineProject()).getDetailId(name);
+            if (detailId == null) {
+                return null;
+            }
+            CmsResource detailResource = cms.readResource(detailId, CmsResourceFilter.ALL);
+            return detailResource.getRootPath() + getSuffix(uri);
+        } catch (Exception e) {
+            LOG.error(e.getLocalizedMessage(), e);
+            return null;
+        }
     }
 }

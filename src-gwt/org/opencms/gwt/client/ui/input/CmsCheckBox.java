@@ -38,8 +38,6 @@ import org.opencms.gwt.client.ui.input.form.I_CmsFormWidgetFactory;
 
 import java.util.Map;
 
-import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.HasClickHandlers;
@@ -81,6 +79,9 @@ implements HasClickHandlers, I_CmsFormWidget, I_CmsHasInit, HasHorizontalAlignme
     /** Internal root widget to which all other components of this widget are attached. */
     private final FlowPanel m_root;
 
+    /** The internal value of this checkbox. */
+    private String m_value;
+
     /**
      * Default constructor which creates a checkbox without a label.<p>
      */
@@ -116,20 +117,11 @@ implements HasClickHandlers, I_CmsFormWidget, I_CmsHasInit, HasHorizontalAlignme
         initWidget(m_root);
         addStyleName(CSS.checkBox());
         addStyleName(CSS.inlineBlock());
-        addClickHandler(new ClickHandler() {
+        m_button.addValueChangeHandler(new ValueChangeHandler<Boolean>() {
 
-            /**
-             * @see com.google.gwt.event.dom.client.ClickHandler#onClick(com.google.gwt.event.dom.client.ClickEvent)
-             */
-            public void onClick(ClickEvent event) {
+            public void onValueChange(ValueChangeEvent<Boolean> changeEvent) {
 
-                Scheduler.get().scheduleDeferred(new ScheduledCommand() {
-
-                    public void execute() {
-
-                        fireValueChangedEvent();
-                    }
-                });
+                ValueChangeEvent.fire(CmsCheckBox.this, changeEvent.getValue());
             }
         });
     }
@@ -197,6 +189,16 @@ implements HasClickHandlers, I_CmsFormWidget, I_CmsHasInit, HasHorizontalAlignme
     }
 
     /**
+     * Gets the toggle button used internally.<p>
+     * 
+     * @return the toggle button 
+     */
+    public CmsToggleButton getButton() {
+
+        return m_button;
+    }
+
+    /**
      * @see org.opencms.gwt.client.ui.input.I_CmsFormWidget#getFieldType()
      */
     public FieldType getFieldType() {
@@ -228,6 +230,27 @@ implements HasClickHandlers, I_CmsFormWidget, I_CmsHasInit, HasHorizontalAlignme
     public HorizontalAlignmentConstant getHorizontalAlignment() {
 
         return m_align;
+    }
+
+    /**
+     * Returns the internal value of this Checkbox.<p>
+     * 
+     * @return the internal value of this Checkbox
+     */
+    public String getInternalValue() {
+
+        return m_value;
+    }
+
+    /**
+     * Returns the text.<p>
+     * 
+     * @return the text as String
+     */
+    public String getText() {
+
+        return m_button.getText();
+
     }
 
     /**
@@ -328,6 +351,16 @@ implements HasClickHandlers, I_CmsFormWidget, I_CmsHasInit, HasHorizontalAlignme
         }
         m_button.setHorizontalAlignment(align);
         m_align = align;
+    }
+
+    /**
+     * Sets the internal value of this Checkbox.<p>
+     * 
+     *  @param value the new internal value
+     */
+    public void setInternalValue(String value) {
+
+        m_value = value;
     }
 
     /**

@@ -33,7 +33,9 @@ import org.opencms.file.CmsResourceFilter;
 import org.opencms.main.CmsException;
 import org.opencms.main.OpenCms;
 import org.opencms.search.CmsSearchIndex;
+import org.opencms.search.I_CmsSearchDocument;
 import org.opencms.search.Messages;
+import org.opencms.search.fields.CmsSearchField;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.util.CmsUUID;
 
@@ -75,6 +77,26 @@ public class CmsGallerySearch {
     }
 
     /**
+     * Searches by structure id.<p>
+     * 
+     * @param cms the OpenCms context to use for the search
+     * @param rootPath the resource root path
+     * @param locale the locale for which the search result should be returned
+     *  
+     * @return the search result 
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    public static CmsGallerySearchResult searchByPath(CmsObject cms, String rootPath, Locale locale)
+    throws CmsException {
+
+        CmsGallerySearch gallerySearch = new CmsGallerySearch();
+        gallerySearch.init(cms);
+        gallerySearch.setIndex(CmsGallerySearchIndex.GALLERY_INDEX_NAME);
+        return gallerySearch.searchByPath(rootPath, locale);
+    }
+
+    /**
      * Returns the name of the current search index.<p>
      * 
      * @return the name of the current search index
@@ -99,7 +121,6 @@ public class CmsGallerySearch {
         if ((m_cms == null) && (m_index == null)) {
             throw new CmsException(Messages.get().container(Messages.ERR_SEARCH_NOT_INITIALIZED_0));
         }
-
         result = m_index.searchGallery(m_cms, params);
 
         if (result.size() > 0) {
@@ -145,12 +166,43 @@ public class CmsGallerySearch {
      */
     public CmsGallerySearchResult searchById(CmsUUID id, Locale locale) throws CmsException {
 
+<<<<<<< HEAD
         Document doc = m_index.getDocument(CmsGallerySearchFieldMapping.FIELD_RESOURCE_STRUCTURE_ID, id.toString());
+=======
+        I_CmsSearchDocument sDoc = m_index.getDocument(
+            CmsGallerySearchFieldMapping.FIELD_RESOURCE_STRUCTURE_ID,
+            id.toString());
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         CmsGallerySearchResult result = null;
-        if (doc != null) {
+        if ((sDoc != null) && (sDoc.getDocument() != null)) {
+            Document doc = (Document)sDoc.getDocument();
             result = new CmsGallerySearchResult(m_cms, 100, doc, null, locale);
         } else {
             CmsResource res = m_cms.readResource(id, CmsResourceFilter.IGNORE_EXPIRATION);
+            result = new CmsGallerySearchResult(m_cms, res);
+        }
+        return result;
+    }
+
+    /**
+     * Searches by structure id.<p>
+     * 
+     * @param path the resource path
+     * @param locale the locale for which the search result should be returned
+     *  
+     * @return the search result 
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    public CmsGallerySearchResult searchByPath(String path, Locale locale) throws CmsException {
+
+        I_CmsSearchDocument sDoc = m_index.getDocument(CmsSearchField.FIELD_PATH, path);
+        CmsGallerySearchResult result = null;
+        if ((sDoc != null) && (sDoc.getDocument() != null)) {
+            Document doc = (Document)sDoc.getDocument();
+            result = new CmsGallerySearchResult(m_cms, 100, doc, null, locale);
+        } else {
+            CmsResource res = m_cms.readResource(path, CmsResourceFilter.IGNORE_EXPIRATION);
             result = new CmsGallerySearchResult(m_cms, res);
         }
         return result;

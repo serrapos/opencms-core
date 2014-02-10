@@ -1,9 +1,9 @@
 @external cms_type_icon;
 /** unused classes **/
-.itemAdditional, .open, .itemActive, .itemRed, .itemBlue, .itemYellow, .disabledItem, .itemTitle, .cms_type_icon,
-.cmsHovering, .buttonPanel, .permaVisible, .itemAdditionalTitle, .itemAdditionalValue, .dragging,
+.itemAdditional, .inlineEditable, .open, .itemActive, .itemRed, .itemBlue, .itemYellow, .disabledItem, .itemTitle, .cms_type_icon,
+.itemAdditionalTitle, .itemAdditionalValue, .dragging,
 .cmsState, .cmsState-up, .cmsState-up-hovering, .cmsState-up-disabled, .cmsState-down, .cmsState-down-hovering,
-.cmsState-down-disabled, .export, .hidden, .secure, .redirect, .normal, .lockSharedOpen, .lockSharedClosed, .stateIcon, .lockOpen, .lockIcon, .lockClosed, .titleInput{}
+.cmsState-down-disabled, .export, .hidden, .secure, .redirect, .normal, .lockSharedOpen, .lockSharedClosed, .stateIcon, .lockOpen, .lockClosed, .titleInput, .copyModel {}
 
 
 @sprite li.expired div.itemContent{
@@ -46,10 +46,37 @@
 	margin: 1px;
 }
 
-.tilingList .tilingItem .cmsHovering .buttonPanel{
-	gwt-image: "backgrounds.softBackground";
+.tilingList .tilingItem .lockIcon{
+	bottom: 1px;
+	right: 1px;
+	top:auto;
+	left: auto;
+}
+
+.tilingList .tilingItem .cmsHovering .buttonPanel, .tilingList .tilingItem .buttonPanel.permaVisible{
 	height: auto;
 	border: 1px solid value("constants.css.borderColor");
+<<<<<<< HEAD
 	background-color: value("constants.css.backgroundColorSoft");
 	border-radius:2px;
 }
+=======
+	background: value("constants.css.backgroundColorDialog");
+	border-radius:2px;
+	display:block;
+	top: 0px;
+	right: 0px;
+}
+
+.buttonPanel.permaVisible > *{
+	visibility: visible;
+}
+
+.unselectable {} 
+
+.changed{}
+
+.topRightIcon {} 
+
+.titleDeleted {}
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485

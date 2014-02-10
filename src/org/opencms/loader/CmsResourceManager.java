@@ -27,9 +27,12 @@
 
 package org.opencms.loader;
 
+import org.opencms.cache.CmsVfsMemoryObjectCache;
 import org.opencms.configuration.CmsConfigurationException;
 import org.opencms.configuration.CmsVfsConfiguration;
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsProperty;
+import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsResource;
 import org.opencms.file.CmsResourceFilter;
 import org.opencms.file.collectors.I_CmsResourceCollector;
@@ -38,6 +41,7 @@ import org.opencms.file.types.CmsResourceTypeFolder;
 import org.opencms.file.types.CmsResourceTypePlain;
 import org.opencms.file.types.CmsResourceTypeUnknownFile;
 import org.opencms.file.types.CmsResourceTypeUnknownFolder;
+import org.opencms.file.types.CmsResourceTypeXmlContent;
 import org.opencms.file.types.I_CmsResourceType;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
@@ -47,6 +51,7 @@ import org.opencms.module.CmsModuleManager;
 import org.opencms.relations.CmsRelationType;
 import org.opencms.security.CmsRole;
 import org.opencms.security.CmsRoleViolationException;
+import org.opencms.util.CmsDefaultSet;
 import org.opencms.util.CmsHtmlConverter;
 import org.opencms.util.CmsHtmlConverterJTidy;
 import org.opencms.util.CmsHtmlConverterOption;
@@ -54,6 +59,7 @@ import org.opencms.util.CmsResourceTranslator;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.util.I_CmsHtmlConverter;
 import org.opencms.workplace.CmsWorkplace;
+import org.opencms.xml.CmsXmlContentDefinition;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -78,6 +84,50 @@ import org.apache.commons.logging.Log;
  * @since 6.0.0 
  */
 public class CmsResourceManager {
+
+    /** 
+     * Bean containing a template resource and the name of the template.<p>
+     */
+    public static class NamedTemplate {
+
+        /** The template name. */
+        private String m_name;
+
+        /** The template resource. */
+        private CmsResource m_resource;
+
+        /**
+         * Creates a new instance.<p>
+         * 
+         * @param resource the template resource 
+         * @param name the template name 
+         */
+        public NamedTemplate(CmsResource resource, String name) {
+
+            m_resource = resource;
+            m_name = name;
+        }
+
+        /**
+         * Gets the template name.<p>
+         * 
+         * @return the template name 
+         */
+        public String getName() {
+
+            return m_name;
+        }
+
+        /**
+         * Gets the template resource.<p>
+         * 
+         * @return the template resource 
+         */
+        public CmsResource getResource() {
+
+            return m_resource;
+        }
+    }
 
     /**
      * Contains the part of the resource manager configuration that can be changed 
@@ -239,6 +289,9 @@ public class CmsResourceManager {
 
     /** The configured default type for folders when the resource type is missing. */
     private I_CmsResourceType m_restypeUnknownFolder;
+
+    /** Cache for template names. */
+    private CmsVfsMemoryObjectCache m_templateNameCache = new CmsVfsMemoryObjectCache();
 
     /** XSD translator, used to translate all accesses to XML schemas from Strings. */
     private CmsResourceTranslator m_xsdTranslator;
@@ -541,6 +594,44 @@ public class CmsResourceManager {
         }
 
         m_resourceTypesFromXml.add(resourceType);
+    }
+
+    /**
+     * Gets the map of forbidden contexts for resource types.<p>
+     * 
+     * @param cms the current CMS context 
+     * @return the map from resource types to the forbidden contexts 
+     */
+    public Map<String, CmsDefaultSet<String>> getAllowedContextMap(CmsObject cms) {
+
+        Map<String, CmsDefaultSet<String>> result = new HashMap<String, CmsDefaultSet<String>>();
+        for (I_CmsResourceType resType : getResourceTypes()) {
+            if (resType instanceof CmsResourceTypeXmlContent) {
+                String schema = null;
+                try {
+                    schema = ((CmsResourceTypeXmlContent)resType).getSchema();
+                    if (schema != null) {
+                        CmsXmlContentDefinition contentDefinition = CmsXmlContentDefinition.unmarshal(cms, schema);
+
+                        CmsDefaultSet<String> allowedContexts = contentDefinition.getContentHandler().getAllowedTemplates();
+                        result.put(resType.getTypeName(), allowedContexts);
+                    } else {
+                        LOG.info("No schema for XML type "
+                            + resType.getTypeName()
+                            + " / "
+                            + resType.getClass().getName());
+                    }
+                } catch (Exception e) {
+                    LOG.error("Error in getAllowedContextMap, schema="
+                        + schema
+                        + ", type="
+                        + resType.getTypeName()
+                        + ", "
+                        + e.getLocalizedMessage(), e);
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -911,29 +1002,69 @@ public class CmsResourceManager {
     public CmsTemplateLoaderFacade getTemplateLoaderFacade(CmsObject cms, CmsResource resource, String templateProperty)
     throws CmsException {
 
+        return getTemplateLoaderFacade(cms, null, resource, templateProperty);
+    }
+
+    /**
+     * Returns a template loader facade for the given file.<p>
+     * @param cms the current OpenCms user context
+     * @param request the current request
+     * @param resource the requested file
+     * @param templateProperty the property to read for the template
+     * 
+     * @return a resource loader facade for the given file
+     * @throws CmsException if something goes wrong
+     */
+    public CmsTemplateLoaderFacade getTemplateLoaderFacade(
+        CmsObject cms,
+        HttpServletRequest request,
+        CmsResource resource,
+        String templateProperty) throws CmsException {
+
         String templateProp = cms.readPropertyObject(resource, templateProperty, true).getValue();
+        CmsTemplateContext templateContext = null;
+        String templateName = null;
         if (templateProp == null) {
 
             // use default template, if template is not set
             templateProp = DEFAULT_TEMPLATE;
-
-            if (!cms.existsResource(templateProp, CmsResourceFilter.IGNORE_EXPIRATION)) {
+            NamedTemplate namedTemplate = readTemplateWithName(cms, templateProp);
+            if (namedTemplate == null) {
                 // no template property defined, this is a must for facade loaders
                 throw new CmsLoaderException(Messages.get().container(
                     Messages.ERR_NONDEF_PROP_2,
                     templateProperty,
                     cms.getSitePath(resource)));
             }
-        } else if (!cms.existsResource(templateProp, CmsResourceFilter.IGNORE_EXPIRATION)) {
-
-            // use default template, if template does not exist
-            if (cms.existsResource(DEFAULT_TEMPLATE, CmsResourceFilter.IGNORE_EXPIRATION)) {
-                templateProp = DEFAULT_TEMPLATE;
+            templateName = namedTemplate.getName();
+        } else {
+            if ((request != null) && CmsTemplateContextManager.hasPropertyPrefix(templateProp)) {
+                templateContext = OpenCms.getTemplateContextManager().getTemplateContext(
+                    templateProp,
+                    cms,
+                    request,
+                    resource);
+                if (templateContext != null) {
+                    templateProp = templateContext.getTemplatePath();
+                }
+            }
+            NamedTemplate namedTemplate = readTemplateWithName(cms, templateProp);
+            if (namedTemplate == null) {
+                namedTemplate = readTemplateWithName(cms, DEFAULT_TEMPLATE);
+                if (namedTemplate != null) {
+                    templateProp = DEFAULT_TEMPLATE;
+                    templateName = namedTemplate.getName();
+                }
+            } else {
+                templateName = namedTemplate.getName();
             }
         }
-
         CmsResource template = cms.readFile(templateProp, CmsResourceFilter.IGNORE_EXPIRATION);
-        return new CmsTemplateLoaderFacade(getLoader(template), resource, template);
+        CmsTemplateLoaderFacade result = new CmsTemplateLoaderFacade(getLoader(template), resource, template);
+        result.setTemplateContext(templateContext);
+        result.setTemplateName(templateName);
+        return result;
+
     }
 
     /**
@@ -1063,6 +1194,32 @@ public class CmsResourceManager {
     }
 
     /**
+     * Checks if there is a resource type with a given name whose id matches the given id.<p>
+     * 
+     * This will return 'false' if no resource type with the given name is registered.<p>
+     * 
+     * @param name a resource type name 
+     * @param id a resource type id 
+     * 
+     * @return true if a matching resource type with the given name and id was found 
+     */
+    public boolean matchResourceType(String name, int id) {
+
+        if (hasResourceType(name)) {
+            try {
+                return getResourceType(name).getTypeId() == id;
+            } catch (Exception e) {
+                // should never happen because we already checked with hasResourceType, still have to 
+                // catch it so the compiler is happy 
+                LOG.error(e.getLocalizedMessage(), e);
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * Configures the URL name generator for XML contents.<p>
      * 
      * @param nameGenerator the configured name generator class
@@ -1119,6 +1276,34 @@ public class CmsResourceManager {
 
         if (CmsLog.INIT.isInfoEnabled()) {
             CmsLog.INIT.info(Messages.get().getBundle().key(Messages.INIT_SHUTDOWN_1, this.getClass().getName()));
+        }
+    }
+
+    /**
+     * Gets the template name for a template resource, using a cache for efficiency.<p>
+     * 
+     * @param cms the current CMS context 
+     * @param resource the template resource 
+     * @return the template name 
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    private String getTemplateName(CmsObject cms, CmsResource resource) throws CmsException {
+
+        String templateName = (String)(m_templateNameCache.getCachedObject(cms, resource.getRootPath()));
+        if (templateName == null) {
+            CmsProperty nameProperty = cms.readPropertyObject(
+                resource,
+                CmsPropertyDefinition.PROPERTY_TEMPLATE_ELEMENTS,
+                false);
+            String nameFromProperty = "";
+            if (!nameProperty.isNullProperty()) {
+                nameFromProperty = nameProperty.getValue();
+            }
+            m_templateNameCache.putCachedObject(cms, resource.getRootPath(), nameFromProperty);
+            return nameFromProperty;
+        } else {
+            return templateName;
         }
     }
 
@@ -1348,4 +1533,24 @@ public class CmsResourceManager {
             CmsLog.INIT.info(Messages.get().getBundle().key(Messages.INIT_RESOURCE_TYPE_INITIALIZED_0));
         }
     }
+
+    /**
+     * Reads a template resource together with its name.<p>
+     * 
+     * @param cms the current CMS context 
+     * @param path the template path 
+     * 
+     * @return the template together with its name, or null if the template couldn't be read 
+     */
+    private NamedTemplate readTemplateWithName(CmsObject cms, String path) {
+
+        try {
+            CmsResource resource = cms.readResource(path, CmsResourceFilter.IGNORE_EXPIRATION);
+            String name = getTemplateName(cms, resource);
+            return new NamedTemplate(resource, name);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
 }

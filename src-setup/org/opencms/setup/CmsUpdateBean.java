@@ -123,7 +123,7 @@ public class CmsUpdateBean extends CmsSetupBean {
     private CmsUpdateDBThread m_dbUpdateThread;
 
     /** The detected mayor version, based on DB structure. */
-    private int m_detectedVersion;
+    private double m_detectedVersion;
 
     /** Parameter for keeping the history. */
     private boolean m_keepHistory;
@@ -151,6 +151,7 @@ public class CmsUpdateBean extends CmsSetupBean {
         super();
         m_modulesFolder = FOLDER_UPDATE + CmsSystemInfo.FOLDER_MODULES;
         m_logFile = CmsSystemInfo.FOLDER_WEBINF + CmsLog.FOLDER_LOGS + "update.log";
+
     }
 
     /**
@@ -202,13 +203,28 @@ public class CmsUpdateBean extends CmsSetupBean {
             m_cms.getRequestContext().setCurrentProject(m_cms.createTempfileProject());
             if (!m_cms.existsResource("/shared")) {
                 m_cms.createResource("/shared", OpenCms.getResourceManager().getResourceType("folder").getTypeId());
-                CmsResource shared = m_cms.readResource("/shared");
+            }
+
+            try {
+                m_cms.lockResourceTemporary("/shared");
+            } catch (CmsException e) {
+                LOG.error(e.getLocalizedMessage(), e);
+            }
+            try {
+                m_cms.chacc("/shared", "group", "Users", "+v+w+r+i");
+            } catch (CmsException e) {
+                LOG.error(e.getLocalizedMessage(), e);
+            }
+            CmsResource shared = m_cms.readResource("/shared");
+            try {
                 OpenCms.getPublishManager().publishProject(
                     m_cms,
                     new CmsHtmlReport(m_cms.getRequestContext().getLocale(), m_cms.getRequestContext().getSiteRoot()),
                     shared,
                     false);
                 OpenCms.getPublishManager().waitWhileRunning();
+            } catch (CmsException e) {
+                LOG.error(e.getLocalizedMessage(), e);
             }
         } finally {
             m_cms.getRequestContext().setSiteRoot(originalSiteRoot);
@@ -278,7 +294,7 @@ public class CmsUpdateBean extends CmsSetupBean {
      * 
      * @return the detected mayor version
      */
-    public int getDetectedVersion() {
+    public double getDetectedVersion() {
 
         return m_detectedVersion;
     }
@@ -456,6 +472,7 @@ public class CmsUpdateBean extends CmsSetupBean {
 
         try {
             super.init(webAppRfsPath, servletMapping, defaultWebApplication);
+            CmsUpdateInfo.INSTANCE.setAdeModuleVersion(getInstalledModules().get("org.opencms.ade.containerpage"));
 
             if (m_workplaceUpdateThread != null) {
                 if (m_workplaceUpdateThread.isAlive()) {
@@ -507,6 +524,12 @@ public class CmsUpdateBean extends CmsSetupBean {
 
         //guava
         preload(MapMaker.class);
+<<<<<<< HEAD
+=======
+
+        //xerces
+        preload(org.apache.xerces.impl.Constants.class);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
@@ -763,7 +786,7 @@ public class CmsUpdateBean extends CmsSetupBean {
      *
      * @param detectedVersion the value to set
      */
-    public void setDetectedVersion(int detectedVersion) {
+    public void setDetectedVersion(double detectedVersion) {
 
         m_detectedVersion = detectedVersion;
     }
@@ -1006,7 +1029,12 @@ public class CmsUpdateBean extends CmsSetupBean {
                 if ("8.0.0".equals(version)
                     || "8.0.1".equals(version)
                     || "8.0.2".equals(version)
+<<<<<<< HEAD
                     || "8.0.3".equals(version)) {
+=======
+                    || "8.0.3".equals(version)
+                    || "8.0.4".equals(version)) {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
                     result.add("org.opencms.ade.containerpage");
                     result.add("org.opencms.ade.sitemap");
                 }

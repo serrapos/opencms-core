@@ -49,6 +49,7 @@ import org.opencms.relations.CmsLink;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.xml.containerpage.CmsFormatterBean;
 import org.opencms.xml.containerpage.CmsFormatterConfiguration;
+import org.opencms.xml.containerpage.I_CmsFormatterBean;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -254,7 +255,7 @@ public class CmsResourceTypeJsp extends A_CmsResourceTypeLinkParseable {
             false,
             res.getRootPath());
 
-        return CmsFormatterConfiguration.create(cms, Collections.singletonList(selfFormatter));
+        return CmsFormatterConfiguration.create(cms, Collections.<I_CmsFormatterBean> singletonList(selfFormatter));
     }
 
     /**
@@ -404,6 +405,12 @@ public class CmsResourceTypeJsp extends A_CmsResourceTypeLinkParseable {
 
         Set<String> references = getReferencingStrongLinks(cms, resource);
         super.undoChanges(cms, securityManager, resource, mode);
+        if (m_jspLoader != null) {
+            // we need to remove the JSP explicitly because undoing the changes also
+            // resets the last modification date, so the automatic mechanism for updating 
+            // JSPs based on modification dates doesn't work.
+            m_jspLoader.removeOfflineJspFromRepository(resource);
+        }
         removeReferencingFromCache(references);
     }
 

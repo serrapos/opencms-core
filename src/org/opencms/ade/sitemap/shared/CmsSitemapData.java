@@ -27,6 +27,8 @@
 
 package org.opencms.ade.sitemap.shared;
 
+import org.opencms.gwt.shared.CmsContextMenuEntryBean;
+import org.opencms.gwt.shared.CmsListInfoBean;
 import org.opencms.gwt.shared.property.CmsClientProperty;
 import org.opencms.gwt.shared.property.CmsClientTemplateBean;
 import org.opencms.xml.content.CmsXmlContentProperty;
@@ -46,14 +48,26 @@ public class CmsSitemapData implements IsSerializable {
     /** Name of the used js variable. */
     public static final String DICT_NAME = "org_opencms_ade_sitemap";
 
+    /** The URL of the JSP used to import aliases. */
+    private String m_aliasImportUrl;
+
     /** The list of property names. */
     private List<String> m_allPropertyNames;
+
+    /** Flag to indicate whether the user can open the alias editor. */
+    private boolean m_canEditAliases;
 
     /** Flag to indicate whether detail pages can be edited. */
     private boolean m_canEditDetailPages;
 
     /** The clipboard data. */
     private CmsSitemapClipboardData m_clipboardData;
+
+    /** The sitemap context menu entries. */
+    private List<CmsContextMenuEntryBean> m_contextMenuEntries;
+
+    /** A flag which controls whether a new folder should be created for subsitemaps. */
+    private boolean m_createNewFolderForSubsitemap;
 
     /** The default info bean for new elements. **/
     private CmsNewResourceInfo m_defaultNewElementInfo;
@@ -63,9 +77,6 @@ public class CmsSitemapData implements IsSerializable {
 
     /** Flag to control the display of the toolbar. */
     private boolean m_displayToolbar;
-
-    /** The export name of the site which contains the sitemap. */
-    private String m_exportName;
 
     /** The export RFS prefix. */
     private String m_exportRfsPrefix;
@@ -78,6 +89,9 @@ public class CmsSitemapData implements IsSerializable {
 
     /** The new element information. */
     private List<CmsNewResourceInfo> m_newElementInfos;
+
+    /** The new navigation level element info. */
+    private CmsNewResourceInfo m_newNavigatioLevelElementInfo;
 
     /** The new redirect element info. */
     private CmsNewResourceInfo m_newRedirectElementInfo;
@@ -106,6 +120,9 @@ public class CmsSitemapData implements IsSerializable {
     /** The sitemap root. */
     private CmsClientSitemapEntry m_root;
 
+    /** The list info beans for possible sitemap folder types. */
+    private List<CmsListInfoBean> m_sitemapFolderTypeInfos;
+
     /** The sitemap info. */
     private CmsSitemapInfo m_sitemapInfo;
 
@@ -126,6 +143,7 @@ public class CmsSitemapData implements IsSerializable {
      * @param templates the available templates
      * @param properties the properties
      * @param clipboardData the clipboard data
+     * @param contextMenuEntries the sitemap context menu entries
      * @param parentProperties the root entry's parent's inherited properties 
      * @param allPropNames the names of all properties 
      * @param exportRfsPrefix the export RFS prefix 
@@ -135,6 +153,10 @@ public class CmsSitemapData implements IsSerializable {
      * @param defaultNewElementInfo the type of the container page resource
      * @param newElementInfos the new element information
      * @param newRedirectElementInfo the new redirect element info
+<<<<<<< HEAD
+=======
+     * @param newNavigationLevelElementInfo the new navigation level element info
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * @param sitemapInfo the sitemap info bean
      * @param parentSitemap the path to the parent sitemap or <code>null</code>
      * @param root the sitemap root
@@ -144,11 +166,16 @@ public class CmsSitemapData implements IsSerializable {
      * @param resourceTypeInfos the resource type information for the detail pages  
      * @param returnCode return page code
      * @param canEditDetailPages flag to indicate whether detail pages can be edited
+     * @param aliasImportUrl the URL of the JSP used to import aliases 
+     * @param canEditAliases flag to indicate whether the current user can edit the alias table 
+     * @param createNewFoldersForSubsitemaps flag to control whether new folders should be created for subsitemaps 
+     * @param subsitemapTypeInfos the type information beans for the available subsitemap folder types 
      */
     public CmsSitemapData(
         Map<String, CmsClientTemplateBean> templates,
         Map<String, CmsXmlContentProperty> properties,
         CmsSitemapClipboardData clipboardData,
+        List<CmsContextMenuEntryBean> contextMenuEntries,
         Map<String, CmsClientProperty> parentProperties,
         List<String> allPropNames,
         String exportRfsPrefix,
@@ -158,6 +185,7 @@ public class CmsSitemapData implements IsSerializable {
         CmsNewResourceInfo defaultNewElementInfo,
         List<CmsNewResourceInfo> newElementInfos,
         CmsNewResourceInfo newRedirectElementInfo,
+        CmsNewResourceInfo newNavigationLevelElementInfo,
         CmsSitemapInfo sitemapInfo,
         String parentSitemap,
         CmsClientSitemapEntry root,
@@ -166,11 +194,16 @@ public class CmsSitemapData implements IsSerializable {
         CmsDetailPageTable detailPageTable,
         List<CmsNewResourceInfo> resourceTypeInfos,
         String returnCode,
-        boolean canEditDetailPages) {
+        boolean canEditDetailPages,
+        String aliasImportUrl,
+        boolean canEditAliases,
+        boolean createNewFoldersForSubsitemaps,
+        List<CmsListInfoBean> subsitemapTypeInfos) {
 
         m_templates = templates;
         m_properties = properties;
         m_clipboardData = clipboardData;
+        m_contextMenuEntries = contextMenuEntries;
         m_noEditReason = noEditReason;
         m_displayToolbar = displayToolbar;
         m_defaultNewElementInfo = defaultNewElementInfo;
@@ -189,6 +222,22 @@ public class CmsSitemapData implements IsSerializable {
         m_returnCode = returnCode;
         m_newElementInfos = newElementInfos;
         m_newRedirectElementInfo = newRedirectElementInfo;
+        m_newNavigatioLevelElementInfo = newNavigationLevelElementInfo;
+        m_aliasImportUrl = aliasImportUrl;
+        m_canEditAliases = canEditAliases;
+        m_createNewFolderForSubsitemap = createNewFoldersForSubsitemaps;
+        m_sitemapFolderTypeInfos = subsitemapTypeInfos;
+    }
+
+    /**
+     * Checks whether the current user can edit the aliases.<p>
+     * 
+     * @return true if the current user can edit the aliases 
+     */
+    public boolean canEditAliases() {
+
+        return m_canEditAliases;
+
     }
 
     /**
@@ -199,6 +248,16 @@ public class CmsSitemapData implements IsSerializable {
     public boolean canEditDetailPages() {
 
         return m_canEditDetailPages && (m_resourceTypeInfos != null) && !m_resourceTypeInfos.isEmpty();
+    }
+
+    /**
+     * Gets the URL of the JSP used to import aliases.<p>
+     * 
+     * @return the alias import URL 
+     */
+    public String getAliasImportUrl() {
+
+        return m_aliasImportUrl;
     }
 
     /**
@@ -222,6 +281,16 @@ public class CmsSitemapData implements IsSerializable {
     }
 
     /**
+     * Returns the sitemap context menu entries.<p>
+     *
+     * @return the sitemap context menu entries
+     */
+    public List<CmsContextMenuEntryBean> getContextMenuEntries() {
+
+        return m_contextMenuEntries;
+    }
+
+    /**
      * Returns the type of the container page resource.<p>
      *
      * @return the type of the container page resource
@@ -239,16 +308,6 @@ public class CmsSitemapData implements IsSerializable {
     public CmsDetailPageTable getDetailPageTable() {
 
         return m_detailPageTable;
-    }
-
-    /**
-     * Returns the export name from the sitemap configuration.<p>
-     *  
-     * @return the export name
-     */
-    public String getExportName() {
-
-        return m_exportName;
     }
 
     /**
@@ -279,6 +338,16 @@ public class CmsSitemapData implements IsSerializable {
     public List<CmsNewResourceInfo> getNewElementInfos() {
 
         return m_newElementInfos;
+    }
+
+    /**
+     * Returns the new navigation level element info.<p>
+     * 
+     * @return the new navigation level element info
+     */
+    public CmsNewResourceInfo getNewNavigationLevelElementInfo() {
+
+        return m_newNavigatioLevelElementInfo;
     }
 
     /**
@@ -382,6 +451,16 @@ public class CmsSitemapData implements IsSerializable {
     }
 
     /**
+     * Returns the list info beans for the available sitemap folder types.<p>
+     * 
+     * @return the list info beans for the available sitemap folder types 
+     */
+    public List<CmsListInfoBean> getSubsitemapFolderTypeInfos() {
+
+        return m_sitemapFolderTypeInfos;
+    }
+
+    /**
      * Returns the available templates.<p>
      *
      * @return the available templates
@@ -389,6 +468,16 @@ public class CmsSitemapData implements IsSerializable {
     public Map<String, CmsClientTemplateBean> getTemplates() {
 
         return m_templates;
+    }
+
+    /**
+     * Returns true if new folders should be created for subsitemaps.<p>
+     * 
+     * @return true if new folders should be created for subsitemaps 
+     */
+    public boolean isCreateNewFoldersForSubsitemaps() {
+
+        return m_createNewFolderForSubsitemap;
     }
 
     /**
@@ -420,4 +509,5 @@ public class CmsSitemapData implements IsSerializable {
 
         m_returnCode = returnCode;
     }
+
 }

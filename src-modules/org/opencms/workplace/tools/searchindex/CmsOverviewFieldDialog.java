@@ -37,7 +37,7 @@ import javax.servlet.jsp.PageContext;
 
 /**
  * 
- * Widget dialog for an overview of a <code>{@link org.opencms.search.fields.CmsSearchField}</code>.<p>
+ * Widget dialog for an overview of a <code>{@link org.opencms.search.fields.CmsLuceneField}</code>.<p>
  * 
  * @since 6.5.5 
  */
@@ -72,7 +72,7 @@ public class CmsOverviewFieldDialog extends A_CmsFieldDialog {
      */
     public String getIndexed() {
 
-        if (m_field != null && m_field.getIndexed() != null) {
+        if ((m_field != null) && (m_field.getIndexed() != null)) {
             return m_field.getIndexed();
         }
         return "";
@@ -96,6 +96,7 @@ public class CmsOverviewFieldDialog extends A_CmsFieldDialog {
      * @param dialog the dialog (page) to get the HTML for
      * @return the dialog HTML for all defined widgets of the named dialog (page)
      */
+    @Override
     protected String createDialogHtml(String dialog) {
 
         StringBuffer result = new StringBuffer(1024);
@@ -120,6 +121,7 @@ public class CmsOverviewFieldDialog extends A_CmsFieldDialog {
     /**
      * @see org.opencms.workplace.CmsWidgetDialog#defaultActionHtmlEnd()
      */
+    @Override
     protected String defaultActionHtmlEnd() {
 
         return "";
@@ -128,6 +130,7 @@ public class CmsOverviewFieldDialog extends A_CmsFieldDialog {
     /**
      * Creates the list of widgets for this dialog.<p>
      */
+    @Override
     protected void defineWidgets() {
 
         super.defineWidgets();

@@ -46,7 +46,6 @@ import org.opencms.security.CmsPermissionSet;
 import org.opencms.staticexport.CmsLinkTable;
 import org.opencms.xml.CmsXmlContentDefinition;
 import org.opencms.xml.CmsXmlEntityResolver;
-import org.opencms.xml.CmsXmlException;
 import org.opencms.xml.containerpage.CmsFormatterConfiguration;
 import org.opencms.xml.content.CmsXmlContent;
 import org.opencms.xml.content.CmsXmlContentFactory;
@@ -119,6 +118,20 @@ public class CmsResourceTypeXmlContent extends A_CmsResourceTypeLinkParseable {
         if (CONFIGURATION_SCHEMA.equalsIgnoreCase(paramName)) {
             m_schema = paramValue.trim();
         }
+    }
+
+    /**
+     * @see org.opencms.file.types.A_CmsResourceType#getGalleryPreviewProvider()
+     */
+    @Override
+    public String getGalleryPreviewProvider() {
+
+        if (m_galleryPreviewProvider == null) {
+            m_galleryPreviewProvider = getConfiguration().getString(
+                CONFIGURATION_GALLERY_PREVIEW_PROVIDER,
+                DEFAULT_GALLERY_PREVIEW_PROVIDER);
+        }
+        return m_galleryPreviewProvider;
     }
 
     /**
@@ -253,8 +266,15 @@ public class CmsResourceTypeXmlContent extends A_CmsResourceTypeLinkParseable {
         if (m_schema != null) {
             // unmarshal the XML schema, this is required to update the resource bundle cache
             try {
-                CmsXmlContentDefinition.unmarshal(cms, m_schema);
-            } catch (CmsXmlException e) {
+                if (cms.existsResource(m_schema)) {
+                    CmsXmlContentDefinition.unmarshal(cms, m_schema);
+                } else {
+                    LOG.debug(Messages.get().getBundle().key(
+                        Messages.LOG_WARN_SCHEMA_RESOURCE_DOES_NOT_EXIST_2,
+                        m_schema,
+                        getTypeName()));
+                }
+            } catch (Exception e) {
                 // unable to unmarshal the XML schema configured
                 LOG.error(Messages.get().getBundle().key(Messages.ERR_BAD_XML_SCHEMA_2, m_schema, getTypeName()), e);
             }
@@ -379,7 +399,14 @@ public class CmsResourceTypeXmlContent extends A_CmsResourceTypeLinkParseable {
         String resourcename,
         List<CmsProperty> properties) {
 
-        return OpenCms.getLocaleManager().getDefaultLocales(cms, CmsResource.getParentFolder(resourcename)).get(0);
+        Locale locale = (Locale)(cms.getRequestContext().getAttribute(CmsRequestContext.ATTRIBUTE_NEW_RESOURCE_LOCALE));
+        if (locale != null) {
+            return locale;
+        }
+        List<Locale> locales = OpenCms.getLocaleManager().getDefaultLocales(
+            cms,
+            CmsResource.getParentFolder(resourcename));
+        return locales.get(0);
     }
 
     /**

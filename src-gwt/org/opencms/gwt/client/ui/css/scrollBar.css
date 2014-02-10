@@ -1,0 +1,55 @@
+div.scrollBar{
+	position:absolute;
+	top: 0px;
+	right: 0px;
+	width: 8px;
+	bottom: 0px;
+}
+div.scrollBar:focus{
+	border:none;
+	outline:none;
+}
+
+div.scrollBar div.scrollKnob{
+	position:absolute;
+	right: 0px;
+	width:8px;
+	background: #333333;
+	border-radius: 4px;
+	opacity:0.6;
+}
+
+div.scrollPanel{
+	overflow:hidden !important;
+	position: relative;
+}
+
+div.scrollable{
+	overflow:auto;
+	position: relative;
+	height:100%;
+}
+@if user.agent ie6 ie8{
+	div.scrollable, div.scrollPanel, div.scrollContainer{
+		zoom:1;
+	}
+}
+div.scrollContainer{
+	display:inline-block;
+}
+
+div.showBars div.scrollbarLayer, div.allwaysShowBars div.scrollbarLayer{
+    right:0px;
+}
+div.scrollbarLayer{
+	position:absolute;
+    top:0px;
+    bottom:0px;
+    right:-50px;
+}
+
+div.hiddenSize{
+	height:1px;
+	width:auto;
+	display:block;
+}

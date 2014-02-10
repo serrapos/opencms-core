@@ -49,9 +49,6 @@ import com.google.gwt.event.shared.HandlerRegistration;
  */
 public class CmsResultListItem extends CmsListItem {
 
-    /** The delete button. */
-    private CmsPushButton m_deleteButton;
-
     /** The name. */
     private String m_name;
 
@@ -61,29 +58,31 @@ public class CmsResultListItem extends CmsListItem {
     /** The resource type name of the resource. */
     private String m_resourceType;
 
+    /** The search result bean. */
+    private CmsResultItemBean m_result;
+
     /** The select button. */
     private CmsPushButton m_selectButton;
-
-    /** The vfs path. */
-    private String m_vfsPath;
 
     /**
      * Creates a new result list item with a main widget.<p>
      * 
      * @param resultItem the result item
+     * @param hasPreview if the item has a preview option
      * @param dndHandler the drag and drop handler
      */
-    public CmsResultListItem(CmsResultItemBean resultItem, CmsDNDHandler dndHandler) {
+    public CmsResultListItem(CmsResultItemBean resultItem, boolean hasPreview, CmsDNDHandler dndHandler) {
 
+        m_result = resultItem;
         resultItem.addAdditionalInfo(Messages.get().key(Messages.GUI_PREVIEW_LABEL_PATH_0), resultItem.getPath());
         CmsResultItemWidget resultItemWidget = new CmsResultItemWidget(resultItem);
+        resultItemWidget.setUnselectable();
         initContent(resultItemWidget);
         if (dndHandler != null) {
             setId(resultItem.getClientId());
             if (resultItem.getTitle() != null) {
                 setName(resultItem.getTitle().toLowerCase().replace("/", "-").replace(" ", "_"));
             } else {
-                // TODO: check if another name makes more sense
                 setName(resultItem.getClientId());
             }
             initMoveHandle(dndHandler);
@@ -92,25 +91,16 @@ public class CmsResultListItem extends CmsListItem {
                 addStyleName(I_CmsLayoutBundle.INSTANCE.galleryResultItemCss().tilingItem());
             }
         }
-        // add delete button
-        m_deleteButton = createDeleteButton();
-        if (!resultItem.isEditable()) {
-            m_deleteButton.disable(resultItem.getNoEditReson());
-        }
-        resultItemWidget.addButton(m_deleteButton);
-
         // add  preview button
-        m_previewButton = new CmsPushButton();
-        m_previewButton.setImageClass(I_CmsImageBundle.INSTANCE.style().searchIcon());
-        m_previewButton.setButtonStyle(ButtonStyle.TRANSPARENT, null);
-        m_previewButton.setTitle(Messages.get().key(Messages.GUI_PREVIEW_BUTTON_SHOW_0));
-        resultItemWidget.addButton(m_previewButton);
-
-        m_selectButton = new CmsPushButton();
-        // TODO: use different icon
-        m_selectButton.setImageClass(I_CmsImageBundle.INSTANCE.style().addIcon());
-        m_selectButton.setButtonStyle(ButtonStyle.TRANSPARENT, null);
-        m_selectButton.setTitle(Messages.get().key(Messages.GUI_PREVIEW_BUTTON_SELECT_0));
+        if (hasPreview) {
+            m_previewButton = createButton(
+                I_CmsImageBundle.INSTANCE.style().previewIcon(),
+                Messages.get().key(Messages.GUI_PREVIEW_BUTTON_SHOW_0));
+            resultItemWidget.addButton(m_previewButton);
+        }
+        m_selectButton = createButton(
+            I_CmsImageBundle.INSTANCE.style().checkIcon(),
+            Messages.get().key(Messages.GUI_PREVIEW_BUTTON_SELECT_0));
         m_selectButton.setVisible(false);
         resultItemWidget.addButton(m_selectButton);
 
@@ -128,21 +118,26 @@ public class CmsResultListItem extends CmsListItem {
      */
     public static CmsPushButton createDeleteButton() {
 
-        CmsPushButton result = new CmsPushButton();
-        result.setImageClass(I_CmsImageBundle.INSTANCE.style().deleteIcon());
-        result.setButtonStyle(ButtonStyle.TRANSPARENT, null);
-        result.setTitle(Messages.get().key(Messages.GUI_RESULT_BUTTON_DELETE_0));
-        return result;
+        return createButton(
+            I_CmsImageBundle.INSTANCE.style().deleteIcon(),
+            Messages.get().key(Messages.GUI_RESULT_BUTTON_DELETE_0));
     }
 
     /**
-     * Adds the delete button click handler.<p>
+     * Creates a button for the list item.<p>
      * 
-     * @param handler the click handler
+     * @param imageClass the icon image class
+     * @param title the button title
+     * 
+     * @return the button
      */
-    public void addDeleteClickHandler(ClickHandler handler) {
+    private static CmsPushButton createButton(String imageClass, String title) {
 
-        m_deleteButton.addClickHandler(handler);
+        CmsPushButton result = new CmsPushButton();
+        result.setImageClass(imageClass);
+        result.setButtonStyle(ButtonStyle.TRANSPARENT, null);
+        result.setTitle(title);
+        return result;
     }
 
     /**
@@ -164,7 +159,9 @@ public class CmsResultListItem extends CmsListItem {
      */
     public void addPreviewClickHandler(ClickHandler handler) {
 
-        m_previewButton.addClickHandler(handler);
+        if (m_previewButton != null) {
+            m_previewButton.addClickHandler(handler);
+        }
     }
 
     /**
@@ -198,14 +195,14 @@ public class CmsResultListItem extends CmsListItem {
         return m_resourceType;
     }
 
-    /**
-     * Returns the vfs path.<p>
-     *
-     * @return the vfs path
+    /** 
+     * Gets the search result bean.<p>
+     * 
+     * @return the search result bean 
      */
-    public String getVfsPath() {
+    public CmsResultItemBean getResult() {
 
-        return m_vfsPath;
+        return m_result;
     }
 
     /**

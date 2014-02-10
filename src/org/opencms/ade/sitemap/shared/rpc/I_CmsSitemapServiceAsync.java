@@ -30,6 +30,16 @@ package org.opencms.ade.sitemap.shared.rpc;
 import org.opencms.ade.sitemap.shared.CmsClientSitemapEntry;
 import org.opencms.ade.sitemap.shared.CmsSitemapChange;
 import org.opencms.ade.sitemap.shared.CmsSitemapData;
+<<<<<<< HEAD
+=======
+import org.opencms.gwt.shared.alias.CmsAliasEditValidationReply;
+import org.opencms.gwt.shared.alias.CmsAliasEditValidationRequest;
+import org.opencms.gwt.shared.alias.CmsAliasImportResult;
+import org.opencms.gwt.shared.alias.CmsAliasInitialFetchResult;
+import org.opencms.gwt.shared.alias.CmsAliasSaveValidationRequest;
+import org.opencms.gwt.shared.alias.CmsRewriteAliasValidationReply;
+import org.opencms.gwt.shared.alias.CmsRewriteAliasValidationRequest;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 import org.opencms.util.CmsUUID;
 
 import com.google.gwt.user.client.rpc.AsyncCallback;
@@ -53,6 +63,24 @@ public interface I_CmsSitemapServiceAsync {
      * @param callback the async callback  
      */
     void createSubSitemap(CmsUUID entryId, AsyncCallback<CmsSitemapChange> callback);
+<<<<<<< HEAD
+=======
+
+    /**
+     * Gets the alias import results from the server.<p>
+     * 
+     * @param resultKey the key which identifies the alias import results to get 
+     * @param asyncCallback the asynchronous callback  
+     */
+    void getAliasImportResult(String resultKey, AsyncCallback<List<CmsAliasImportResult>> asyncCallback);
+
+    /**
+     * Gets the initial data for the bulk alias editor.<p>
+     * 
+     * @param callback the asynchronous callback  
+     */
+    void getAliasTable(AsyncCallback<CmsAliasInitialFetchResult> callback);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
     /**
      * Returns the sitemap children for the given entry.<p>
@@ -90,6 +118,17 @@ public interface I_CmsSitemapServiceAsync {
      * @param callback the async callback
      */
     void save(String sitemapUri, CmsSitemapChange change, AsyncCallback<CmsSitemapChange> callback);
+<<<<<<< HEAD
+=======
+
+    /**
+     * Saves the aliases for the bulk alias editor.<p>
+     *  
+     * @param saveRequest the object containing the data to save
+     * @param callback the asynchronous callback  
+     */
+    void saveAliases(CmsAliasSaveValidationRequest saveRequest, AsyncCallback<CmsAliasEditValidationReply> callback);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
     /**
      * Save the change to the given sitemap.<p>
@@ -100,4 +139,39 @@ public interface I_CmsSitemapServiceAsync {
      */
     @SynchronizedRpcRequest
     void saveSync(String sitemapUri, CmsSitemapChange change, AsyncCallback<CmsSitemapChange> callback);
+<<<<<<< HEAD
+=======
+
+    /**
+     * Updates the alias editor status.<p>
+     * 
+     * This is used to keep two users from editing the alias table for a site root concurrently.<p>
+     * 
+     * @param editing true to indicate that the table is still being edited, false to indicate that the table isn't being edited anymore
+     * @param callback the asynchronous callback 
+     */
+    void updateAliasEditorStatus(boolean editing, AsyncCallback<Void> callback);
+
+    /**
+     * Validates the aliases for the bulk alias editor.<p>
+     * 
+     * @param validationRequest an object indicating the type of validation to perform 
+     * @param callback the asynchronous callback 
+     */
+    void validateAliases(
+        CmsAliasEditValidationRequest validationRequest,
+        AsyncCallback<CmsAliasEditValidationReply> callback);
+
+    /**
+     * Validates rewrite aliases.<p>
+     * 
+     * @param validationRequest the rewrite alias data to validate
+     *  
+     * @param callback the callback for the result 
+     */
+    void validateRewriteAliases(
+        CmsRewriteAliasValidationRequest validationRequest,
+        AsyncCallback<CmsRewriteAliasValidationReply> callback);
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 }

@@ -44,16 +44,25 @@ import java.util.ResourceBundle;
 public interface I_CmsResourceBundle {
 
     /**
+     * Creates a clone of the resource bundle.<p>
+     * 
+     * (This may not actually clone the resource bundle if it is immutable).
+     * 
+     * @return a clone of the resource bundle 
+     */
+    I_CmsResourceBundle getClone();
+
+    /**
      * Sets the locale used for this resource bundle.<p>
      * 
      * @param l the locale to set
      */
-    public void setLocale(Locale l);
+    void setLocale(Locale l);
 
     /**
      * Sets the parent bundle.<p>
      * 
      * @param parent the parent bundle to set
      */
-    public void setParent(ResourceBundle parent);
+    void setParent(ResourceBundle parent);
 }

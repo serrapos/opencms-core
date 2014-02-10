@@ -33,6 +33,7 @@ import org.opencms.gwt.client.ui.css.I_CmsInputLayoutBundle;
 import org.opencms.gwt.client.ui.css.I_CmsLayoutBundle;
 import org.opencms.gwt.client.ui.input.form.CmsWidgetFactoryRegistry;
 import org.opencms.gwt.client.ui.input.form.I_CmsFormWidgetFactory;
+import org.opencms.gwt.client.util.CmsDomUtil;
 import org.opencms.util.CmsPair;
 import org.opencms.util.CmsStringUtil;
 
@@ -43,6 +44,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.gwt.event.dom.client.FocusEvent;
+import com.google.gwt.event.dom.client.FocusHandler;
+import com.google.gwt.event.dom.client.HasFocusHandlers;
+import com.google.gwt.event.logical.shared.HasValueChangeHandlers;
+import com.google.gwt.event.logical.shared.ValueChangeEvent;
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
+import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Panel;
@@ -53,22 +61,23 @@ import com.google.gwt.user.client.ui.Panel;
  * @since 8.0.0
  *  
  */
-public class CmsMultiCheckBox extends Composite implements I_CmsFormWidget, I_CmsHasInit {
+public class CmsMultiCheckBox extends Composite
+implements I_CmsFormWidget, I_CmsHasInit, HasValueChangeHandlers<String>, HasFocusHandlers {
 
     /** The type string for this widget. */
-    public static final String WIDGET_TYPE = "multiselect";
+    public static final String WIDGET_TYPE = "multicheck";
 
     /** The list of checkboxes. */
-    private List<CmsCheckBox> m_checkboxes = new ArrayList<CmsCheckBox>();
+    protected List<CmsCheckBox> m_checkboxes = new ArrayList<CmsCheckBox>();
 
     /** Error display for this widget. */
-    private CmsErrorWidget m_error = new CmsErrorWidget();
+    protected CmsErrorWidget m_error = new CmsErrorWidget();
 
     /** The select options of the multi check box. */
-    private Map<String, String> m_items = new LinkedHashMap<String, String>();
+    protected Map<String, String> m_items = new LinkedHashMap<String, String>();
 
     /** Panel which contains all the components of the widget. */
-    private Panel m_panel = new FlowPanel();
+    protected Panel m_panel = new FlowPanel();
 
     /**
      * Constructs a new checkbox group from a list of string pairs.<p>
@@ -116,11 +125,29 @@ public class CmsMultiCheckBox extends Composite implements I_CmsFormWidget, I_Cm
     }
 
     /**
+     * @see com.google.gwt.event.logical.shared.HasValueChangeHandlers#addValueChangeHandler(com.google.gwt.event.logical.shared.ValueChangeHandler)
+     */
+    public HandlerRegistration addValueChangeHandler(ValueChangeHandler<String> handler) {
+
+        return addHandler(handler, ValueChangeEvent.getType());
+    }
+
+    /**
      * @see org.opencms.gwt.client.ui.input.I_CmsFormWidget#getApparentValue()
      */
     public String getApparentValue() {
 
         return getFormValueAsString();
+    }
+
+    /**
+     * Returns a list of all checkboxes.<p>
+     * 
+     * @return a list of checkboxes
+     * */
+    public List<CmsCheckBox> getCheckboxes() {
+
+        return m_checkboxes;
     }
 
     /**
@@ -245,9 +272,37 @@ public class CmsMultiCheckBox extends Composite implements I_CmsFormWidget, I_Cm
      */
     public void setFormValueAsString(String formValue) {
 
+        if (formValue == null) {
+            formValue = "";
+        }
         List<String> values = CmsStringUtil.splitAsList(formValue, "|");
         setFormValue(values);
+    }
 
+    /**
+     * Enables or disables italics display in the checkbox labels.<p>
+     *  
+     * @param weak true if italics display should be enabled 
+     */
+    public void setTextWeak(boolean weak) {
+
+        String style = I_CmsInputLayoutBundle.INSTANCE.inputCss().weakText();
+        if (weak) {
+            addStyleName(style);
+        } else {
+            removeStyleName(style);
+        }
+
+    }
+
+    /**
+     * Fires the value change event for the widget.<p>
+     * 
+     * @param newValue the new value 
+     */
+    protected void fireValueChanged(String newValue) {
+
+        ValueChangeEvent.fire(this, newValue);
     }
 
     /**
@@ -264,15 +319,39 @@ public class CmsMultiCheckBox extends Composite implements I_CmsFormWidget, I_Cm
         m_items = new LinkedHashMap<String, String>(items);
         m_panel.setStyleName(I_CmsInputLayoutBundle.INSTANCE.inputCss().multiCheckBox());
         m_panel.addStyleName(I_CmsLayoutBundle.INSTANCE.generalCss().textMedium());
+        FocusHandler focusHandler = new FocusHandler() {
+
+            public void onFocus(FocusEvent event) {
+
+                CmsDomUtil.fireFocusEvent(CmsMultiCheckBox.this);
+            }
+        };
         for (Map.Entry<String, String> entry : items.entrySet()) {
             String value = entry.getValue();
             CmsCheckBox checkbox = new CmsCheckBox(value);
             // wrap the check boxes in FlowPanels to arrange them vertically 
             FlowPanel checkboxWrapper = new FlowPanel();
             checkboxWrapper.add(checkbox);
+            checkbox.addValueChangeHandler(new ValueChangeHandler<Boolean>() {
+
+                public void onValueChange(ValueChangeEvent<Boolean> valueChanged) {
+
+                    fireValueChanged(getFormValueAsString());
+                }
+            });
+            checkbox.getButton().addFocusHandler(focusHandler);
             m_panel.add(checkboxWrapper);
+            m_checkboxes.add(checkbox);
         }
         m_panel.add(m_error);
+    }
+
+    /**
+     * @see com.google.gwt.event.dom.client.HasFocusHandlers#addFocusHandler(com.google.gwt.event.dom.client.FocusHandler)
+     */
+    public HandlerRegistration addFocusHandler(FocusHandler handler) {
+
+        return addDomHandler(handler, FocusEvent.getType());
     }
 
 }

@@ -27,14 +27,20 @@
 
 package org.opencms.ade.containerpage.client.ui;
 
+import com.alkacon.acacia.client.EditorBase;
+import com.alkacon.acacia.client.I_InlineFormParent;
+
 import org.opencms.ade.containerpage.client.CmsContainerpageController;
 import org.opencms.ade.containerpage.client.ui.css.I_CmsLayoutBundle;
+import org.opencms.ade.containerpage.shared.CmsInheritanceInfo;
+import org.opencms.ade.contenteditor.client.CmsContentEditor;
 import org.opencms.gwt.client.dnd.I_CmsDraggable;
 import org.opencms.gwt.client.dnd.I_CmsDropTarget;
 import org.opencms.gwt.client.ui.CmsHighlightingBorder;
 import org.opencms.gwt.client.util.CmsDomUtil;
 import org.opencms.gwt.client.util.CmsDomUtil.Tag;
 import org.opencms.gwt.client.util.CmsPositionBean;
+import org.opencms.util.CmsStringUtil;
 import org.opencms.util.CmsUUID;
 
 import java.util.HashMap;
@@ -44,15 +50,25 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Display;
 import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.dom.client.HasClickHandlers;
+import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.DOM;
+import com.google.gwt.user.client.Event;
+import com.google.gwt.user.client.Event.NativePreviewEvent;
+import com.google.gwt.user.client.Event.NativePreviewHandler;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.AbsolutePanel;
+import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.RootPanel;
 
 /**
@@ -60,21 +76,31 @@ import com.google.gwt.user.client.ui.RootPanel;
  * 
  * @since 8.0.0
  */
-public class CmsContainerPageElementPanel extends AbsolutePanel implements I_CmsDraggable {
-
-    /** The height necessary for a container page element. */
-    public static int NECESSARY_HEIGHT = 24;
+public class CmsContainerPageElementPanel extends AbsolutePanel
+implements I_CmsDraggable, HasClickHandlers, I_InlineFormParent {
 
     /** Highlighting border for this element. */
     protected CmsHighlightingBorder m_highlighting;
 
+    /** A flag which indicates whether the height has already been checked. */
+    private boolean m_checkedHeight;
+
+    /** Flag indicating the the editables are currently being checked. */
     private boolean m_checkingEditables;
 
     /** The elements client id. */
     private String m_clientId;
 
+    /**
+     * Flag which indicates whether the new editor is disabled for this element.<p>
+     */
+    private boolean m_disableNewEditor;
+
     /** The direct edit bar instances. */
     private Map<Element, CmsListCollectorEditor> m_editables;
+
+    /** The editor click handler registration. */
+    private HandlerRegistration m_editorClickHandlerRegistration;
 
     /** The option bar, holding optional function buttons. */
     private CmsElementOptionBar m_elementOptionBar;
@@ -84,6 +110,9 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
 
     /** Indicates whether this element has settings to edit. */
     private boolean m_hasSettings;
+
+    /** The inheritance info for this element. */
+    private CmsInheritanceInfo m_inheritanceInfo;
 
     /** The is new element type. */
     private String m_newType;
@@ -109,6 +138,12 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
      **/
     private boolean m_viewPermission;
 
+    /** 
+     * Indicates if the current user has write permissions on the element resource. 
+     * Without write permissions, the element can not be edited. 
+     **/
+    private boolean m_writePermission;
+
     /**
      * Constructor.<p>
      * 
@@ -119,7 +154,9 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
      * @param noEditReason the no edit reason, if empty, editing is allowed
      * @param hasSettings should be true if the element has settings which can be edited 
      * @param hasViewPermission indicates if the current user has view permissions on the element resource
+     * @param hasWritePermission indicates if the current user has write permissions on the element resource
      * @param releasedAndNotExpired <code>true</code> if the element resource is currently released and not expired
+     * @param disableNewEditor flag to disable the new editor for this element 
      */
     public CmsContainerPageElementPanel(
         Element element,
@@ -129,30 +166,38 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
         String noEditReason,
         boolean hasSettings,
         boolean hasViewPermission,
-        boolean releasedAndNotExpired) {
+        boolean hasWritePermission,
+        boolean releasedAndNotExpired,
+        boolean disableNewEditor) {
 
-        super((com.google.gwt.user.client.Element)element);
+        super(element);
         m_clientId = clientId;
         m_sitePath = sitePath;
         m_noEditReason = noEditReason;
         m_hasSettings = hasSettings;
         m_parent = parent;
+        m_disableNewEditor = disableNewEditor;
         setViewPermission(hasViewPermission);
+        setWritePermission(hasWritePermission);
         setReleasedAndNotExpired(releasedAndNotExpired);
         getElement().addClassName(I_CmsLayoutBundle.INSTANCE.dragdropCss().dragElement());
     }
 
     /**
-     * Make sure that the element has at least a certain minimum height so that option bars of subsequent elements
-     * in a container don't overlap.<p>
+     * @see com.google.gwt.event.dom.client.HasClickHandlers#addClickHandler(com.google.gwt.event.dom.client.ClickHandler)
      */
-    public void applyMinHeight() {
+    public HandlerRegistration addClickHandler(ClickHandler handler) {
 
-        if (isAttached()) {
-            if (getOffsetHeight() < NECESSARY_HEIGHT) {
-                getElement().getStyle().setProperty("minHeight", NECESSARY_HEIGHT + "px");
-            }
-        }
+        return addDomHandler(handler, ClickEvent.getType());
+    }
+
+    /**
+     * @see com.alkacon.acacia.client.I_InlineFormParent#adoptWidget(com.google.gwt.user.client.ui.IsWidget)
+     */
+    public void adoptWidget(IsWidget widget) {
+
+        getChildren().add(widget.asWidget());
+        adopt(widget.asWidget());
     }
 
     /**
@@ -160,6 +205,17 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
      */
     public Element getDragHelper(I_CmsDropTarget target) {
 
+        Style optionStyle = m_elementOptionBar.getElement().getStyle();
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(optionStyle.getTop())) {
+            // in case the option bar has an especially set top offset, override the Y cursor offset
+            optionStyle.clearTop();
+            CmsContainerpageController.get().getDndHandler().setCursorOffsetY(12);
+        }
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(optionStyle.getRight())) {
+            // in case the option bar has an especially set right offset, override the X cursor offset
+            optionStyle.clearRight();
+            CmsContainerpageController.get().getDndHandler().setCursorOffsetX(35);
+        }
         Element helper = CmsDomUtil.clone(getElement());
         target.getElement().appendChild(helper);
         // preparing helper styles
@@ -197,6 +253,16 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
     public String getId() {
 
         return m_clientId;
+    }
+
+    /**
+     * Returns the inheritance info for this element.<p>
+     *
+     * @return the inheritance info for this element
+     */
+    public CmsInheritanceInfo getInheritanceInfo() {
+
+        return m_inheritanceInfo;
     }
 
     /**
@@ -281,14 +347,6 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
     }
 
     /**
-     * @see org.opencms.gwt.client.dnd.I_CmsDraggable#hasTag(java.lang.String)
-     */
-    public boolean hasTag(String tag) {
-
-        return false;
-    }
-
-    /**
      * Returns if the current user has view permissions for the element resource.<p>
      *
      * @return <code>true</code> if the current user has view permissions for the element resource
@@ -296,6 +354,16 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
     public boolean hasViewPermission() {
 
         return m_viewPermission;
+    }
+
+    /**
+     * Returns if the user has write permission.<p>
+     *
+     * @return <code>true</code> if the user has write permission
+     */
+    public boolean hasWritePermission() {
+
+        return m_writePermission;
     }
 
     /**
@@ -316,12 +384,60 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
     public void highlightElement() {
 
         if (m_highlighting == null) {
-            m_highlighting = new CmsHighlightingBorder(CmsPositionBean.generatePositionInfo(this), isNew()
+            m_highlighting = new CmsHighlightingBorder(CmsPositionBean.getInnerDimensions(getElement()), isNew()
             ? CmsHighlightingBorder.BorderColor.blue
             : CmsHighlightingBorder.BorderColor.red);
             RootPanel.get().add(m_highlighting);
         } else {
-            m_highlighting.setPosition(CmsPositionBean.generatePositionInfo(this));
+            m_highlighting.setPosition(CmsPositionBean.getInnerDimensions(getElement()));
+        }
+    }
+
+    /**
+     * Initializes the editor click handler.<p>
+     * 
+     * @param controller the container page controller instance
+     */
+    public void initInlineEditor(final CmsContainerpageController controller) {
+
+        if (CmsStringUtil.isEmptyOrWhitespaceOnly(m_noEditReason)
+            && !m_disableNewEditor
+            && CmsContentEditor.setEditable(getElement(), true)) {
+            if (m_editorClickHandlerRegistration != null) {
+                m_editorClickHandlerRegistration.removeHandler();
+            }
+            m_editorClickHandlerRegistration = Event.addNativePreviewHandler(new NativePreviewHandler() {
+
+                public void onPreviewNativeEvent(NativePreviewEvent event) {
+
+                    if (event.getTypeInt() == Event.ONCLICK) {
+                        // if another content is already being edited, don't start another editor
+                        if (controller.isContentEditing()) {
+                            return;
+                        }
+                        Element eventTarget = event.getNativeEvent().getEventTarget().cast();
+                        // check if the event target is a child 
+                        if (getElement().isOrHasChild(eventTarget)) {
+                            Element target = event.getNativeEvent().getEventTarget().cast();
+                            while ((target != null)
+                                && !target.getTagName().equalsIgnoreCase("a")
+                                && (target != getElement())) {
+                                if (CmsContentEditor.isEditable(target)) {
+                                    EditorBase.markForInlineFocus(target);
+                                    controller.getHandler().openEditorForElement(
+                                        CmsContainerPageElementPanel.this,
+                                        true);
+                                    removeEditorHandler();
+                                    event.cancel();
+                                    break;
+                                } else {
+                                    target = target.getParentElement();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
     }
 
@@ -333,6 +449,16 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
     public boolean isNew() {
 
         return m_newType != null;
+    }
+
+    /**
+     * Returns true if the new content editor is disabled for this element.<p>
+     * 
+     * @return true if the new editor is disabled for this element
+     */
+    public boolean isNewEditorDisabled() {
+
+        return m_disableNewEditor;
     }
 
     /**
@@ -384,6 +510,29 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
     }
 
     /**
+     * Removes the inline editor.<p>
+     */
+    public void removeInlineEditor() {
+
+        CmsContentEditor.setEditable(getElement(), false);
+        removeEditorHandler();
+    }
+
+    /**
+     * @see com.alkacon.acacia.client.I_InlineFormParent#replaceHtml(java.lang.String)
+     */
+    public void replaceHtml(String html) {
+
+        // detach all children first
+        while (getChildren().size() > 0) {
+            getChildren().get(getChildren().size() - 1).removeFromParent();
+        }
+        Element tempDiv = DOM.createDiv();
+        tempDiv.setInnerHTML(html);
+        getElement().setInnerHTML(tempDiv.getFirstChildElement().getInnerHTML());
+    }
+
+    /**
      * Sets the elementOptionBar.<p>
      *
      * @param elementOptionBar the elementOptionBar to set
@@ -395,12 +544,7 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
         }
         m_elementOptionBar = elementOptionBar;
         insert(m_elementOptionBar, 0);
-        if (isOptionbarIFrameCollision()) {
-            m_elementOptionBar.getElement().getStyle().setPosition(Position.RELATIVE);
-            int marginLeft = getElement().getOffsetWidth() - m_elementOptionBar.getCalculatedWidth();
-            m_elementOptionBar.getElement().getStyle().setMarginLeft(marginLeft, Unit.PX);
-        }
-
+        updateOptionBarPosition();
     }
 
     /**
@@ -411,6 +555,16 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
     public void setId(String id) {
 
         m_clientId = id;
+    }
+
+    /**
+     * Sets the inheritance info for this element.<p>
+     *
+     * @param inheritanceInfo the inheritance info for this element to set
+     */
+    public void setInheritanceInfo(CmsInheritanceInfo inheritanceInfo) {
+
+        m_inheritanceInfo = inheritanceInfo;
     }
 
     /**
@@ -442,14 +596,14 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
 
         m_releasedAndNotExpired = releasedAndNotExpired;
         if (m_releasedAndNotExpired) {
-            getElement().removeClassName(I_CmsLayoutBundle.INSTANCE.containerpageCss().expired());
+            removeStyleName(I_CmsLayoutBundle.INSTANCE.containerpageCss().expired());
             if (m_expiredOverlay != null) {
                 m_expiredOverlay.removeFromParent();
                 m_expiredOverlay = null;
             }
 
         } else {
-            getElement().addClassName(I_CmsLayoutBundle.INSTANCE.containerpageCss().expired());
+            addStyleName(I_CmsLayoutBundle.INSTANCE.containerpageCss().expired());
             m_expiredOverlay = DOM.createDiv();
             m_expiredOverlay.setTitle("Expired resource");
             m_expiredOverlay.addClassName(I_CmsLayoutBundle.INSTANCE.containerpageCss().expiredOverlay());
@@ -478,6 +632,16 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
     }
 
     /**
+     * Sets the user write permission.<p>
+     *
+     * @param writePermission the user write permission to set
+     */
+    public void setWritePermission(boolean writePermission) {
+
+        m_writePermission = writePermission;
+    }
+
+    /**
      * Shows list collector direct edit buttons (old direct edit style), if present.<p>
      */
     public void showEditableListButtons() {
@@ -489,7 +653,7 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
             if ((editables != null) && (editables.size() > 0)) {
                 for (Element editable : editables) {
                     CmsListCollectorEditor editor = new CmsListCollectorEditor(editable, m_clientId);
-                    add(editor, (com.google.gwt.user.client.Element)editable.getParentElement());
+                    add(editor, editable.getParentElement());
                     if (CmsDomUtil.hasDimension(editable.getParentElement())) {
                         editor.setPosition(CmsDomUtil.getEditablePosition(editable), getElement());
                     } else {
@@ -519,7 +683,7 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
                 for (Element editable : editables) {
                     if (!m_editables.containsKey(editable)) {
                         CmsListCollectorEditor editor = new CmsListCollectorEditor(editable, m_clientId);
-                        add(editor, (com.google.gwt.user.client.Element)editable.getParentElement());
+                        add(editor, editable.getParentElement());
                         if (CmsDomUtil.hasDimension(editable.getParentElement())) {
                             editor.setPosition(CmsDomUtil.getEditablePosition(editable), getElement());
                         } else {
@@ -537,13 +701,41 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
     }
 
     /**
-     * Perform layout corrections.<p>
-     * 
-     * This method will be called in regular intervals by the containerpage editor.<p>
+     * Updates the option bar position.<p>
      */
-    public void update() {
+    public void updateOptionBarPosition() {
 
-        applyMinHeight();
+        if (m_elementOptionBar == null) {
+            return;
+        }
+        // only if attached to the DOM
+        if (RootPanel.getBodyElement().isOrHasChild(getElement())) {
+            int absoluteTop = getElement().getAbsoluteTop();
+            int absoluteRight = getElement().getAbsoluteRight();
+            CmsPositionBean dimensions = CmsPositionBean.getInnerDimensions(getElement());
+            if (Math.abs(absoluteTop - dimensions.getTop()) > 20) {
+                absoluteTop = (dimensions.getTop() - absoluteTop) + 2;
+                m_elementOptionBar.getElement().getStyle().setTop(absoluteTop, Unit.PX);
+            } else {
+                m_elementOptionBar.getElement().getStyle().clearTop();
+            }
+            if (Math.abs(absoluteRight - dimensions.getLeft() - dimensions.getWidth()) > 20) {
+                absoluteRight = (absoluteRight - dimensions.getLeft() - dimensions.getWidth()) + 2;
+                m_elementOptionBar.getElement().getStyle().setRight(absoluteTop, Unit.PX);
+            } else {
+                m_elementOptionBar.getElement().getStyle().clearRight();
+            }
+            if (isOptionbarIFrameCollision(absoluteTop, m_elementOptionBar.getCalculatedWidth())) {
+                m_elementOptionBar.getElement().getStyle().setPosition(Position.RELATIVE);
+                int marginLeft = getElement().getClientWidth() - m_elementOptionBar.getCalculatedWidth();
+                if (marginLeft > 0) {
+                    m_elementOptionBar.getElement().getStyle().setMarginLeft(marginLeft, Unit.PX);
+                }
+            } else {
+                m_elementOptionBar.getElement().getStyle().clearPosition();
+                m_elementOptionBar.getElement().getStyle().clearMarginLeft();
+            }
+        }
     }
 
     /**
@@ -584,13 +776,66 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
     }
 
     /**
-     * @see com.google.gwt.user.client.ui.Widget#onAttach()
+     * @see com.google.gwt.user.client.ui.Widget#onDetach()
      */
     @Override
-    protected void onAttach() {
+    protected void onDetach() {
 
-        super.onAttach();
+        super.onDetach();
+        removeEditorHandler();
+    }
+
+    /**
+     * @see com.google.gwt.user.client.ui.Widget#onLoad()
+     */
+    @Override
+    protected void onLoad() {
+
+        if (!hasCheckedHeight() && (getParentTarget() instanceof CmsContainerPageContainer)) {
+            Scheduler.get().scheduleDeferred(new ScheduledCommand() {
+
+                public void execute() {
+
+                    CmsContainerPageElementPanel thisElement = CmsContainerPageElementPanel.this;
+                    if (!hasCheckedHeight() && CmsSmallElementsHandler.isSmall(thisElement)) {
+                        CmsContainerpageController.get().getSmallElementsHandler().prepareSmallElement(thisElement);
+                    }
+                    setCheckedHeight(true);
+                }
+            });
+        }
         resetOptionbar();
+    }
+
+    /**
+     * Removes the inline editor handler.<p>
+     */
+    protected void removeEditorHandler() {
+
+        if (m_editorClickHandlerRegistration != null) {
+            m_editorClickHandlerRegistration.removeHandler();
+            m_editorClickHandlerRegistration = null;
+        }
+    }
+
+    /**
+     * Returns if the minimum element height has been checked.<p>
+     * 
+     * @return <code>true</code> if the minimum element height has been checked
+     */
+    boolean hasCheckedHeight() {
+
+        return m_checkedHeight;
+    }
+
+    /**
+     * Sets the checked height flag.<p>
+     * 
+     * @param checked the checked height flag
+     */
+    void setCheckedHeight(boolean checked) {
+
+        m_checkedHeight = checked;
     }
 
     /**
@@ -604,52 +849,63 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
         // using own implementation as GWT won't do it properly on IE7-8
         CmsDomUtil.clearOpacity(getElement());
         getElement().getStyle().clearDisplay();
+        updateOptionBarPosition();
     }
 
     /**
      * Returns if the option bar position collides with any iframe child elements.<p>
      * 
+     * @param optionTop the option bar absolute top 
+     * @param optionWidth the option bar width 
+     * 
      * @return <code>true</code> if there are iframe child elements located no less than 25px below the upper edge of the element
      */
-    private boolean isOptionbarIFrameCollision() {
+    private boolean isOptionbarIFrameCollision(int optionTop, int optionWidth) {
 
         if (RootPanel.getBodyElement().isOrHasChild(getElement())) {
-            int elementTop = getElement().getAbsoluteTop();
             NodeList<Element> frames = getElement().getElementsByTagName(CmsDomUtil.Tag.iframe.name());
             for (int i = 0; i < frames.getLength(); i++) {
-
-                if ((frames.getItem(i).getAbsoluteTop() - elementTop) < 25) {
+                int frameTop = frames.getItem(i).getAbsoluteTop();
+                int frameHeight = frames.getItem(i).getOffsetHeight();
+                int frameRight = frames.getItem(i).getAbsoluteRight();
+                if (((frameTop - optionTop) < 25)
+                    && (((frameTop + frameHeight) - optionTop) > 0)
+                    && ((frameRight - getElement().getAbsoluteRight()) < optionWidth)) {
                     return true;
                 }
+
             }
         }
         return false;
     }
 
+    /**
+     * Resets the node inserted handler.<p>
+     */
     private native void resetNodeInsertedHandler()/*-{
-      var $this = this;
-      var element = $this.@org.opencms.ade.containerpage.client.ui.CmsContainerPageElementPanel::getElement()();
-      var handler = $this.@org.opencms.ade.containerpage.client.ui.CmsContainerPageElementPanel::m_nodeInsertHandler;
-      if (handler == null) {
-         handler = function(event) {
-            $this.@org.opencms.ade.containerpage.client.ui.CmsContainerPageElementPanel::checkForEditableChanges()();
-         };
-         $this.@org.opencms.ade.containerpage.client.ui.CmsContainerPageElementPanel::m_nodeInsertHandler = handler;
-      } else {
-         if (element.removeEventLister) {
-            element.removeEventListener("DOMNodeInserted", handler);
-         } else if (element.detachEvent) {
-            // IE specific
-            element.detachEvent("onDOMNodeInserted", handler);
-         }
-      }
-      if (element.addEventListener) {
-         element.addEventListener("DOMNodeInserted", handler, false);
-      } else if (element.attachEvent) {
-         // IE specific
-         element.attachEvent("onDOMNodeInserted", handler);
-      }
-    }-*/;
+                                                  var $this = this;
+                                                  var element = $this.@org.opencms.ade.containerpage.client.ui.CmsContainerPageElementPanel::getElement()();
+                                                  var handler = $this.@org.opencms.ade.containerpage.client.ui.CmsContainerPageElementPanel::m_nodeInsertHandler;
+                                                  if (handler == null) {
+                                                  handler = function(event) {
+                                                  $this.@org.opencms.ade.containerpage.client.ui.CmsContainerPageElementPanel::checkForEditableChanges()();
+                                                  };
+                                                  $this.@org.opencms.ade.containerpage.client.ui.CmsContainerPageElementPanel::m_nodeInsertHandler = handler;
+                                                  } else {
+                                                  if (element.removeEventLister) {
+                                                  element.removeEventListener("DOMNodeInserted", handler);
+                                                  } else if (element.detachEvent) {
+                                                  // IE specific
+                                                  element.detachEvent("onDOMNodeInserted", handler);
+                                                  }
+                                                  }
+                                                  if (element.addEventListener) {
+                                                  element.addEventListener("DOMNodeInserted", handler, false);
+                                                  } else if (element.attachEvent) {
+                                                  // IE specific
+                                                  element.attachEvent("onDOMNodeInserted", handler);
+                                                  }
+                                                  }-*/;
 
     /**
      * This method removes the option-bar widget from DOM and re-attaches it at it's original position.<p>
@@ -661,18 +917,8 @@ public class CmsContainerPageElementPanel extends AbsolutePanel implements I_Cms
             if (getWidgetIndex(m_elementOptionBar) >= 0) {
                 m_elementOptionBar.removeFromParent();
             }
-            if (isOptionbarIFrameCollision()) {
-                m_elementOptionBar.getElement().getStyle().setPosition(Position.RELATIVE);
-                int marginLeft = getElement().getClientWidth() - m_elementOptionBar.getCalculatedWidth();
-                if (marginLeft > 0) {
-                    m_elementOptionBar.getElement().getStyle().setMarginLeft(marginLeft, Unit.PX);
-                }
-            } else {
-                m_elementOptionBar.getElement().getStyle().clearPosition();
-                m_elementOptionBar.getElement().getStyle().clearMarginLeft();
-            }
+            updateOptionBarPosition();
             insert(m_elementOptionBar, 0);
         }
     }
-
 }

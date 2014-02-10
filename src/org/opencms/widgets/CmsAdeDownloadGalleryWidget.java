@@ -27,10 +27,14 @@
 
 package org.opencms.widgets;
 
+import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants;
 import org.opencms.file.CmsObject;
 import org.opencms.file.types.CmsResourceTypeBinary;
 import org.opencms.file.types.CmsResourceTypeImage;
+import org.opencms.i18n.CmsMessages;
+import org.opencms.json.JSONException;
 import org.opencms.json.JSONObject;
+import org.opencms.main.OpenCms;
 
 /**
  * ADE download gallery widget implementations.<p>
@@ -70,6 +74,15 @@ public class CmsAdeDownloadGalleryWidget extends A_CmsAdeGalleryWidget {
     }
 
     /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    @Override
+    public String getWidgetName() {
+
+        return CmsAdeDownloadGalleryWidget.class.getName();
+    }
+
+    /**
      * @see org.opencms.widgets.I_CmsWidget#newInstance()
      */
     public I_CmsWidget newInstance() {
@@ -78,15 +91,25 @@ public class CmsAdeDownloadGalleryWidget extends A_CmsAdeGalleryWidget {
     }
 
     /**
-     * @see org.opencms.widgets.A_CmsAdeGalleryWidget#getAdditionalGalleryInfo(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog, org.opencms.widgets.I_CmsWidgetParameter)
+     * @see org.opencms.widgets.A_CmsAdeGalleryWidget#getAdditionalGalleryInfo(org.opencms.file.CmsObject, java.lang.String, org.opencms.i18n.CmsMessages, org.opencms.widgets.I_CmsWidgetParameter)
      */
     @Override
     protected JSONObject getAdditionalGalleryInfo(
         CmsObject cms,
-        I_CmsWidgetDialog widgetDialog,
-        I_CmsWidgetParameter param) {
+        String resource,
+        CmsMessages messages,
+        I_CmsWidgetParameter param) throws JSONException {
 
-        return null;
+        JSONObject result = new JSONObject();
+        result.put(I_CmsGalleryProviderConstants.CONFIG_TAB_CONFIG, "selectDoc");
+        String uploadFolder = OpenCms.getWorkplaceManager().getRepositoryFolderHandler().getRepositoryFolder(
+            cms,
+            resource,
+            GALLERY_NAME + "gallery");
+        if (uploadFolder != null) {
+            result.put(I_CmsGalleryProviderConstants.CONFIG_UPLOAD_FOLDER, uploadFolder);
+        }
+        return result;
     }
 
     /**

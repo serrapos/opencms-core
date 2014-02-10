@@ -27,15 +27,16 @@
 
 package org.opencms.ade.publish.shared.rpc;
 
-import org.opencms.ade.publish.shared.CmsProjectBean;
 import org.opencms.ade.publish.shared.CmsPublishData;
-import org.opencms.ade.publish.shared.CmsPublishGroup;
+import org.opencms.ade.publish.shared.CmsPublishGroupList;
 import org.opencms.ade.publish.shared.CmsPublishOptions;
-import org.opencms.ade.publish.shared.CmsPublishResource;
+import org.opencms.ade.publish.shared.CmsWorkflow;
+import org.opencms.ade.publish.shared.CmsWorkflowAction;
+import org.opencms.ade.publish.shared.CmsWorkflowActionParams;
+import org.opencms.ade.publish.shared.CmsWorkflowResponse;
 import org.opencms.gwt.CmsRpcException;
-import org.opencms.util.CmsUUID;
 
-import java.util.List;
+import java.util.HashMap;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 
@@ -47,55 +48,38 @@ import com.google.gwt.user.client.rpc.RemoteService;
 public interface I_CmsPublishService extends RemoteService {
 
     /**
+     * Tries to publish a list of resources.<p>
+     * 
+     * @param action the work flow action
+     * @param params the data on which to perform the workflow action 
+     *  
+     * @return the workflow response
+     * 
+     * @throws CmsRpcException  if something goes wrong
+     */
+    CmsWorkflowResponse executeAction(CmsWorkflowAction action, CmsWorkflowActionParams params) throws CmsRpcException;
+
+    /**
      * Returns the initial publish data.<p>
+     * 
+     * @param params a map of additional publish parameters 
      * 
      * @return the initial publish data
      *  
      * @throws CmsRpcException if something goes wrong
      */
-    CmsPublishData getInitData() throws CmsRpcException;
-
-    /**
-     * Gets a list of projects from the server.<p>
-     * 
-     * @return a list of projects 
-     * 
-     * @throws CmsRpcException if something goes wrong 
-     */
-    List<CmsProjectBean> getProjects() throws CmsRpcException;
+    CmsPublishData getInitData(HashMap<String, String> params) throws CmsRpcException;
 
     /**
      * Retrieves the publish list, subdivided into groups based on the time of their last change.<p>
      * 
+     * @param workflow the selected workflow 
      * @param options the publish options for which the publish list should be fetched
      * 
      * @return the publish list groups 
      *  
      * @throws CmsRpcException if something goes wrong
      */
-    List<CmsPublishGroup> getPublishGroups(CmsPublishOptions options) throws CmsRpcException;
-
-    /**
-     * Retrieves the publish options.<p>
-     * 
-     * @return the publish options last used
-     * 
-     * @throws CmsRpcException if something goes wrong
-     */
-    CmsPublishOptions getPublishOptions() throws CmsRpcException;
-
-    /**
-     * Tries to publish a list of resources.<p>
-     * 
-     * @param toPublish list of IDs of resources to publish
-     * @param toRemove list of IDs of resources to remove from the publish list
-     * @param force if <code>true</code>, ignore "broken link" problems
-     *  
-     * @return the resources with problems
-     * 
-     * @throws CmsRpcException  if something goes wrong
-     */
-    List<CmsPublishResource> publishResources(List<CmsUUID> toPublish, List<CmsUUID> toRemove, boolean force)
-    throws CmsRpcException;
+    CmsPublishGroupList getResourceGroups(CmsWorkflow workflow, CmsPublishOptions options) throws CmsRpcException;
 
 }

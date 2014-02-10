@@ -31,7 +31,10 @@ import org.opencms.ade.sitemap.client.Messages;
 import org.opencms.ade.sitemap.client.control.CmsSitemapController;
 import org.opencms.ade.sitemap.shared.CmsClientSitemapEntry;
 import org.opencms.file.CmsResource;
+<<<<<<< HEAD
 import org.opencms.gwt.client.ui.css.I_CmsImageBundle;
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
 /**
  * Sitemap context menu add entry to navigation.<p>
@@ -48,7 +51,6 @@ public class CmsAddToNavMenuEntry extends A_CmsSitemapMenuEntry {
     public CmsAddToNavMenuEntry(CmsSitemapHoverbar hoverbar) {
 
         super(hoverbar);
-        setImageClass(I_CmsImageBundle.INSTANCE.contextMenuIcons().newElement());
         setLabel(Messages.get().key(Messages.GUI_HOVERBAR_SHOW_IN_NAV_0));
         setActive(true);
     }

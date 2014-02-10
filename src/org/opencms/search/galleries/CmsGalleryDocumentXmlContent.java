@@ -31,28 +31,34 @@ import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsResource;
+import org.opencms.file.types.CmsResourceTypeXmlContainerPage;
+import org.opencms.file.types.I_CmsResourceType;
+import org.opencms.loader.CmsLoaderException;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
-import org.opencms.search.CmsIndexException;
+import org.opencms.main.OpenCms;
 import org.opencms.search.CmsSearchIndex;
+import org.opencms.search.CmsIndexException;
+import org.opencms.search.I_CmsSearchDocument;
 import org.opencms.search.documents.CmsDocumentXmlContent;
 import org.opencms.search.documents.Messages;
 import org.opencms.search.extractors.CmsExtractionResult;
 import org.opencms.search.extractors.I_CmsExtractionResult;
 import org.opencms.search.fields.CmsSearchField;
+import org.opencms.search.fields.CmsSearchFieldConfiguration;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.xml.A_CmsXmlDocument;
 import org.opencms.xml.content.CmsXmlContentFactory;
 import org.opencms.xml.content.I_CmsXmlContentHandler;
 import org.opencms.xml.types.I_CmsXmlContentValue;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
-import org.apache.lucene.document.Document;
 
 /**
  * Special document text extraction factory for the gallery index that creates multiple fields for the content
@@ -78,14 +84,15 @@ public class CmsGalleryDocumentXmlContent extends CmsDocumentXmlContent {
     /**
      * Generates a new lucene document instance from contents of the given resource for the provided index.<p>
      * 
-     * For gallery document generators, we never check for {@link CmsSearchIndex#isExtractingContent()} since
+     * For gallery document generators, we never check for {@link org.opencms.search.CmsSearchIndex#isExtractingContent()} since
      * all these classes are assumed to be written with optimizations special to gallery search indexing anyway.<p>
      * 
-     * @see org.opencms.search.fields.CmsSearchFieldConfiguration#createDocument(CmsObject, CmsResource, CmsSearchIndex, I_CmsExtractionResult)
+     * @see org.opencms.search.fields.CmsLuceneFieldConfiguration#createDocument(CmsObject, CmsResource, CmsSearchIndex, I_CmsExtractionResult)
      * @see org.opencms.search.documents.I_CmsDocumentFactory#createDocument(CmsObject, CmsResource, CmsSearchIndex)
      */
     @Override
-    public Document createDocument(CmsObject cms, CmsResource resource, CmsSearchIndex index) throws CmsException {
+    public I_CmsSearchDocument createDocument(CmsObject cms, CmsResource resource, CmsSearchIndex index)
+    throws CmsException {
 
         // extract the content from the resource
         I_CmsExtractionResult content = null;
@@ -126,6 +133,7 @@ public class CmsGalleryDocumentXmlContent extends CmsDocumentXmlContent {
                 locales.append(locale.toString());
                 locales.append(' ');
                 StringBuffer content = new StringBuffer();
+                boolean hasTitleMapping = false;
                 for (String xpath : xmlContent.getNames(locale)) {
                     I_CmsXmlContentValue value = xmlContent.getValue(xpath, locale);
                     if (value.getContentDefinition().getContentHandler().isSearchable(value)) {
@@ -151,29 +159,34 @@ public class CmsGalleryDocumentXmlContent extends CmsDocumentXmlContent {
                                         String fieldName = null;
                                         if (CmsPropertyDefinition.PROPERTY_TITLE.equals(propertyName)) {
                                             // field is title
+                                            hasTitleMapping = true;
                                             fieldName = CmsSearchField.FIELD_TITLE_UNSTORED;
                                         } else {
                                             // if field is not title, it must be description
                                             fieldName = CmsSearchField.FIELD_DESCRIPTION;
                                         }
-                                        // append language individual property field
-                                        items.put(
-                                            CmsGallerySearchFieldConfiguration.getLocaleExtendedName(fieldName, locale),
-                                            extracted);
+                                        putMappingValue(xmlContent, fieldName, locale, items, extracted);
                                     }
                                 }
                             }
                         }
                     }
                 }
+                if (!hasTitleMapping) {
+                    // in case no title mapping present, use the title property for all locales
+                    String title = cms.readPropertyObject(resource, CmsPropertyDefinition.PROPERTY_TITLE, false).getValue();
+                    putMappingValue(xmlContent, CmsSearchField.FIELD_TITLE_UNSTORED, locale, items, title);
+                }
                 if (content.length() > 0) {
                     // append language individual content field
                     items.put(
-                        CmsGallerySearchFieldConfiguration.getLocaleExtendedName(CmsSearchField.FIELD_CONTENT, locale),
+                        CmsSearchFieldConfiguration.getLocaleExtendedName(CmsSearchField.FIELD_CONTENT, locale),
                         content.toString());
                 }
                 // store the locales
-                items.put(CmsGallerySearchFieldMapping.FIELD_RESOURCE_LOCALES, locales.toString());
+                items.put(
+                    CmsSearchField.FIELD_RESOURCE_LOCALES,
+                    CmsStringUtil.listAsString(getLocalesToStore(xmlContent), " "));
             }
 
             // return the extraction result
@@ -194,5 +207,83 @@ public class CmsGalleryDocumentXmlContent extends CmsDocumentXmlContent {
     public boolean isLocaleDependend() {
 
         return false;
+    }
+
+    /**
+     * Gets the locales which should be stored in the locale field of the document for the given content.<p>
+     * 
+     * @param content the XML content 
+     * 
+     * @return the list of locales for the locale field 
+     */
+    protected List<Locale> getLocalesToStore(A_CmsXmlDocument content) {
+
+        if (isGroup(content)) {
+            return OpenCms.getLocaleManager().getAvailableLocales();
+        } else {
+            return content.getLocales();
+        }
+    }
+
+    /**
+     * Returns the locales which the given field should be written to in the document.
+     * 
+     * @param xmlContent the XML content 
+     * @param fieldName the field name 
+     * @param sourceLocale the source locale
+     * 
+     * @return the list of locales to which the field should be written 
+     */
+    protected List<Locale> getTargetLocalesForField(A_CmsXmlDocument xmlContent, String fieldName, Locale sourceLocale) {
+
+        if (isGroup(xmlContent) && sourceLocale.equals(Locale.ENGLISH)) {
+            return OpenCms.getLocaleManager().getAvailableLocales();
+        } else {
+            return Collections.singletonList(sourceLocale);
+        }
+    }
+
+    /**
+     * Helper method to check whether the content is an element group.<p>
+     * 
+     * @param content the content to check 
+     * 
+     * @return true if the content is an element group 
+     */
+    protected boolean isGroup(A_CmsXmlDocument content) {
+
+        try {
+            int typeId = content.getFile().getTypeId();
+            I_CmsResourceType type = OpenCms.getResourceManager().getResourceType(typeId);
+            String typeName = type.getTypeName();
+            return CmsResourceTypeXmlContainerPage.GROUP_CONTAINER_TYPE_NAME.equals(typeName)
+                || CmsResourceTypeXmlContainerPage.INHERIT_CONTAINER_TYPE_NAME.equals(typeName);
+        } catch (CmsLoaderException e) {
+            LOG.error(e.getLocalizedMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Adds the given value to the document items for all target locales.<p>
+     * 
+     * @param xmlContent the XML content 
+     * @param fieldName the field name 
+     * @param sourceLocale the source locale
+     * @param items the document items
+     * @param value the value to put
+     */
+    protected void putMappingValue(
+        A_CmsXmlDocument xmlContent,
+        String fieldName,
+        Locale sourceLocale,
+        Map<String, String> items,
+        String value) {
+
+        List<Locale> fieldTargetLocales = getTargetLocalesForField(xmlContent, fieldName, sourceLocale);
+        // append language individual property field
+        for (Locale targetLocale : fieldTargetLocales) {
+            items.put(CmsSearchFieldConfiguration.getLocaleExtendedName(fieldName, targetLocale), value);
+        }
     }
 }

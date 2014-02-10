@@ -28,13 +28,20 @@
 package org.opencms.file.collectors;
 
 import org.opencms.file.CmsDataAccessException;
+import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsRequestContext;
 import org.opencms.file.CmsResource;
+import org.opencms.file.CmsResourceFilter;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsIllegalArgumentException;
 import org.opencms.main.OpenCms;
+import org.opencms.util.CmsStringUtil;
+import org.opencms.xml.content.CmsXmlContent;
+import org.opencms.xml.content.CmsXmlContentFactory;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Provides some helpful base implementations for resource collector classes.<p>
@@ -65,6 +72,88 @@ public abstract class A_CmsResourceCollector implements I_CmsResourceCollector {
     public A_CmsResourceCollector() {
 
         m_hashcode = getClass().getName().hashCode();
+    }
+
+    /**
+     * Creates a new content collector resource.<p>
+     * 
+     * @param cms the cms context
+     * @param newLink the new resource link
+     * @param locale the content locale
+     * @param referenceResource the reference resource
+     * @param modelFile the model file
+     * 
+     * @return the new file name
+     * 
+     * @throws CmsException if something goes wrong
+     */
+    public static String createResourceForCollector(
+        CmsObject cms,
+        String newLink,
+        Locale locale,
+        String referenceResource,
+        String modelFile) throws CmsException {
+
+        // get the collector used to create the new content
+        int pos = newLink.indexOf('|');
+        String collectorName = newLink.substring(0, pos);
+        String collectorParams = newLink.substring(pos + 1);
+
+        String param;
+        String templateFileName;
+
+        pos = collectorParams.indexOf(A_CmsResourceCollector.SEPARATOR_TEMPLATEFILE);
+        if (pos != -1) {
+            // found an explicit template file name to use for the new resource, use it
+            param = collectorParams.substring(0, pos);
+            templateFileName = collectorParams.substring(pos + A_CmsResourceCollector.SEPARATOR_TEMPLATEFILE.length());
+        } else {
+            // no template file name was specified, use given resource name as template file
+            param = collectorParams;
+            templateFileName = referenceResource;
+        }
+
+        // get the collector used for calculating the next file name
+        I_CmsResourceCollector collector = OpenCms.getResourceManager().getContentCollector(collectorName);
+        String newFileName = "";
+        // one resource serves as a "template" for the new resource
+        CmsResource templateResource = cms.readResource(templateFileName, CmsResourceFilter.IGNORE_EXPIRATION);
+        CmsXmlContent newContent = null;
+        int typeId;
+        CmsObject cloneCms = OpenCms.initCmsObject(cms);
+        cloneCms.getRequestContext().setRequestTime(CmsResource.DATE_RELEASED_EXPIRED_IGNORE);
+        // the reference resource may be a folder in case of creating for an empty collector list
+        if (!templateResource.isFolder()) {
+            typeId = templateResource.getTypeId();
+            CmsFile templateFile = cms.readFile(templateResource);
+            CmsXmlContent template = CmsXmlContentFactory.unmarshal(cloneCms, templateFile);
+            // now create a new XML content based on the templates content definition            
+            newContent = CmsXmlContentFactory.createDocument(
+                cms,
+                locale,
+                template.getEncoding(),
+                template.getContentDefinition());
+        } else {
+            typeId = collector.getCreateTypeId(cloneCms, collectorName, collectorParams);
+        }
+        // IMPORTANT: calculation of the name MUST be done here so the file name is ensured to be valid
+        newFileName = collector.getCreateLink(cms, collectorName, param);
+        boolean useModelFile = false;
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(modelFile)) {
+            cms.getRequestContext().setAttribute(CmsRequestContext.ATTRIBUTE_MODEL, modelFile);
+            useModelFile = true;
+        }
+        // now create the resource, fill it with the marshalled XML and write it back to the VFS
+        cms.createResource(newFileName, typeId);
+        // re-read the created resource
+        CmsFile newFile = cms.readFile(newFileName, CmsResourceFilter.ALL);
+        if (!useModelFile && (newContent != null)) {
+            newFile.setContents(newContent.marshal());
+            // write the file with the updated content
+            cloneCms.writeFile(newFile);
+        }
+        return newFileName;
+
     }
 
     /**
@@ -112,6 +201,16 @@ public abstract class A_CmsResourceCollector implements I_CmsResourceCollector {
 
         checkParams();
         return getCreateParam(cms, getDefaultCollectorName(), getDefaultCollectorParam());
+    }
+
+    /**
+     * @see org.opencms.file.collectors.I_CmsResourceCollector#getCreateTypeId(org.opencms.file.CmsObject, java.lang.String, java.lang.String)
+     */
+    @SuppressWarnings("unused")
+    public int getCreateTypeId(CmsObject cms, String collectorName, String param) throws CmsException {
+
+        // overwrite to allow creation of new items
+        return -1;
     }
 
     /**

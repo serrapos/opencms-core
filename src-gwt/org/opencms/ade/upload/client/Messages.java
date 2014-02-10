@@ -37,25 +37,10 @@ import org.opencms.gwt.client.util.CmsMessages;
 public final class Messages {
 
     /** Message constant for key in the resource bundle. */
-    public static final String ERR_UPLOAD_BROWSER_0 = "ERR_UPLOAD_BROWSER_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String ERR_UPLOAD_BROWSER_ABORT_ERR_0 = "ERR_UPLOAD_BROWSER_ABORT_ERR_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String ERR_UPLOAD_BROWSER_ENCODING_0 = "ERR_UPLOAD_BROWSER_ENCODING_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String ERR_UPLOAD_BROWSER_NOT_FOUND_0 = "ERR_UPLOAD_BROWSER_NOT_FOUND_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String ERR_UPLOAD_BROWSER_NOT_READABLE_0 = "ERR_UPLOAD_BROWSER_NOT_READABLE_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String ERR_UPLOAD_BROWSER_SECURITY_0 = "ERR_UPLOAD_BROWSER_SECURITY_0";
-
-    /** Message constant for key in the resource bundle. */
     public static final String GUI_UPLOAD_BUTTON_ADD_FILES_0 = "GUI_UPLOAD_BUTTON_ADD_FILES_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_BUTTON_NO_TARGET_0 = "GUI_UPLOAD_BUTTON_NO_TARGET_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_UPLOAD_BUTTON_OK_DISABLE_CHECKING_0 = "GUI_UPLOAD_BUTTON_OK_DISABLE_CHECKING_0";
@@ -64,19 +49,16 @@ public final class Messages {
     public static final String GUI_UPLOAD_BUTTON_OK_DISABLE_UPLOADING_0 = "GUI_UPLOAD_BUTTON_OK_DISABLE_UPLOADING_0";
 
     /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_BUTTON_TITLE_0 = "GUI_UPLOAD_BUTTON_TITLE_0";
-
-    /** Message constant for key in the resource bundle. */
     public static final String GUI_UPLOAD_CLIENT_LOADING_0 = "GUI_UPLOAD_CLIENT_LOADING_0";
 
     /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_DIALOG_TITLE_0 = "GUI_UPLOAD_DIALOG_TITLE_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_DRAG_AND_DROP_ENABLED_0 = "GUI_UPLOAD_DRAG_AND_DROP_ENABLED_0";
+    public static final String GUI_UPLOAD_DIALOG_TITLE_1 = "GUI_UPLOAD_DIALOG_TITLE_1";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_UPLOAD_DRAG_AND_DROP_DISABLED_0 = "GUI_UPLOAD_DRAG_AND_DROP_DISABLED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_DRAG_AND_DROP_ENABLED_0 = "GUI_UPLOAD_DRAG_AND_DROP_ENABLED_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_UPLOAD_FILE_INVALID_NAME_2 = "GUI_UPLOAD_FILE_INVALID_NAME_2";
@@ -91,34 +73,16 @@ public final class Messages {
     public static final String GUI_UPLOAD_FILE_TOO_LARGE_2 = "GUI_UPLOAD_FILE_TOO_LARGE_2";
 
     /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_FILES_PLURAL_0 = "GUI_UPLOAD_FILES_PLURAL_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_FILES_SINGULAR_0 = "GUI_UPLOAD_FILES_SINGULAR_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_FINISH_UPLOADED_0 = "GUI_UPLOAD_FINISH_UPLOADED_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_FINISH_UPLOADED_VALUE_4 = "GUI_UPLOAD_FINISH_UPLOADED_VALUE_4";
-
-    /** Message constant for key in the resource bundle. */
     public static final String GUI_UPLOAD_FOLDER_0 = "GUI_UPLOAD_FOLDER_0";
 
     /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_INFO_CREATING_RESOURCES_0 = "GUI_UPLOAD_INFO_CREATING_RESOURCES_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_INFO_FINISHING_0 = "GUI_UPLOAD_INFO_FINISHING_0";
+    public static final String GUI_UPLOAD_HOOK_DIALOG_TITLE_0 = "GUI_UPLOAD_HOOK_DIALOG_TITLE_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_UPLOAD_INFO_OVERWRITE_0 = "GUI_UPLOAD_INFO_OVERWRITE_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_UPLOAD_INFO_SELECTION_0 = "GUI_UPLOAD_INFO_SELECTION_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_INFO_UPLOADING_0 = "GUI_UPLOAD_INFO_UPLOADING_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_UPLOAD_MAX_SIZE_REACHED_2 = "GUI_UPLOAD_MAX_SIZE_REACHED_2";
@@ -128,18 +92,6 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_UPLOAD_NOTIFICATION_RUNNING_0 = "GUI_UPLOAD_NOTIFICATION_RUNNING_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_PROGRESS_CURRENT_FILE_0 = "GUI_UPLOAD_PROGRESS_CURRENT_FILE_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_PROGRESS_CURRENT_VALUE_3 = "GUI_UPLOAD_PROGRESS_CURRENT_VALUE_3";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_PROGRESS_UPLOADING_0 = "GUI_UPLOAD_PROGRESS_UPLOADING_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String GUI_UPLOAD_PROGRESS_UPLOADING_VALUE_2 = "GUI_UPLOAD_PROGRESS_UPLOADING_VALUE_2";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_UPLOAD_SUMMARY_FILES_0 = "GUI_UPLOAD_SUMMARY_FILES_0";

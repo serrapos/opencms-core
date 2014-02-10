@@ -42,18 +42,18 @@ public interface I_CmsContextMenuEntry {
     void execute();
 
     /**
-     * Returns the image class for the icon in front of the label.<p>
-     *
-     * @return the image class
+     * Generates the context menu item.<p>
+     * 
+     * @return the context menu item
      */
-    String getImageClass();
+    A_CmsContextMenuItem generateMenuItem();
 
     /**
-     * Returns the image path for the icon in front of the label.<p>
-     *
-     * @return the image path
+     * Returns a CSS class which should be used to display an icon, or null if no icon is required.<p>
+     * 
+     * @return the CSS class for the icon 
      */
-    String getImagePath();
+    String getIconClass();
 
     /**
      * Returns the JSP path for the command generation.<p>

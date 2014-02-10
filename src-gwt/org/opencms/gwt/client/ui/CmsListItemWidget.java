@@ -52,6 +52,10 @@ import java.util.List;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Style;
+<<<<<<< HEAD
+=======
+import com.google.gwt.dom.client.Style.Cursor;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.BlurEvent;
 import com.google.gwt.event.dom.client.BlurHandler;
@@ -82,6 +86,7 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Image;
+import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.gwt.user.client.ui.Panel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.TextBox;
@@ -223,9 +228,6 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
     /** Text metrics key. */
     private static final String TM_SUBTITLE = "Subtitle";
 
-    /** Text metrics key. */
-    private static final String TM_TITLE = "Title";
-
     /** The ui-binder instance for this class. */
     private static I_CmsListItemWidgetUiBinder uiBinder = GWT.create(I_CmsListItemWidgetUiBinder.class);
 
@@ -251,16 +253,20 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
     /** The open-close button for the additional info. */
     protected CmsPushButton m_openClose;
 
+    /** A label which is optionally displayed after the subtitle. */
+    protected InlineLabel m_shortExtraInfoLabel;
+
     /** Sub title label. */
     @UiField
     protected CmsLabel m_subtitle;
 
-    /** A label which is optionally displayed after the subtitle. */
-    protected CmsLabel m_subtitleSuffix;
-
     /** Title label. */
     @UiField
     protected CmsLabel m_title;
+
+    /** Container for the title. */
+    @UiField
+    protected FlowPanel m_titleBox;
 
     /** The title row, holding the title and the open-close button for the additional info. */
     @UiField
@@ -307,6 +313,9 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
     /** The text metrics prefix. */
     private String m_tmPrefix;
 
+    /** Widget for the overlay icon in the top-right corner. */
+    private HTML m_topRightIcon;
+
     /**
      * Constructor. Using a 'li'-tag as default root element.<p>
      * 
@@ -317,8 +326,7 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
         initWidget(uiBinder.createAndBindUi(this));
         m_handlerRegistrations = new ArrayList<HandlerRegistration>();
         m_backgroundStyle = new CmsStyleVariable(this);
-        m_subtitleSuffix = new CmsLabel();
-        m_subtitleSuffix.addStyleName(I_CmsLayoutBundle.INSTANCE.generalCss().inlineBlock());
+        m_shortExtraInfoLabel = new InlineLabel();
         init(infoBean);
     }
 
@@ -391,6 +399,7 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
      * @return the handler registration
      */
     public HandlerRegistration addIconClickHandler(final ClickHandler handler) {
+<<<<<<< HEAD
 
         final HandlerRegistration internalHandlerRegistration = m_iconPanel.addDomHandler(handler, ClickEvent.getType());
         m_iconClickHandlers.add(handler);
@@ -398,6 +407,15 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
 
             public void removeHandler() {
 
+=======
+
+        final HandlerRegistration internalHandlerRegistration = m_iconPanel.addDomHandler(handler, ClickEvent.getType());
+        m_iconClickHandlers.add(handler);
+        HandlerRegistration result = new HandlerRegistration() {
+
+            public void removeHandler() {
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
                 internalHandlerRegistration.removeHandler();
                 m_iconClickHandlers.remove(handler);
             }
@@ -468,7 +486,9 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
     public void forceMouseOut() {
 
         for (Widget w : m_buttonPanel) {
-            CmsDomUtil.ensureMouseOut(w);
+            if (w instanceof CmsPushButton) {
+                ((CmsPushButton)w).clearHoverState();
+            }
         }
         CmsDomUtil.ensureMouseOut(this);
         removeStyleName(I_CmsLayoutBundle.INSTANCE.stateCss().cmsHovering());
@@ -517,6 +537,16 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
     }
 
     /**
+     * Returns the label after the subtitle.<p>
+     * 
+     * @return the label after the subtitle
+     */
+    public InlineLabel getShortExtraInfoLabel() {
+
+        return m_shortExtraInfoLabel;
+    }
+
+    /**
      * Returns the subtitle label.<p>
      *
      * @return the subtitle label
@@ -527,16 +557,6 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
     }
 
     /**
-     * Returns the label after the subtitle.<p>
-     * 
-     * @return the label after the subtitle
-     */
-    public CmsLabel getSubTitleSuffix() {
-
-        return m_subtitleSuffix;
-    }
-
-    /**
      * Returns the title label text.<p>
      * 
      * @return the title label text
@@ -544,6 +564,16 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
     public String getTitleLabel() {
 
         return m_title.getText();
+    }
+
+    /** 
+     * Gets the title widget.<p>
+     * 
+     * @return the title widget
+     */
+    public CmsLabel getTitleWidget() {
+
+        return m_title;
     }
 
     /**
@@ -564,11 +594,25 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
     public void reInitAdditionalInfo(CmsListInfoBean infoBean) {
 
         m_additionalInfo.clear();
+<<<<<<< HEAD
         if (m_openClose != null) {
+=======
+        boolean hadOpenClose = false;
+        boolean openCloseDown = false;
+        if (m_openClose != null) {
+            hadOpenClose = true;
+            openCloseDown = m_openClose.isDown();
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
             m_openClose.removeFromParent();
             m_openClose = null;
         }
         initAdditionalInfo(infoBean);
+<<<<<<< HEAD
+=======
+        if (hadOpenClose) {
+            m_openClose.setDown(openCloseDown);
+        }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
@@ -646,6 +690,7 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
             m_openClose.setDown(false);
             CloseEvent.fire(this, this);
         }
+        CmsDomUtil.resizeAncestor(getParent());
     }
 
     /**
@@ -669,6 +714,27 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
             default:
                 m_backgroundStyle.setValue(null);
         }
+    }
+
+    /**
+     * Sets the extra info text, and hides or displays the extra info label depending on whether
+     * the text is null or not null.<p>
+     * 
+     * @param text the text to put into the subtitle suffix 
+     */
+    public void setExtraInfo(String text) {
+
+        if (text == null) {
+            if (m_shortExtraInfoLabel.getParent() != null) {
+                m_shortExtraInfoLabel.removeFromParent();
+            }
+        } else {
+            if (m_shortExtraInfoLabel.getParent() == null) {
+                m_titleBox.add(m_shortExtraInfoLabel);
+            }
+            m_shortExtraInfoLabel.setText(text);
+        }
+        updateTruncation();
     }
 
     /**
@@ -696,6 +762,17 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
         Panel iconWidget = new SimplePanel();
         m_iconPanel.setWidget(iconWidget);
         iconWidget.addStyleName(iconClasses + " " + m_fixedIconClasses);
+    }
+
+    /**
+     * Sets the cursor for the icon.<p>
+     * 
+     * @param cursor the cursor for the icon
+     */
+    public void setIconCursor(Cursor cursor) {
+
+        m_iconPanel.getElement().getStyle().setCursor(cursor);
+
     }
 
     /**
@@ -768,6 +845,7 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
 
         }
         String iconTitle = null;
+<<<<<<< HEAD
         switch (icon) {
             case export:
                 m_stateIcon.setStyleName(I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().stateIcon()
@@ -779,15 +857,33 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
                 m_stateIcon.setStyleName(I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().stateIcon()
                     + " "
                     + I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().secure());
+=======
+        I_CmsListItemWidgetCss listItemWidgetCss = I_CmsLayoutBundle.INSTANCE.listItemWidgetCss();
+        String styleStateIcon = I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().stateIcon();
+        switch (icon) {
+            case export:
+                m_stateIcon.setStyleName(styleStateIcon + " " + listItemWidgetCss.export());
+                iconTitle = Messages.get().key(Messages.GUI_ICON_TITLE_EXPORT_0);
+                break;
+            case secure:
+                m_stateIcon.setStyleName(styleStateIcon + " " + listItemWidgetCss.secure());
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
                 iconTitle = Messages.get().key(Messages.GUI_ICON_TITLE_SECURE_0);
                 break;
+            case copy:
+                m_stateIcon.setStyleName(styleStateIcon + " " + listItemWidgetCss.copyModel());
+                break;
+            case standard:
             default:
                 m_stateIcon.setStyleName(I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().stateIcon());
                 break;
         }
         m_stateIcon.setTitle(concatIconTitles(m_iconTitle, iconTitle));
         m_stateIcon.getElement().getStyle().setCursor(Style.Cursor.POINTER);
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
@@ -798,27 +894,6 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
     public void setSubtitleLabel(String label) {
 
         m_subtitle.setText(label);
-    }
-
-    /**
-     * Sets the subtitle suffix text, and hides or displays the subtitle suffix depending on whether
-     * the text is null or not null.<p>
-     * 
-     * @param text the text to put into the subtitle suffix 
-     */
-    public void setSubtitleSuffixText(String text) {
-
-        if (text == null) {
-            if (m_subtitleSuffix.getParent() != null) {
-                m_subtitleSuffix.removeFromParent();
-            }
-        } else {
-            if (m_subtitleSuffix.getParent() == null) {
-                m_titleRow.add(m_subtitleSuffix);
-            }
-            m_subtitleSuffix.setText(text);
-        }
-        updateTruncation();
     }
 
     /**
@@ -835,8 +910,9 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
         if (!editable) {
             m_titleClickHandlerRegistration.removeHandler();
             m_titleClickHandlerRegistration = null;
-
+            m_title.removeStyleName(I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().inlineEditable());
         } else {
+            m_title.addStyleName(I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().inlineEditable());
             m_titleClickHandlerRegistration = m_title.addClickHandler(new ClickHandler() {
 
                 /**
@@ -872,9 +948,35 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
     }
 
     /**
+     * Sets the icon in the top right corner and its title.<p>
+     * 
+     * @param iconClass the CSS class for the icon
+     * @param title the value for the title attribute of the icon
+     */
+    public void setTopRightIcon(String iconClass, String title) {
+
+        if (m_topRightIcon == null) {
+            m_topRightIcon = new HTML();
+            m_contentPanel.add(m_topRightIcon);
+        }
+        m_topRightIcon.setStyleName(I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().topRightIcon() + " " + iconClass);
+        if (title != null) {
+            m_topRightIcon.setTitle(title);
+        }
+    }
+
+    /**
+     * Makes the content of the list info box unselectable.<p>
+     */
+    public void setUnselectable() {
+
+        m_contentPanel.addStyleName(I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().unselectable());
+    }
+
+    /**
      * @see org.opencms.gwt.client.ui.I_CmsTruncable#truncate(java.lang.String, int)
      */
-    public void truncate(String textMetricsPrefix, int widgetWidth) {
+    public void truncate(final String textMetricsPrefix, final int widgetWidth) {
 
         m_childWidth = widgetWidth;
         m_tmPrefix = textMetricsPrefix;
@@ -889,13 +991,8 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
             // IE fails with a JS error if the width is negative 
             width = 0;
         }
-        m_title.truncate(textMetricsPrefix + TM_TITLE, width - 10);
-        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(m_subtitleSuffix.getText())) {
-            m_subtitleSuffix.truncate(textMetricsPrefix + "_STSUFFIX", 100);
-            m_subtitle.truncate(textMetricsPrefix + TM_SUBTITLE, width - 110);
-        } else {
-            m_subtitle.truncate(textMetricsPrefix + TM_SUBTITLE, width - 10);
-        }
+        m_titleBox.setWidth(Math.max(0, width - 30) + "px");
+        m_subtitle.truncate(textMetricsPrefix + TM_SUBTITLE, width);
         for (Widget addInfo : m_additionalInfo) {
             ((AdditionalInfoItem)addInfo).truncate(textMetricsPrefix, widgetWidth - 10);
         }
@@ -925,7 +1022,10 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
         final String originalTitle = m_title.getText();
         // wrap the boolean flag in an array so we can change it from the event handlers 
         final boolean[] checked = new boolean[] {false};
-
+        final boolean restoreUnselectable = CmsDomUtil.hasClass(
+            I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().unselectable(),
+            m_contentPanel.getElement());
+        m_contentPanel.removeStyleName(I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().unselectable());
         box.addBlurHandler(new BlurHandler() {
 
             /**
@@ -933,6 +1033,9 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
              */
             public void onBlur(BlurEvent event) {
 
+                if (restoreUnselectable) {
+                    setUnselectable();
+                }
                 if (checked[0]) {
                     return;
                 }
@@ -967,7 +1070,7 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
                 }
             }
         });
-        m_titleRow.insert(box, 1);
+        m_titleBox.insert(box, 2);
         box.setFocus(true);
     }
 
@@ -981,7 +1084,7 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
                 I_CmsImageBundle.INSTANCE.style().triangleRight(),
                 I_CmsImageBundle.INSTANCE.style().triangleDown());
             m_openClose.setButtonStyle(ButtonStyle.TRANSPARENT, null);
-            m_titleRow.insert(m_openClose, 0);
+            m_titleBox.insert(m_openClose, 0);
             m_openClose.addClickHandler(new ClickHandler() {
 
                 /**
@@ -990,6 +1093,7 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
                 public void onClick(ClickEvent event) {
 
                     setAdditionalInfoVisible(!getElement().getClassName().contains(CmsListItemWidget.OPENCLASS));
+                    CmsDomUtil.resizeAncestor(CmsListItemWidget.this);
                 }
             });
         }
@@ -1016,6 +1120,18 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
         if (infoBean.getLockIcon() != null) {
             setLockIcon(infoBean.getLockIcon(), infoBean.getLockIconTitle());
         }
+
+        CmsResourceState resourceState = infoBean.getResourceState();
+
+        if ((resourceState != null) && resourceState.isChanged() && infoBean.isMarkChangedState()) {
+            String title = Messages.get().key(Messages.GUI_UNPUBLISHED_CHANGES_TITLE_0);
+            setTopRightIcon(I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().changed(), title);
+        }
+
+        if ((resourceState != null) && resourceState.isDeleted()) {
+            m_title.addStyleName(I_CmsLayoutBundle.INSTANCE.listItemWidgetCss().titleDeleted());
+        }
+
         initAdditionalInfo(infoBean);
     }
 
@@ -1087,4 +1203,8 @@ HasClickHandlers, HasDoubleClickHandlers, HasMouseOverHandlers, I_CmsTruncable {
         return main + " [" + secondary + "]";
 
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 }

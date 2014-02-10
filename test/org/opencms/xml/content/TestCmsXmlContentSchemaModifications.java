@@ -56,6 +56,7 @@ import junit.framework.TestSuite;
  */
 public class TestCmsXmlContentSchemaModifications extends OpenCmsTestCase {
 
+    /** The schema id. */
     private static final String SCHEMA_SYSTEM_ID_1 = "http://www.opencms.org/test1.xsd";
 
     /**
@@ -274,6 +275,15 @@ public class TestCmsXmlContentSchemaModifications extends OpenCmsTestCase {
             "xmlcontent-1.mod4.xml",
             "xmlcontent-definition-1.mod5.xsd",
             "xmlcontent-1.mod5.xml");
+
+        // test a schema change where all nodes become invalid
+        runTestWithChangedSchema(
+            SCHEMA_SYSTEM_ID_1,
+            "/testCombinedChangeSchemaNodesC.html",
+            "xmlcontent-definition-5.xsd",
+            "xmlcontent-1.mod5.xml",
+            "xmlcontent-definition-1.mod6.xsd",
+            "xmlcontent-1.mod6.xml");
     }
 
     /**

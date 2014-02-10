@@ -32,12 +32,21 @@ import org.opencms.gwt.shared.CmsDeleteResourceBean;
 import org.opencms.gwt.shared.CmsListInfoBean;
 import org.opencms.gwt.shared.CmsLockReportInfo;
 import org.opencms.gwt.shared.CmsPrepareEditResponse;
+import org.opencms.gwt.shared.CmsPreviewInfo;
+import org.opencms.gwt.shared.CmsRenameInfoBean;
+import org.opencms.gwt.shared.CmsReplaceInfo;
+import org.opencms.gwt.shared.CmsResourceStatusBean;
+import org.opencms.gwt.shared.CmsRestoreInfoBean;
 import org.opencms.gwt.shared.CmsVfsEntryBean;
+import org.opencms.gwt.shared.alias.CmsAliasBean;
 import org.opencms.gwt.shared.property.CmsPropertiesBean;
 import org.opencms.gwt.shared.property.CmsPropertyChangeSet;
 import org.opencms.util.CmsUUID;
+import org.opencms.xml.content.CmsXmlContentProperty;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.rpc.SynchronizedRpcRequest;
@@ -48,6 +57,23 @@ import com.google.gwt.user.client.rpc.SynchronizedRpcRequest;
  * @since 8.0.0
  */
 public interface I_CmsVfsServiceAsync {
+
+    /**
+     * Creates a property definition.<p>
+     * 
+     * @param propertyName the new property name 
+     * 
+     * @param callback the callback 
+     */
+    void createPropertyDefinition(String propertyName, AsyncCallback<Void> callback);
+
+    /**
+     * Deletes a resource from the VFS.<p>
+     * 
+     * @param structureId the structure id of the resource to delete
+     * @param callback the callback
+     */
+    void deleteResource(CmsUUID structureId, AsyncCallback<Void> callback);
 
     /**
      * Deletes a resource from the VFS.<p>
@@ -64,6 +90,15 @@ public interface I_CmsVfsServiceAsync {
      * @param callback the callback
      */
     void forceUnlock(CmsUUID structureId, AsyncCallback<Void> callback);
+
+    /**
+     * Fetches the aliases for a given page.<p>
+     * 
+     * @param structureId the structure id of the page 
+     * @param callback the async callback 
+     *  
+     */
+    void getAliasesForPage(CmsUUID structureId, AsyncCallback<List<CmsAliasBean>> callback);
 
     /**
      * Gets a {@link CmsAvailabilityInfoBean} for a given resource.<p>
@@ -84,6 +119,14 @@ public interface I_CmsVfsServiceAsync {
     /**
      * Returns a list of potentially broken links, if the given resource was deleted.<p>
      * 
+     * @param structureId the resource structure id
+     * @param callback the callback
+     */
+    void getBrokenLinks(CmsUUID structureId, AsyncCallback<CmsDeleteResourceBean> callback);
+
+    /**
+     * Returns a list of potentially broken links, if the given resource was deleted.<p>
+     * 
      * @param sitePath the resource site-path
      * @param callback the callback
      */
@@ -96,6 +139,32 @@ public interface I_CmsVfsServiceAsync {
      * @param callback the asynchronous callback 
      */
     void getChildren(String path, AsyncCallback<List<CmsVfsEntryBean>> callback);
+
+    /**
+     * Gets the default property configurations for a list of structure ids.<p>
+     * 
+     * @param structureIds the structure ids for which to fetch the default property configurations 
+     * 
+     * @param callback the callback for the result 
+     */
+    void getDefaultProperties(
+        List<CmsUUID> structureIds,
+        AsyncCallback<Map<CmsUUID, Map<String, CmsXmlContentProperty>>> callback);
+
+    /**
+     * Gets the names of defined properties.<p>
+     * 
+     * @param callback the callback for the results 
+     */
+    void getDefinedProperties(AsyncCallback<ArrayList<String>> callback);
+
+    /**
+     * Returns the file replace info.<p>
+     * 
+     * @param structureId the structure id of the file to replace
+     * @param callback the asynchronous callback
+     */
+    void getFileReplaceInfo(CmsUUID structureId, AsyncCallback<CmsReplaceInfo> callback);
 
     /**
      * Returns the lock report info.<p>
@@ -120,6 +189,56 @@ public interface I_CmsVfsServiceAsync {
      * @param callback the asynchronous callback
      */
     void getPageInfo(String vfsPath, AsyncCallback<CmsListInfoBean> callback);
+
+    /**
+     * Returns the preview info for the given resource.<p>
+     * 
+     * @param structureId the resource structure id
+     * @param locale the requested locale
+     * @param callback the call back
+     */
+    void getPreviewInfo(CmsUUID structureId, String locale, AsyncCallback<CmsPreviewInfo> callback);
+
+    /**
+     * Returns the preview info for the given resource.<p>
+     * 
+     * @param sitePath the resource site path
+     * @param locale the requested locale
+     * @param callback the call back
+     */
+    void getPreviewInfo(String sitePath, String locale, AsyncCallback<CmsPreviewInfo> callback);
+
+    /**
+     * Gets the information needed for the Rename dialog.<p>
+     * 
+     * @param structureId the structure id of the resource to rename 
+     * @param callback the callback for the result 
+     */
+    void getRenameInfo(CmsUUID structureId, AsyncCallback<CmsRenameInfoBean> callback);
+
+    /**
+     * Gets status information for a single resource.<p>
+     * 
+     * @param structureId the structure id of the resource
+     * @param locale the locale for which we want the resource information
+     * @param includeTargets flag to control whether relation targets should also be fetched 
+     * @param additionalTargetIds structure ids of additional resources to include in the relation targets returned   
+     * @param callback the callback for the results 
+     */
+    void getResourceStatus(
+        CmsUUID structureId,
+        String locale,
+        boolean includeTargets,
+        List<CmsUUID> additionalTargetIds,
+        AsyncCallback<CmsResourceStatusBean> callback);
+
+    /**
+     * Gets the information which is necessary for opening the 'Restore' dialog for a resource.<p>
+     * 
+     * @param structureId the structure id of the resource
+     * @param resultCallback the callback for the result 
+     */
+    void getRestoreInfo(CmsUUID structureId, AsyncCallback<CmsRestoreInfoBean> resultCallback);
 
     /**
      * Returns the root entries of the VFS.<p>
@@ -155,6 +274,25 @@ public interface I_CmsVfsServiceAsync {
     void prepareEdit(CmsUUID currentPage, String fileNameWithMacros, AsyncCallback<CmsPrepareEditResponse> callback);
 
     /**
+     * Renames a resource.<p>
+     * 
+     * @param structureId the structure id of the resource to rename 
+     * @param newName the new resource name 
+     * 
+     * @param callback the asynchronous callback for the result 
+     */
+    void renameResource(CmsUUID structureId, String newName, AsyncCallback<String> callback);
+
+    /**
+     * Saves aliases for a page.<p>
+     * 
+     * @param structureId the structure id of the page 
+     * @param aliases the aliases which should be saved for the page
+     * @param callback the async callback  
+     */
+    void saveAliases(CmsUUID structureId, List<CmsAliasBean> aliases, AsyncCallback<Void> callback);
+
+    /**
      * Saves a set of property changes.<p>
      * 
      * @param changes the property changes
@@ -172,5 +310,35 @@ public interface I_CmsVfsServiceAsync {
      */
     @SynchronizedRpcRequest
     void substituteLinkForRootPath(String currentSiteRoot, String rootPath, AsyncCallback<String> callback);
+
+    /**
+     * Deletes a resource from the VFS.<p>
+     * 
+     * @param structureId the structure id of the resource to delete
+     * @param callback the callback
+     */
+    @SynchronizedRpcRequest
+    void syncDeleteResource(CmsUUID structureId, AsyncCallback<Void> callback);
+
+    /**
+     * Undoes the changes to a given resource, i.e. restores its online content to its offline version.<p>
+     * 
+     * @param structureId the structure id of the resource to undo 
+     * @param undoMove true if move operations should be undone
+     * @param callback the callback for the result 
+     */
+    void undoChanges(CmsUUID structureId, boolean undoMove, AsyncCallback<Void> callback);
+
+    /**
+     * Validates alias paths for a page.<p>
+     * 
+     * @param structureId the structure id of the page 
+     * @param aliasPaths a map from (arbitrary) id strings to alias paths
+     * @param callback the async callback 
+     */
+    void validateAliases(
+        CmsUUID structureId,
+        Map<String, String> aliasPaths,
+        AsyncCallback<Map<String, String>> callback);
 
 }

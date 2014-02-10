@@ -31,7 +31,6 @@ import org.opencms.gwt.client.Messages;
 import org.opencms.gwt.client.ui.CmsPopup;
 import org.opencms.gwt.client.ui.CmsPushButton;
 import org.opencms.gwt.client.ui.input.I_CmsFormField;
-import org.opencms.xml.content.CmsXmlContentProperty;
 
 import java.util.Map;
 
@@ -39,16 +38,20 @@ import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.Window;
 
 /**
  * A dialog containing a form.<p>
  * 
  * @since 8.0.0
  */
-public class CmsFormDialog extends CmsPopup implements I_CmsFormDialog {
+public class CmsFormDialog extends CmsPopup {
+
+    /** The maximum dialog width. */
+    public static final int MAX_DIALOG_WIDTH = 930;
 
     /** The dialog width. */
-    public static final int STANDARD_DIALOG_WIDTH = 600;
+    public static final int STANDARD_DIALOG_WIDTH = 700;
 
     /** The widget containing the form fields. */
     protected CmsForm m_form;
@@ -67,44 +70,38 @@ public class CmsFormDialog extends CmsPopup implements I_CmsFormDialog {
      */
     public CmsFormDialog(String title, CmsForm form) {
 
+        this(title, form, -1);
+    }
+
+    /** 
+     * Constructs a new form dialog with a given title.<p>
+     * 
+     * @param title the title of the form dialog
+     * @param form the form to use  
+     * @param dialogWidth the dialog width
+     */
+    public CmsFormDialog(String title, CmsForm form, int dialogWidth) {
+
         super(title);
         setGlassEnabled(true);
         setAutoHideEnabled(false);
         setModal(true);
-        setWidth(STANDARD_DIALOG_WIDTH);
+        // check the available width for this dialog
+        int windowWidth = Window.getClientWidth();
+        if (dialogWidth > 0) {
+            // reduce the dialog width if necessary
+            if ((windowWidth - 50) < dialogWidth) {
+                dialogWidth = windowWidth - 50;
+            }
+        } else {
+            dialogWidth = (windowWidth - 100) > STANDARD_DIALOG_WIDTH ? windowWidth - 100 : STANDARD_DIALOG_WIDTH;
+            dialogWidth = dialogWidth > MAX_DIALOG_WIDTH ? MAX_DIALOG_WIDTH : dialogWidth;
+        }
+        setWidth(dialogWidth);
         addButton(createCancelButton());
         m_okButton = createOkButton();
         addButton(m_okButton);
         m_form = form;
-        m_form.setFormDialog(this);
-    }
-
-    /**
-     * Static utility method for opening a property form dialog.<p>
-     * 
-     * @param propertyConfig the configuration of the properties 
-     * @param properties the current values of the properties 
-     * @param title the title of the dialog 
-     * @param formHandler the form handler which should be used 
-     */
-    public static void showPropertyDialog(
-        Map<String, CmsXmlContentProperty> propertyConfig,
-        Map<String, String> properties,
-        String title,
-        I_CmsFormHandler formHandler) {
-
-        CmsSimpleFormFieldPanel simplePanel = new CmsSimpleFormFieldPanel();
-        CmsForm form = new CmsForm(simplePanel);
-        CmsFormDialog dialog = new CmsFormDialog(Messages.get().key(Messages.GUI_FORM_PROPERTIES_EDIT_0), form);
-        dialog.setFormHandler(formHandler);
-        Map<String, I_CmsFormField> formFields = CmsBasicFormField.createFields(propertyConfig.values());
-
-        for (I_CmsFormField field : formFields.values()) {
-            String currentValue = properties.get(field.getId());
-            form.addField(field, currentValue);
-        }
-        form.render();
-        dialog.center();
     }
 
     /**
@@ -116,14 +113,6 @@ public class CmsFormDialog extends CmsPopup implements I_CmsFormDialog {
         initContent();
         super.center();
         notifyWidgetsOfOpen();
-    }
-
-    /**
-     * @see org.opencms.gwt.client.ui.input.form.I_CmsFormDialog#closeDialog()
-     */
-    public void closeDialog() {
-
-        hide();
     }
 
     /**
@@ -157,7 +146,9 @@ public class CmsFormDialog extends CmsPopup implements I_CmsFormDialog {
     }
 
     /**
-     * @see org.opencms.gwt.client.ui.input.form.I_CmsFormDialog#setOkButtonEnabled(boolean)
+     * Enables/disables the OK button.<p> 
+     *    
+     * @param enabled if true, enables the OK button, else disables it
      */
     public void setOkButtonEnabled(final boolean enabled) {
 

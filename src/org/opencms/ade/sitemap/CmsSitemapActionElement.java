@@ -30,8 +30,10 @@ package org.opencms.ade.sitemap;
 import org.opencms.ade.publish.CmsPublishActionElement;
 import org.opencms.ade.sitemap.shared.CmsSitemapData;
 import org.opencms.ade.sitemap.shared.rpc.I_CmsSitemapService;
+import org.opencms.ade.upload.CmsUploadActionElement;
 import org.opencms.gwt.CmsGwtActionElement;
 import org.opencms.gwt.CmsRpcException;
+import org.opencms.main.OpenCms;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -46,8 +48,11 @@ import javax.servlet.jsp.PageContext;
  */
 public class CmsSitemapActionElement extends CmsGwtActionElement {
 
-    /** The module name. */
-    public static final String MODULE_NAME = "sitemap";
+    /** The OpenCms module name. */
+    public static final String CMS_MODULE_NAME = "org.opencms.ade.sitemap";
+
+    /** The GWT module name. */
+    public static final String GWT_MODULE_NAME = "sitemap";
 
     /** The current sitemap data. */
     private CmsSitemapData m_sitemapData;
@@ -71,12 +76,14 @@ public class CmsSitemapActionElement extends CmsGwtActionElement {
     public String export() throws Exception {
 
         StringBuffer sb = new StringBuffer();
-        String prefetchedData = serialize(
+        String prefetchedData = exportDictionary(
+            CmsSitemapData.DICT_NAME,
             I_CmsSitemapService.class.getMethod("prefetch", String.class),
             getSitemapData());
-        sb.append(CmsSitemapData.DICT_NAME).append("='").append(prefetchedData).append("';");
+        sb.append(prefetchedData);
         sb.append(ClientMessages.get().export(getRequest()));
-        return wrapScript(sb).toString();
+        sb.append(org.opencms.gwt.seo.ClientMessages.get().export(getRequest()));
+        return sb.toString();
     }
 
     /**
@@ -89,7 +96,10 @@ public class CmsSitemapActionElement extends CmsGwtActionElement {
         sb.append(super.export(".vfsMode"));
         sb.append(export());
         sb.append(new CmsPublishActionElement(getJspContext(), getRequest(), getResponse()).export());
-        sb.append(createNoCacheScript(MODULE_NAME));
+        sb.append(new CmsUploadActionElement(getJspContext(), getRequest(), getResponse()).export());
+        sb.append(createNoCacheScript(
+            GWT_MODULE_NAME,
+            OpenCms.getModuleManager().getModule(CMS_MODULE_NAME).getVersion().toString()));
         return sb.toString();
     }
 
@@ -102,7 +112,7 @@ public class CmsSitemapActionElement extends CmsGwtActionElement {
 
         if (m_sitemapData == null) {
             try {
-                m_sitemapData = CmsVfsSitemapService.newInstance(getRequest()).prefetch(getCoreData().getUri());
+                m_sitemapData = CmsVfsSitemapService.prefetch(getRequest(), getCmsObject().getRequestContext().getUri());
             } catch (CmsRpcException e) {
                 // ignore, should never happen, and it is already logged
             }

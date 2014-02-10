@@ -30,6 +30,7 @@ package org.opencms.loader;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsResource;
+import org.opencms.jsp.util.CmsJspStandardContextBean.TemplateBean;
 import org.opencms.main.CmsException;
 import org.opencms.main.OpenCms;
 import org.opencms.xml.containerpage.CmsXmlContainerPage;
@@ -49,10 +50,10 @@ import javax.servlet.http.HttpServletResponse;
  * 
  * @since 7.6
  */
-public class CmsXmlContainerPageLoader extends A_CmsXmlDocumentLoader {
+public class CmsXmlContainerPageLoader extends CmsXmlContentLoader {
 
     /** The id of this loader. */
-    public static final int RESOURCE_LOADER_ID = 11;
+    public static final int CONTAINER_PAGE_RESOURCE_LOADER_ID = 11;
 
     /**
      * Default constructor.<p>
@@ -65,9 +66,10 @@ public class CmsXmlContainerPageLoader extends A_CmsXmlDocumentLoader {
     /**
      * @see org.opencms.loader.I_CmsResourceLoader#getLoaderId()
      */
+    @Override
     public int getLoaderId() {
 
-        return RESOURCE_LOADER_ID;
+        return CONTAINER_PAGE_RESOURCE_LOADER_ID;
     }
 
     /**
@@ -76,6 +78,7 @@ public class CmsXmlContainerPageLoader extends A_CmsXmlDocumentLoader {
      * 
      * @return a describing String for the ResourceLoader 
      */
+    @Override
     public String getResourceLoaderInfo() {
 
         return Messages.get().getBundle().key(Messages.GUI_LOADER_CONTAINERPAGE_DEFAULT_DESC_0);
@@ -99,8 +102,16 @@ public class CmsXmlContainerPageLoader extends A_CmsXmlDocumentLoader {
 
         CmsTemplateLoaderFacade loaderFacade = OpenCms.getResourceManager().getTemplateLoaderFacade(
             cms,
+            req,
             resource,
             getTemplatePropertyDefinition());
+        CmsTemplateContext context = loaderFacade.getTemplateContext();
+        req.setAttribute(CmsTemplateContextManager.ATTR_TEMPLATE_CONTEXT, context);
+        TemplateBean templateBean = new TemplateBean(context != null
+        ? context.getKey()
+        : loaderFacade.getTemplateName(), loaderFacade.getTemplate());
+        templateBean.setForced((context != null) && context.isForced());
+        req.setAttribute(CmsTemplateContextManager.ATTR_TEMPLATE_BEAN, templateBean);
         loaderFacade.getLoader().load(cms, loaderFacade.getLoaderStartResource(), req, res);
     }
 

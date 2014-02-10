@@ -27,6 +27,11 @@
 
 package org.opencms.main;
 
+import java.lang.reflect.Method;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.util.Enumeration;
+
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpSessionEvent;
@@ -59,6 +64,7 @@ public class OpenCmsListener implements ServletContextListener, HttpSessionListe
         try {
             // destroy the OpenCms instance
             OpenCmsCore.getInstance().shutDown();
+            shutDownSqlDrivers();
         } catch (CmsInitException e) {
             if (e.isNewError()) {
                 LOG.error(e.getLocalizedMessage(), e);
@@ -123,6 +129,36 @@ public class OpenCmsListener implements ServletContextListener, HttpSessionListe
         } catch (Throwable t) {
             // make sure all other errors are displayed in the OpenCms log
             LOG.error(Messages.get().getBundle().key(Messages.LOG_ERROR_GENERIC_0), t);
+        }
+    }
+
+    /**
+     * De-registers the SQL drivers in order to prevent potential memory leaks.<p>
+     */
+    private void shutDownSqlDrivers() {
+
+        // This manually deregisters JDBC driver, which prevents Tomcat 7 from complaining about memory leaks
+        Enumeration<Driver> drivers = DriverManager.getDrivers();
+        while (drivers.hasMoreElements()) {
+            Driver driver = drivers.nextElement();
+            try {
+                DriverManager.deregisterDriver(driver);
+            } catch (Throwable e) {
+                System.out.println(Messages.get().getBundle().key(
+                    Messages.ERR_DEREGISTERING_JDBC_DRIVER_1,
+                    driver.getClass().getName()));
+                e.printStackTrace(System.out);
+            }
+        }
+
+        try {
+            Class<?> cls = Class.forName("com.mysql.jdbc.AbandonedConnectionCleanupThread");
+            Method shutdownMethod = (cls == null ? null : cls.getMethod("shutdown"));
+            if (shutdownMethod != null) {
+                shutdownMethod.invoke(null);
+            }
+        } catch (Throwable e) {
+            System.out.println("Failed to shutdown MySQL connection cleanup thread: " + e.getMessage());
         }
     }
 }

@@ -3,20 +3,25 @@
 <export>
 	<info>
 		<creator>Admin</creator>
-		<opencms_version>8.0.0</opencms_version>
+		<opencms_version>9.0.0</opencms_version>
 		<createdate>Wed, 04 May 2011 13:17:19 GMT</createdate>
 		<infoproject>Offline</infoproject>
 		<export_version>7</export_version>
 	</info>
 	<module>
 		<name>org.opencms.workplace</name>
-		<nicename><![CDATA[OpenCms 8 Workplace base]]></nicename>
+		<nicename><![CDATA[OpenCms 9 Workplace base]]></nicename>
 		<group>OpenCms Workplace</group>
 		<class>org.opencms.workplace.CmsWorkplaceAction</class>
 		<description><![CDATA[<p>This module contains the OpenCms Workplace base files.</p>
 <p>It includes common used dialogs and style sheets, that are needed by any workplace module.</p>
+<<<<<<< HEAD
 <p><i>(c) 2012 by Alkacon Software GmbH (http://www.alkacon.com).</i></p>]]></description>
 		<version>8.0.4</version>
+=======
+<p><i>&copy; 2014 by Alkacon Software GmbH (http://www.alkacon.com).</i></p>]]></description>
+		<version>9.0.1</version>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 		<authorname><![CDATA[Alkacon Software GmbH]]></authorname>
 		<authoremail><![CDATA[info@alkacon.com]]></authoremail>
 		<datecreated>Mon, 27 Jun 2005 08:00:00 GMT</datecreated>
@@ -33,6 +38,7 @@
 			<resource uri="/system/workplace/admin/notification/notification"/>
 			<resource uri="/system/workplace/admin/notification/notification.xsd"/>
 			<resource uri="/system/workplace/admin/notification/publish-notification"/>
+			<resource uri="/system/workplace/admin/notification/workflow-notification"/>
 			<resource uri="/system/workplace/commons/includes/"/>
 			<resource uri="/system/workplace/commons/style/"/>
 			<resource uri="/system/workplace/commons/template/"/>
@@ -769,6 +775,31 @@
 			<relations/>
 			<accesscontrol/>
 		</file>
+		<file>
+			<source>system/workplace/admin/notification/workflow-notification</source>
+			<destination>system/workplace/admin/notification/workflow-notification</destination>
+			<type>xmlcontent</type>
+			<uuidstructure>74563c65-4a30-45b1-a729-69157d6a2208</uuidstructure>
+			<uuidresource>c39d20c8-62ac-4a9e-b9f4-490477b2d467</uuidresource>
+			<datelastmodified>Mon, 29 Jan 2007 10:25:58 GMT</datelastmodified>
+			<userlastmodified>Admin</userlastmodified>
+			<datecreated>Thu, 28 Sep 2006 13:19:28 GMT</datecreated>
+			<usercreated>Admin</usercreated>
+			<flags>0</flags>
+			<properties>
+				<property>
+					<name>Title</name>
+					<value><![CDATA[OpenCms Workflow Notification]]></value>
+				</property>
+				<property>
+					<name>content-encoding</name>
+					<value><![CDATA[ISO-8859-1]]></value>
+				</property>
+			</properties>
+			<relations/>
+			<accesscontrol/>
+		</file>
+		
 		<file>
 			<destination>system/workplace/commons</destination>
 			<type>folder</type>

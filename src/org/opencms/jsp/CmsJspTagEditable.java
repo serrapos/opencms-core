@@ -29,11 +29,16 @@ package org.opencms.jsp;
 
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsResource;
+import org.opencms.file.collectors.I_CmsResourceCollector;
 import org.opencms.file.history.CmsHistoryResourceHandler;
 import org.opencms.flex.CmsFlexController;
+import org.opencms.gwt.shared.CmsGwtConstants;
+import org.opencms.i18n.CmsEncoder;
+import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
 import org.opencms.util.CmsStringUtil;
+import org.opencms.workplace.editors.directedit.CmsDirectEditButtonSelection;
 import org.opencms.workplace.editors.directedit.CmsDirectEditJspIncludeProvider;
 import org.opencms.workplace.editors.directedit.CmsDirectEditMode;
 import org.opencms.workplace.editors.directedit.CmsDirectEditParams;
@@ -43,6 +48,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
 import javax.servlet.jsp.tagext.BodyTagSupport;
+import javax.servlet.jsp.tagext.Tag;
 
 import org.apache.commons.logging.Log;
 
@@ -87,6 +93,9 @@ public class CmsJspTagEditable extends BodyTagSupport {
     /** Class name of the direct edit provider. */
     protected String m_provider;
 
+    /** The edit empty tag attribute. */
+    private boolean m_editEmpty;
+
     /** Indicates if the tag is the first on the page, this mean the header file must be included. */
     private boolean m_firstOnPage;
 
@@ -106,30 +115,14 @@ public class CmsJspTagEditable extends BodyTagSupport {
     public static void editableTagAction(PageContext context, String provider, CmsDirectEditMode mode, String fileName)
     throws JspException {
 
-        if (mode == CmsDirectEditMode.FALSE) {
-            // direct edit is turned off
-            return;
-        }
-
         ServletRequest req = context.getRequest();
-        if (CmsHistoryResourceHandler.isHistoryRequest(req)) {
-            // don't display direct edit buttons on an historical resource
+        if ((mode == CmsDirectEditMode.FALSE) || !isEditableRequest(req)) {
+            // direct edit is turned off
             return;
         }
 
         CmsFlexController controller = CmsFlexController.getController(req);
         CmsObject cms = controller.getCmsObject();
-
-        if (cms.getRequestContext().getCurrentProject().isOnlineProject()) {
-            // direct edit is never enabled in the online project
-            return;
-        }
-
-        if (CmsResource.isTemporaryFileName(cms.getRequestContext().getUri())) {
-            // don't display direct edit buttons if a temporary file is displayed
-            return;
-        }
-
         I_CmsDirectEditProvider eb = getDirectEditProvider(context);
         if (eb == null) {
             if (CmsStringUtil.isNotEmpty(fileName) && CmsStringUtil.isEmpty(provider)) {
@@ -204,6 +197,88 @@ public class CmsJspTagEditable extends BodyTagSupport {
         // get the direct edit provider from the request attributes
         return (I_CmsDirectEditProvider)context.getRequest().getAttribute(
             I_CmsDirectEditProvider.ATTRIBUTE_DIRECT_EDIT_PROVIDER);
+    }
+
+    /**
+     * Inserts direct edit for empty collector lists.<p>
+     * 
+     * @param context the current JSP page context
+     * @param container the parent content load container
+     * @param mode the direct edit mode to use (may be <code>null</code>, which means current use mode on page)
+     * 
+     * @throws CmsException in case of invalid collector settings
+     * @throws JspException in case writing to page context fails 
+     */
+    public static void insertEditEmpty(PageContext context, I_CmsXmlContentContainer container, CmsDirectEditMode mode)
+    throws CmsException, JspException {
+
+        ServletRequest req = context.getRequest();
+        if (isEditableRequest(req)
+            && (container.getCollectorResult() != null)
+            && (container.getCollectorResult().size() == 0)) {
+            CmsFlexController controller = CmsFlexController.getController(req);
+            CmsObject cms = controller.getCmsObject();
+            // now collect the resources
+            I_CmsResourceCollector collector = OpenCms.getResourceManager().getContentCollector(
+                container.getCollectorName());
+            if (collector == null) {
+                throw new CmsException(Messages.get().container(
+                    Messages.ERR_COLLECTOR_NOT_FOUND_1,
+                    container.getCollectorName()));
+            }
+            String createParam = collector.getCreateParam(
+                cms,
+                container.getCollectorName(),
+                container.getCollectorParam());
+            String createLink = collector.getCreateLink(
+                cms,
+                container.getCollectorName(),
+                container.getCollectorParam());
+            if ((createParam != null)
+                && (collector.getCreateTypeId(cms, container.getCollectorName(), container.getCollectorParam()) != -1)) {
+                String createFolderName = CmsResource.getFolderPath(createLink);
+                createParam = CmsEncoder.encode(container.getCollectorName() + "|" + createParam);
+                getDirectEditProvider(context).insertDirectEditEmptyList(
+                    context,
+                    new CmsDirectEditParams(createFolderName, CmsDirectEditButtonSelection.NEW, mode, createParam));
+            }
+        }
+    }
+
+    /**
+     * Returns if direct edit is disabled for the current request.<p>
+     * 
+     * @param request the servlet request
+     * 
+     * @return <code>true</code> if direct edit is disabled for the current request
+     */
+    public static boolean isDirectEditDisabled(ServletRequest request) {
+
+        String disabledParam = request.getParameter(CmsGwtConstants.PARAM_DISABLE_DIRECT_EDIT);
+        return Boolean.parseBoolean(disabledParam);
+    }
+
+    /**
+     * Checks if the current request should be direct edit enabled. 
+     * Online-, history-requests and temporary files will not be editable.
+     * 
+     * @param req the servlet request
+     * 
+     * @return <code>true</code> if the current request should be direct edit enabled
+     */
+    public static boolean isEditableRequest(ServletRequest req) {
+
+        boolean result = true;
+        if (CmsHistoryResourceHandler.isHistoryRequest(req) || CmsJspTagEditable.isDirectEditDisabled(req)) {
+            // don't display direct edit buttons on an historical resource
+            result = false;
+        } else {
+            CmsFlexController controller = CmsFlexController.getController(req);
+            CmsObject cms = controller.getCmsObject();
+            result = !cms.getRequestContext().getCurrentProject().isOnlineProject()
+                && !CmsResource.isTemporaryFileName(cms.getRequestContext().getUri());
+        }
+        return result;
     }
 
     /**
@@ -316,14 +391,13 @@ public class CmsJspTagEditable extends BodyTagSupport {
     @Override
     public int doStartTag() throws JspException {
 
-        if (!CmsFlexController.isCmsOnlineRequest(pageContext.getRequest())
-            && !CmsResource.isTemporaryFileName(CmsFlexController.getCmsObject(pageContext.getRequest()).getRequestContext().getUri())) {
+        if (isEditableRequest(pageContext.getRequest())) {
             // all this does NOT apply to the "online" project, or for temporary files
             I_CmsDirectEditProvider eb = getDirectEditProvider(pageContext);
             // if no provider is available this is the first "editable" tag on the page
             m_firstOnPage = (eb == null);
             m_manualPlacement = false;
-            if (m_mode == CmsDirectEditMode.MANUAL) {
+            if ((m_mode == CmsDirectEditMode.MANUAL) || !m_editEmpty) {
                 // manual mode requested, we may need to insert HTML
                 if (!m_firstOnPage && (eb != null)) {
                     // first tag on a page is only for insertion of header HTML
@@ -332,6 +406,12 @@ public class CmsJspTagEditable extends BodyTagSupport {
                         m_manualPlacement = true;
                         editableTagAction(pageContext, m_provider, m_mode, m_file);
                     }
+                }
+            } else if (!m_firstOnPage && (eb != null) && m_editEmpty) {
+                try {
+                    insertEditEmpty();
+                } catch (CmsException e) {
+                    LOG.error(e.getLocalizedMessage(), e);
                 }
             }
         } else {
@@ -373,6 +453,16 @@ public class CmsJspTagEditable extends BodyTagSupport {
     }
 
     /**
+     * Returns the edit empty attribute.<p>
+     *
+     * @return the edit empty attribute
+     */
+    public boolean isEditEmpty() {
+
+        return m_editEmpty;
+    }
+
+    /**
      * Releases any resources we may have (or inherit).<p>
      */
     @Override
@@ -384,6 +474,17 @@ public class CmsJspTagEditable extends BodyTagSupport {
         m_mode = null;
         m_firstOnPage = false;
         m_manualPlacement = true;
+        m_editEmpty = false;
+    }
+
+    /**
+     * Sets the edit empty attribute.<p>
+     *
+     * @param editEmpty the edit empty attribute to set
+     */
+    public void setEditEmpty(boolean editEmpty) {
+
+        m_editEmpty = editEmpty;
     }
 
     /**
@@ -414,5 +515,22 @@ public class CmsJspTagEditable extends BodyTagSupport {
     public void setProvider(String provider) {
 
         m_provider = provider;
+    }
+
+    /**
+     * Inserts direct edit for empty collector lists.<p>
+     * 
+     * @throws CmsException in case of invalid collector settings
+     * @throws JspException in case writing to page context fails 
+     */
+    private void insertEditEmpty() throws CmsException, JspException {
+
+        Tag ancestor = findAncestorWithClass(this, I_CmsXmlContentContainer.class);
+        I_CmsXmlContentContainer container = null;
+        if (ancestor != null) {
+            // parent content container available, use preloaded values from this container
+            container = (I_CmsXmlContentContainer)ancestor;
+            insertEditEmpty(pageContext, container, m_mode == null ? CmsDirectEditMode.AUTO : m_mode);
+        }
     }
 }

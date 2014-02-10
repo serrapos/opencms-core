@@ -216,6 +216,8 @@ public class CmsXmlContainerPage extends CmsXmlContent {
     public byte[] createContainerPageXml(CmsObject cms, Locale locale, CmsContainerPageBean cntPage)
     throws CmsException {
 
+        // make sure all links are validated 
+        checkLinkConcistency(cms, locale);
         writeContainerPage(cms, locale, cntPage);
         return marshal();
 
@@ -329,6 +331,23 @@ public class CmsXmlContainerPage extends CmsXmlContent {
     }
 
     /**
+     * Checks the link consistency for a given locale and reinitializes the document afterwards.<p>
+     * 
+     * @param cms the cms context
+     * @param locale the locale
+     */
+    protected void checkLinkConcistency(CmsObject cms, Locale locale) {
+
+        for (I_CmsXmlContentValue contentValue : getValues(locale)) {
+            if (contentValue instanceof CmsXmlVfsFileValue) {
+                CmsLink link = ((CmsXmlVfsFileValue)contentValue).getLink(cms);
+                link.checkConsistency(cms);
+            }
+        }
+        initDocument();
+    }
+
+    /**
      * Fills a {@link CmsXmlVfsFileValue} with the resource identified by the given id.<p>
      * 
      * @param cms the current CMS context
@@ -406,9 +425,9 @@ public class CmsXmlContainerPage extends CmsXmlContent {
 
                         // element itself
                         int elemIndex = CmsXmlUtils.getXpathIndexInt(element.getUniquePath(container));
-                        String elemPath = CmsXmlUtils.concatXpath(cntPath, CmsXmlUtils.createXpathElement(
-                            element.getName(),
-                            elemIndex));
+                        String elemPath = CmsXmlUtils.concatXpath(
+                            cntPath,
+                            CmsXmlUtils.createXpathElement(element.getName(), elemIndex));
                         I_CmsXmlSchemaType elemSchemaType = cntDef.getSchemaType(element.getName());
                         I_CmsXmlContentValue elemValue = elemSchemaType.createValue(this, element, locale);
                         addBookmark(elemPath, locale, true, elemValue);
@@ -459,8 +478,10 @@ public class CmsXmlContainerPage extends CmsXmlContent {
 
                 m_cntPages.put(locale, new CmsContainerPageBean(locale, containers));
             } catch (NullPointerException e) {
-                LOG.error(org.opencms.xml.content.Messages.get().getBundle().key(
-                    org.opencms.xml.content.Messages.LOG_XMLCONTENT_INIT_BOOKMARKS_0), e);
+                LOG.error(
+                    org.opencms.xml.content.Messages.get().getBundle().key(
+                        org.opencms.xml.content.Messages.LOG_XMLCONTENT_INIT_BOOKMARKS_0),
+                    e);
             }
         }
     }
@@ -486,12 +507,6 @@ public class CmsXmlContainerPage extends CmsXmlContent {
             cntElement.addElement(XmlNode.Name.name()).addCDATA(container.getName());
             cntElement.addElement(XmlNode.Type.name()).addCDATA(container.getType());
 
-            //            for (Map.Entry<String, String> entry : container.getAttributes().entrySet()) {
-            //                Element attrElement = cntElement.addElement(XmlNode.Attribute.name());
-            //                attrElement.addElement(XmlNode.Key.name()).addCDATA(entry.getKey());
-            //                attrElement.addElement(XmlNode.Value.name()).addCDATA(entry.getValue());
-            //            }
-
             // the elements
             for (CmsContainerElementBean element : container.getElements()) {
                 Element elemElement = cntElement.addElement(XmlNode.Elements.name());
@@ -501,14 +516,17 @@ public class CmsXmlContainerPage extends CmsXmlContent {
                 CmsResource uriRes = fillResource(cms, uriElem, element.getId());
                 Element formatterElem = elemElement.addElement(XmlNode.Formatter.name());
                 fillResource(cms, formatterElem, element.getFormatterId());
-
+                if (element.isCreateNew()) {
+                    Element createNewElem = elemElement.addElement(XmlNode.CreateNew.name());
+                    createNewElem.addText(Boolean.TRUE.toString());
+                }
                 // the properties
                 Map<String, String> properties = element.getIndividualSettings();
                 Map<String, CmsXmlContentProperty> propertiesConf = OpenCms.getADEManager().getElementSettings(
                     cms,
                     uriRes);
 
-                CmsXmlContentPropertyHelper.saveProperties(cms, elemElement, properties, uriRes, propertiesConf);
+                CmsXmlContentPropertyHelper.saveProperties(cms, elemElement, properties, propertiesConf);
             }
         }
     }

@@ -27,35 +27,150 @@
 
 package org.opencms.gwt.client.ui.contextmenu;
 
-import com.google.gwt.event.logical.shared.CloseEvent;
-import com.google.gwt.event.logical.shared.CloseHandler;
-import com.google.gwt.user.client.ui.PopupPanel;
+import org.opencms.gwt.client.CmsCoreProvider;
+import org.opencms.gwt.client.rpc.CmsRpcAction;
+import org.opencms.gwt.shared.CmsContextMenuEntryBean;
+import org.opencms.gwt.shared.CmsCoreData.AdeContext;
+import org.opencms.util.CmsStringUtil;
+import org.opencms.util.CmsUUID;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import com.google.gwt.core.client.GWT;
 
 /**
- * Implements the close handler for the menu.<p>
- * 
- * @since version 8.0.0
+ * The context menu handler for the search result tab.<p>
  */
-public class CmsContextMenuHandler implements CloseHandler<PopupPanel> {
+public class CmsContextMenuHandler implements I_CmsContextMenuHandler {
 
-    /** The menu. */
-    private CmsContextMenu m_menu;
+    /** The available context menu commands. */
+    private static Map<String, I_CmsContextMenuCommand> m_contextMenuCommands;
 
     /**
      * Constructor.<p>
-     * 
-     * @param menu the menu
      */
-    public CmsContextMenuHandler(CmsContextMenu menu) {
+    public CmsContextMenuHandler() {
 
-        m_menu = menu;
     }
 
     /**
-     * @see com.google.gwt.event.logical.shared.CloseHandler#onClose(com.google.gwt.event.logical.shared.CloseEvent)
+     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuHandler#ensureLockOnResource(org.opencms.util.CmsUUID)
      */
-    public void onClose(CloseEvent<PopupPanel> event) {
+    public boolean ensureLockOnResource(CmsUUID structureId) {
 
-        m_menu.onClose();
+        return CmsCoreProvider.get().lock(structureId);
     }
+
+    /**
+     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuHandler#getContextMenuCommands()
+     */
+    public Map<String, I_CmsContextMenuCommand> getContextMenuCommands() {
+
+        if (m_contextMenuCommands == null) {
+            I_CmsContextMenuCommandInitializer initializer = GWT.create(I_CmsContextMenuCommandInitializer.class);
+            m_contextMenuCommands = initializer.initCommands();
+        }
+        return m_contextMenuCommands;
+    }
+
+    /**
+     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuHandler#leavePage(java.lang.String)
+     */
+    public void leavePage(String targetUri) {
+
+        // not supported within galleries
+    }
+
+    /**
+     * Loads the context menu.<p>
+     * 
+     * @param structureId the resource structure id
+     * @param context the context
+     * @param menuButton the menu button
+     */
+    public void loadContextMenu(
+        final CmsUUID structureId,
+        final AdeContext context,
+        final CmsContextMenuButton menuButton) {
+
+        CmsRpcAction<List<CmsContextMenuEntryBean>> action = new CmsRpcAction<List<CmsContextMenuEntryBean>>() {
+
+            @Override
+            public void execute() {
+
+                CmsCoreProvider.getService().getContextMenuEntries(structureId, context, this);
+            }
+
+            @Override
+            protected void onResponse(List<CmsContextMenuEntryBean> result) {
+
+                menuButton.showMenu(transformEntries(result, structureId));
+            }
+        };
+        action.execute();
+    }
+
+    /**
+     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuHandler#refreshResource(org.opencms.util.CmsUUID)
+     */
+    public void refreshResource(CmsUUID structureId) {
+
+        // do nothing 
+    }
+
+    /**
+     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuHandler#unlockResource(org.opencms.util.CmsUUID)
+     */
+    public void unlockResource(CmsUUID structureId) {
+
+        CmsCoreProvider.get().unlock(structureId);
+    }
+
+    /**
+     * Transforms a list of context menu entry beans to a list of context menu entries.<p>
+     * 
+     * @param menuBeans the list of context menu entry beans
+     * @param structureId the id of the resource for which to transform the context menu entries 
+     * 
+     * @return a list of context menu entries 
+     */
+    protected List<I_CmsContextMenuEntry> transformEntries(
+        List<CmsContextMenuEntryBean> menuBeans,
+        final CmsUUID structureId) {
+
+        List<I_CmsContextMenuEntry> menuEntries = new ArrayList<I_CmsContextMenuEntry>();
+        for (CmsContextMenuEntryBean bean : menuBeans) {
+            I_CmsContextMenuEntry entry = transformSingleEntry(bean, structureId);
+            if (entry != null) {
+                menuEntries.add(entry);
+            }
+        }
+        return menuEntries;
+    }
+
+    /**
+     * Creates a single context menu entry from a context menu entry bean.<p>
+     *  
+     * @param bean the menu entry bean 
+     * @param structureId the structure id
+     *  
+     * @return the context menu for the given entry 
+     */
+    protected I_CmsContextMenuEntry transformSingleEntry(CmsContextMenuEntryBean bean, CmsUUID structureId) {
+
+        String name = bean.getName();
+        I_CmsContextMenuCommand command = null;
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(name)) {
+            command = getContextMenuCommands().get(name);
+        }
+        CmsContextMenuEntry entry = new CmsContextMenuEntry(this, structureId, command);
+        entry.setBean(bean);
+        if (bean.hasSubMenu()) {
+            entry.setSubMenu(transformEntries(bean.getSubMenu(), structureId));
+        }
+        return entry;
+    }
+
 }

@@ -198,6 +198,7 @@ public class CmsPublishList implements Externalizable {
      * @param directPublishResources the list of direct publish resources
      * @param publishSiblings indicates if all siblings of the selected resources should be published
      * @param publishSubResources indicates if sub-resources in folders should be published (for direct publish only)
+     * @param all if <code>true</code> the publish list will not be filtered for redundant resources
      */
     private CmsPublishList(
         CmsProject project,
@@ -626,6 +627,30 @@ public class CmsPublishList implements Externalizable {
             }
         }
         return true;
+    }
+
+    /**
+     * Gets the sub-resources of a list of folders which are missing from the publish list.<p> 
+     * 
+     * @param cms the current CMS context 
+     * @param folders the folders which should be checked 
+     * @return a list of missing sub resources 
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    protected List<CmsResource> getMissingSubResources(CmsObject cms, List<CmsResource> folders) throws CmsException {
+
+        List<CmsResource> result = new ArrayList<CmsResource>();
+        for (CmsResource folder : folders) {
+            String folderPath = cms.getSitePath(folder);
+            List<CmsResource> subResources = cms.readResources(folderPath, CmsResourceFilter.ALL, true);
+            for (CmsResource resource : subResources) {
+                if (!containsResource(resource)) {
+                    result.add(resource);
+                }
+            }
+        }
+        return result;
     }
 
     /**

@@ -4,17 +4,22 @@ package org.opencms.editors.tinymce;
 import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
 import org.opencms.i18n.CmsEncoder;
+import org.opencms.json.JSONException;
+import org.opencms.json.JSONObject;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.widgets.A_CmsHtmlWidget;
+import org.opencms.widgets.CmsHtmlWidget;
 import org.opencms.widgets.CmsHtmlWidgetOption;
 import org.opencms.widgets.I_CmsWidget;
 import org.opencms.widgets.I_CmsWidgetDialog;
 import org.opencms.widgets.I_CmsWidgetParameter;
 import org.opencms.workplace.CmsWorkplace;
 import org.opencms.workplace.editors.CmsEditorDisplayOptions;
+import org.opencms.workplace.editors.CmsTinyMceToolbarHelper;
+import org.opencms.workplace.editors.CmsWorkplaceEditorConfiguration;
 import org.opencms.workplace.editors.I_CmsEditorCssHandler;
 import org.opencms.xml.types.I_CmsXmlContentValue;
 
@@ -22,10 +27,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 
 /**
@@ -35,6 +38,7 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
 
     /** Path of the base content CSS. */
     public static final String BASE_CONTENT_CSS = "/system/workplace/editors/tinymce/base_content.css";
+<<<<<<< HEAD
 
     /** The translation of the generic widget button names to TinyMCE specific button names. */
     public static final String BUTTON_TRANSLATION =
@@ -60,6 +64,8 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
         BUTTON_TRANSLATION,
         "|",
         ":");
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
     /** Request parameter name for the tool bar configuration parameter. */
     public static final String PARAM_CONFIGURATION = "config";
@@ -104,7 +110,7 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
 
         StringBuilder result = new StringBuilder(128);
         // general TinyMCE JS
-        result.append(getJSIncludeFile(CmsWorkplace.getSkinUri() + "editors/tinymce/jscripts/tiny_mce/tiny_mce.js"));
+        result.append(getJSIncludeFile(CmsWorkplace.getSkinUri() + "editors/tinymce/jscripts/tinymce/tinymce.min.js"));
         result.append("\n");
         result.append(getJSIncludeFile(OpenCms.getLinkManager().substituteLinkForRootPath(
             cms,
@@ -112,6 +118,10 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
         result.append("\n");
         // special TinyMCE widget functions
         result.append(getJSIncludeFile(CmsWorkplace.getSkinUri() + "components/widgets/tinymce.js"));
+        String pluginCssUri = OpenCms.getLinkManager().substituteLinkForRootPath(
+            cms,
+            "/system/workplace/editors/tinymce/opencms_plugin.css");
+        result.append("<link type='text/css' rel='stylesheet' href='" + pluginCssUri + "'>");
         String cssUri = CmsWorkplace.getSkinUri() + "components/widgets/tinymce.css";
         result.append("<link type='text/css' rel='stylesheet' href='" + cssUri + "'>");
         return result.toString();
@@ -144,6 +154,7 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
         result.append("\">");
 
         result.append("<script type=\"text/javascript\">\n");
+<<<<<<< HEAD
         CmsEditorDisplayOptions options = OpenCms.getWorkplaceManager().getEditorDisplayOptions();
         Properties displayOptions = options.getDisplayOptions(cms);
         String preprocessorFunction = configuration.generateOptionPreprocessor("cms_preprocess_options");
@@ -253,9 +264,11 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
         result.append("theme_advanced_resizing : false,\n");
         result.append("theme_advanced_resizing_use_cookie : false");
         result.append("}));\n");
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
+        result.append("initTinyMCE(").append(getTinyMceConfiguration(cms, param)).append(");\n");
         result.append("contentFields[contentFields.length] = document.getElementById(\"").append(id).append("\");\n");
-
         result.append("</script>\n");
         result.append("</td>");
 
@@ -271,30 +284,72 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
     }
 
     /**
-     * Builds the toolbar.
+     * Returns the string representation of the tinyMCE options object.<p>
      * 
-     * @return Javascript code for toolbar configuration
+     * @param cms the OpenCms context
+     * @param param the widget parameter
+     * 
+     * @return the string representation of the tinyMCE options object
      */
-    private String getToolbar() {
+    private String getTinyMceConfiguration(CmsObject cms, I_CmsWidgetParameter param) {
 
-        String result = "";
-        List<String> barItems = getHtmlWidgetOption().getButtonBarShownItems();
-        List<List<String>> blocks = new ArrayList<List<String>>();
-        blocks.add(new ArrayList<String>());
-        String lastItem = null;
-        List<String> processedItems = new ArrayList<String>();
-
-        // translate buttons and eliminate adjacent separators 
-        for (String barItem : barItems) {
-            if (BUTTON_TRANSLATION_MAP.containsKey(barItem)) {
-                barItem = BUTTON_TRANSLATION_MAP.get(barItem);
+        JSONObject result = new JSONObject();
+        CmsEditorDisplayOptions options = OpenCms.getWorkplaceManager().getEditorDisplayOptions();
+        Properties displayOptions = options.getDisplayOptions(cms);
+        try {
+            result.put("elements", "ta_" + param.getId());
+            String editorHeight = getHtmlWidgetOption().getEditorHeight();
+            if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(editorHeight)) {
+                editorHeight = editorHeight.replaceAll("px", "");
+                result.put("height", editorHeight);
             }
-            if (barItem.equals("[") || barItem.equals("]") || barItem.equals("-")) {
-                barItem = "|";
-                if ("|".equals(lastItem)) {
-                    continue;
+            if (options.showElement("gallery.enhancedoptions", displayOptions)) {
+                result.put("cmsGalleryEnhancedOptions", true);
+            }
+            if (options.showElement("gallery.usethickbox", displayOptions)) {
+                result.put("cmsGalleryUseThickbox", true);
+            }
+            CmsWorkplaceEditorConfiguration editorConfig = OpenCms.getWorkplaceManager().getWorkplaceEditorManager().getEditorConfiguration(
+                "tinymce");
+            Boolean pasteText = Boolean.valueOf(editorConfig.getParameters().get("paste_text"));
+            result.put("paste_as_text", pasteText);
+
+            result.put("fullpage", getHtmlWidgetOption().isFullPage());
+            result.merge(getToolbarJson(), true, false);
+
+            result.put("language", OpenCms.getWorkplaceManager().getWorkplaceLocale(cms).getLanguage());
+            // set CSS style sheet for current editor widget if configured
+            boolean cssConfigured = false;
+            String cssPath = "";
+            if (getHtmlWidgetOption().useCss()) {
+                cssPath = getHtmlWidgetOption().getCssPath();
+                // set the CSS path to null (the created configuration String passed to JS will not include this path then)
+                getHtmlWidgetOption().setCssPath(null);
+                cssConfigured = true;
+            } else if (OpenCms.getWorkplaceManager().getEditorCssHandlers().size() > 0) {
+                Iterator<I_CmsEditorCssHandler> i = OpenCms.getWorkplaceManager().getEditorCssHandlers().iterator();
+                try {
+                    // cast parameter to I_CmsXmlContentValue
+                    I_CmsXmlContentValue contentValue = (I_CmsXmlContentValue)param;
+                    // now extract the absolute path of the edited resource
+                    CmsFile editedResource = contentValue.getDocument().getFile();
+                    String editedResourceSitePath = editedResource == null ? null : cms.getSitePath(editedResource);
+                    while (i.hasNext()) {
+                        I_CmsEditorCssHandler handler = i.next();
+                        if (handler.matches(cms, editedResourceSitePath)) {
+                            cssPath = handler.getUriStyleSheet(cms, editedResourceSitePath);
+                            if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(cssPath)) {
+                                cssConfigured = true;
+                            }
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    // ignore, CSS could not be set
+                    LOG.debug(e.getLocalizedMessage(), e);
                 }
             }
+<<<<<<< HEAD
             if (barItem.indexOf(",") > -1) {
                 for (String subItem : barItem.split(",")) {
                     processedItems.add(subItem);
@@ -304,38 +359,56 @@ public class CmsTinyMCEWidget extends A_CmsHtmlWidget {
             }
             lastItem = barItem;
         }
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
-        // remove leading or trailing '|' 
-        if ((processedItems.size() > 0) && processedItems.get(0).equals("|")) {
-            processedItems.remove(0);
-        }
-
-        if ((processedItems.size() > 0) && processedItems.get(processedItems.size() - 1).equals("|")) {
-            processedItems.remove(processedItems.size() - 1);
-        }
-
-        // transform flat list into list of groups 
-        for (String processedItem : processedItems) {
-            blocks.get(blocks.size() - 1).add(processedItem);
-            if ("|".equals(processedItem)) {
-                blocks.add(new ArrayList<String>());
+            List<String> contentCssLinks = new ArrayList<String>();
+            contentCssLinks.add(OpenCms.getLinkManager().substituteLink(cms, BASE_CONTENT_CSS));
+            if (cssConfigured) {
+                contentCssLinks.add(OpenCms.getLinkManager().substituteLink(cms, cssPath));
             }
+            result.put("content_css", CmsStringUtil.listAsString(contentCssLinks, ","));
+            if (getHtmlWidgetOption().showStylesFormat()) {
+                try {
+                    CmsFile file = cms.readFile(getHtmlWidgetOption().getStylesFormatPath());
+                    String characterEncoding = OpenCms.getSystemInfo().getDefaultEncoding();
+                    result.put("style_formats", new String(file.getContents(), characterEncoding));
+                } catch (CmsException cmsException) {
+                    LOG.error("Can not open file:" + getHtmlWidgetOption().getStylesFormatPath(), cmsException);
+                } catch (UnsupportedEncodingException ex) {
+                    LOG.error(ex);
+                }
+            }
+            String formatSelectOptions = getHtmlWidgetOption().getFormatSelectOptions();
+            if (!CmsStringUtil.isEmpty(formatSelectOptions)
+                && !getHtmlWidgetOption().isButtonHidden(CmsHtmlWidgetOption.OPTION_FORMATSELECT)) {
+                result.put("block_formats", CmsHtmlWidget.getTinyMceBlockFormats(formatSelectOptions));
+            }
+            result.put("entity_encoding", "raw");
+        } catch (JSONException e) {
+            LOG.error(e.getLocalizedMessage(), e);
         }
 
-        // produce the TinyMCE toolbar options from the groups
-        // we use TinyMCE's button rows as groups instead of rows and fix the layout using CSS.
-        // This is because we want the button bars to wrap automatically when there is not enough space.
-        // Using this method, the wraps can only occur between different blocks/rows. 
-        int row = 1;
-        for (List<String> block : blocks) {
-            result = result + "theme_advanced_buttons" + row + ": '" + CmsStringUtil.listAsString(block, ",") + "',\n";
-            row += 1;
-        }
-        // overwrite default toolbar rows 
-        for (int r = row; r <= 4; r++) {
-            result = result + "theme_advanced_buttons" + r + ": '',\n";
+        return result.toString();
+    }
+
+    /**
+     * Builds the toolbar rows.<p>
+     * 
+     * @return the toolbar button rows configuration
+     * 
+     * @throws JSONException if something goes wrong manipulating the JSON object
+     */
+    private JSONObject getToolbarJson() throws JSONException {
+
+        JSONObject result = new JSONObject();
+        List<String> barItems = getHtmlWidgetOption().getButtonBarShownItems();
+        String toolbar = CmsTinyMceToolbarHelper.createTinyMceToolbarStringFromGenericToolbarItems(barItems);
+        result.put("toolbar", toolbar);
+        String contextmenu = CmsTinyMceToolbarHelper.getContextMenuEntries(barItems);
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(contextmenu)) {
+            result.put("contextmenu", contextmenu);
         }
         return result;
     }
-
 }

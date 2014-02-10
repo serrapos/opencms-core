@@ -128,10 +128,17 @@ public class CmsFrameDialog {
      * @return <code>true</code> if the parent frame is available
      */
     public static native boolean hasParentFrame() /*-{
+<<<<<<< HEAD
         if ($wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::CLOSE_FUNCTION]) {
             return true;
         }
         return false;
+=======
+      if ($wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::CLOSE_FUNCTION]) {
+         return true;
+      }
+      return false;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
     }-*/;
 
@@ -180,10 +187,17 @@ public class CmsFrameDialog {
      * Removes exported functions from the window context.<p>
      */
     protected static native void removeExportedFunctions() /*-{
+<<<<<<< HEAD
         $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::CLOSE_FUNCTION] = null;
         $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::HEIGHT_FUNCTION] = null;
         $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::WIDTH_FUNCTION] = null;
         $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::TITLE_FUNCTION] = null;
+=======
+      $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::CLOSE_FUNCTION] = null;
+      $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::HEIGHT_FUNCTION] = null;
+      $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::WIDTH_FUNCTION] = null;
+      $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::TITLE_FUNCTION] = null;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }-*/;
 
     /**
@@ -192,6 +206,7 @@ public class CmsFrameDialog {
      * @param popup the popup
      */
     private static native void exportDialogFunctions(final CmsPopup popup) /*-{
+<<<<<<< HEAD
         var self = this;
         $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::CLOSE_FUNCTION] = function() {
             popup.@org.opencms.gwt.client.ui.CmsPopup::hide()();
@@ -218,6 +233,34 @@ public class CmsFrameDialog {
                 title) {
             popup.@org.opencms.gwt.client.ui.CmsPopup::addDialogClose(Lcom/google/gwt/user/client/Command;)(null);
         };
+=======
+      var self = this;
+      $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::CLOSE_FUNCTION] = function() {
+         popup.@org.opencms.gwt.client.ui.CmsPopup::hide()();
+      };
+      $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::HEIGHT_FUNCTION] = function(
+            height) {
+         popup.@org.opencms.gwt.client.ui.CmsPopup::setHeight(I)(height);
+         if (popup.@org.opencms.gwt.client.ui.CmsPopup::isShowing()) {
+            popup.@org.opencms.gwt.client.ui.CmsPopup::center()();
+         }
+      };
+      $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::WIDTH_FUNCTION] = function(
+            width) {
+         popup.@org.opencms.gwt.client.ui.CmsPopup::setWidth(I)(width);
+         if (popup.@org.opencms.gwt.client.ui.CmsPopup::isShowing()) {
+            popup.@org.opencms.gwt.client.ui.CmsPopup::center()();
+         }
+      };
+      $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::TITLE_FUNCTION] = function(
+            title) {
+         popup.@org.opencms.gwt.client.ui.CmsPopup::setCaption(Ljava/lang/String;)(title);
+      };
+      $wnd[@org.opencms.gwt.client.ui.CmsFrameDialog::ENABLE_CLOSE_FUNCTION] = function(
+            title) {
+         popup.@org.opencms.gwt.client.ui.CmsPopup::addDialogClose(Lcom/google/gwt/user/client/Command;)(null);
+      };
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }-*/;
 
     /**
@@ -229,7 +272,11 @@ public class CmsFrameDialog {
 
         if (m_isFrame) {
             initButtonPanel();
+<<<<<<< HEAD
             m_buttonPanel.add(button);
+=======
+            m_buttonPanel.insert(button, 0);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         } else {
             m_popup.addButton(button);
         }
@@ -413,16 +460,25 @@ public class CmsFrameDialog {
      * Enables the dialog close button on the parent frame popup.<p>
      */
     private native void enableParentDialogClose() /*-{
+<<<<<<< HEAD
         $wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::ENABLE_CLOSE_FUNCTION]
                 ();
+=======
+      $wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::ENABLE_CLOSE_FUNCTION]
+            ();
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }-*/;
 
     /**
      * Hides the parent dialog.<p>
      */
     private native void hideParent() /*-{
+<<<<<<< HEAD
         $wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::CLOSE_FUNCTION]
                 ();
+=======
+      $wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::CLOSE_FUNCTION]();
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }-*/;
 
     /**
@@ -443,8 +499,13 @@ public class CmsFrameDialog {
      * @param height the height to set
      */
     private native void setParentHeight(int height) /*-{
+<<<<<<< HEAD
         $wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::HEIGHT_FUNCTION]
                 (height);
+=======
+      $wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::HEIGHT_FUNCTION]
+            (height);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }-*/;
 
     /**
@@ -453,8 +514,13 @@ public class CmsFrameDialog {
      * @param title the title
      */
     private native void setParentTitle(String title) /*-{
+<<<<<<< HEAD
         $wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::TITLE_FUNCTION]
                 (title);
+=======
+      $wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::TITLE_FUNCTION]
+            (title);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }-*/;
 
     /**
@@ -463,7 +529,12 @@ public class CmsFrameDialog {
      * @param width the width to set
      */
     private native void setParentWidth(int width) /*-{
+<<<<<<< HEAD
         $wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::WIDTH_FUNCTION]
                 (width);
+=======
+      $wnd.parent[@org.opencms.gwt.client.ui.CmsFrameDialog::WIDTH_FUNCTION]
+            (width);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }-*/;
 }

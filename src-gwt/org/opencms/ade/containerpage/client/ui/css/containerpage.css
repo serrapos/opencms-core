@@ -1,18 +1,13 @@
 @external html-face, cms_ade_groupcontainer, cmsState, cmsState-up, cmsState-up-hovering, cmsState-up-disabled, cmsState-down, cmsState-down-hovering, cmsState-down-disabled, gwt-TabLayoutPanel;
 
-.toolbarAdd, .toolbarSitemap,
-.toolbarReset, .toolbarPublish, .toolbarClipboard,  .toolbarSave, .toolbarContext{}
+.showButtons, .hideButtons{}
 
 .menuTabContainer{
 	height: 486px;
 }
 
-.menuTabContainer > div >.gwt-TabLayoutPanel{
+.menuTabContainer > div >.gwt-TabLayoutPanel, .menuTabContainer > div{
 	border: none;
-}
-
-.menuTabContainer > div{
-	border: none;	
 }
 
 .menuTabContainer ul.clipboardList {
@@ -27,26 +22,18 @@ ul.clipboardList{
 	height: 441px;
 }
 
-.showButtons {}
-
-.hideButtons {}
-
-.classicDirectEdit {}
-
-/** hiding buttons in clip-board menu while dragging **/
-.dragStarted .clipboardList .cmsState {
-	display: none;
-}
-
-.dragStarted div.directEditButtons{
-	display: none;
-}
-
 .clipboardList > div  {
 	margin: 2px;
 }
 
-div.optionBar{
+/** hiding buttons in clip-board menu while dragging **/
+.dragStarted .clipboardList .cmsState, .dragStarted div.directEditButtons, 
+.cms_ade_groupcontainer.hideElements .hiddenElement, .dragStarted .cms_ade_groupcontainer .hiddenElement{
+	display:none;
+}
+
+
+.dragElement div.optionBar{
 	border: 1px solid transparent;
 	position: absolute;
 	top: 2px;
@@ -68,21 +55,20 @@ div.optionBar{
 	max-width: none;
 }
 
+.dragElement div.optionBar, .dragElement div.optionBar *{
+	box-sizing: content-box;
+	-moz-box-sizing: content-box;
+}
+
 .toolbarSelection div.expired, .dragging div.expired, .toolbarAdd div.expired, .toolbarClipboard div.expired{
 	display: block;
 }
-
-/** Force scroll-bar as long as direct edit buttons are visible to avoid any flickering when elements highlighted. */
-body.toolbarSelection{
-	overflow-y: scroll;
-}
-
 
 div.expired{
 	display: none;
 }
 
-@sprite .expired div.expiredOverlay{
+@sprite .expired div.expiredOverlay, .hiddenElement div.hiddenElementOverlay{
 	gwt-image: 'otherImages.invalidElement';
 	position: absolute;
 	height: auto;
@@ -93,16 +79,22 @@ div.expired{
 	bottom: 2px;
 }
 
-@if user.agent ie6 {
-	.expired div.expiredOverlay {
-		filter: literal("alpha(opacity = 60)");
-	}
-} @elif user.agent ie8 {
-	.expired div.expiredOverlay {
+@sprite div.expiredListElementOverlay{
+	gwt-image: 'otherImages.invalidElement';
+	box-sizing: content-box;
+	-moz-box-sizing: content-box;
+	padding: 0px;
+	margin: 0px;
+	position: absolute;
+	z-index: 1;
+}
+
+@if user.agent ie8 {
+	.expired div.expiredOverlay, .hiddenElement div.hiddenElementOverlay, div.expiredListElementOverlay {
 		-ms-filter: "alpha(opacity = 60)";
 	}
 } @else {
-	.expired div.expiredOverlay {
+	.expired div.expiredOverlay, .hiddenElement div.hiddenElementOverlay, div.expiredListElementOverlay {
         opacity: 0.6;
 	}
 }
@@ -133,25 +125,31 @@ div.toolbarToggle{
 	max-width: none;
 }
 
-@sprite .toolbarSelection .optionBar.cmsHovering{
-	gwt-image: "backgrounds.softBackground";
+.toolbarSelection div.optionBar.cmsHovering{
 	height: auto;
 	border: 1px solid value("constants.css.borderColor");
+<<<<<<< HEAD
 	border-radius: 2px;
 	background-color: value("constants.css.backgroundColorSoft");
+=======
+	border-radius: value("constants.css.borderRadius");
+	background: value("constants.css.backgroundColorDialog");
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 }
 
 .optionBar div.cmsState{
 	display: none;
 }
 
-.dragStarted .optionBar, .dragPlaceholder .optionBar, .groupcontainerEditing .optionBar, .cms_ade_groupcontainer .dragElement .optionBar{
+.dragStarted .optionBar, .dragPlaceholder .optionBar, 
+.groupcontainerEditor .cms_ade_groupcontainer .dragPlaceholder .optionBar, .groupcontainerEditing .optionBar, 
+.cms_ade_groupcontainer .dragElement .optionBar{
 	display: none;
 }
-.emptyGroupContainer{
+@sprite .emptyGroupContainer{
 	min-height: 27px;
-	background: #ffffff;
-	border: 1px dashed value("constants.css.borderColorHighlight");
+	gwt-image: 'otherImages.placeholderImage';
+	border: 1px solid value("constants.css.borderColor");
 }
 
 div.groupcontainerPlaceholder{
@@ -172,33 +170,29 @@ div.groupcontainerPlaceholder{
 	left: 0;
 	width: 100%;
 	height: 100%;
+	z-index: value("constants.css.zIndexHighlighting");
 }
-
-.groupcontainerEditor{}
 
 .groupcontainerEditor .cms_ade_groupcontainer .optionBar{
 	display: block;
 }
 
-.groupcontainerEditing .emptyGroupContainer{
+.groupcontainerEditing .emptyGroupContainer, .toolbarSelection .dragging div.optionBar.cmsHovering{
 	background: transparent;
 	border: none;
 }
 
-.dragStarted .dragElement.dragging .optionBar{
+.dragStarted .dragElement.dragging > .optionBar{
 	display: block;
 }
 
-.toolbarSelection .dragging .optionBar.cmsHovering{
-	background: transparent;
-	border: none;
-}
 .toolbarSelection .dragging .optionBar .toolbarClipboard,
 .toolbarSelection .dragging .optionBar .toolbarRemove, 
 .toolbarSelection .dragging .optionBar .toolbarEdit, 
 .toolbarSelection .dragging .optionBar .toolbarNew, 
 .toolbarSelection .dragging .optionBar .toolbarProperties, 
-.toolbarSelection .dragging .optionBar .toolbarSelection{
+.toolbarSelection .dragging .optionBar .toolbarInherited,
+.toolbarSelection .dragging .optionBar .toolbarInfo{
 	visibility: hidden;
 }
 
@@ -231,21 +225,32 @@ div.groupcontainerPlaceholder{
 @sprite .optionBar .cmsState-up .toolbarDelete, .optionBar .cmsState-up-disabled .toolbarDelete, .optionBar .cmsState-down-disabled .toolbarDelete {
     gwt-image: "images.deleteIconDeactivated";
 }
-@sprite .optionBar .cmsState-up-hovering .toolbarEdit, .optionBar .cmsState-down-hovering .toolbarEdit, .optionBar .cmsState-down .toolbarEdit {
+
+@sprite .optionBar .toolbarEdit.cmsState-up-hovering .toolbarSelection, .optionBar .toolbarEdit.cmsState-down-hovering .toolbarSelection, .optionBar .toolbarEdit.cmsState-down .toolbarSelection {
     gwt-image: "images.editIconActive";
 }
-@sprite .optionBar .cmsState-up .toolbarEdit{
+@sprite .cmsHovering.optionBar .toolbarEdit.cmsState-up .toolbarSelection,  .optionBar .cmsState-up .toolbarEdit{
     gwt-image: "images.editIconDeactivated";
 }
+
+
+@sprite .optionBar .cmsState-up-hovering .toolbarSelection.lockedElement, .optionBar .cmsState-down-hovering .toolbarSelection.lockedElement, .optionBar .cmsState-down .toolbarSelection.lockedElement {
+    gwt-image: "images.lockIconActive";
+}
+@sprite .optionBar .cmsState-up .toolbarSelection.lockedElement{
+    gwt-image: "images.lockIconDeactivated";
+}
+
+
 /** show lock icon for deactivated edit button **/
 @sprite .optionBar .cmsState-up-disabled .toolbarEdit, .optionBar .cmsState-down-disabled .toolbarEdit {
 	gwt-image: "images.lockIconDeactivated";
 }
-@sprite .optionBar .cmsState-up-hovering .toolbarMove, .optionBar .cmsState-down-hovering .toolbarMove, .optionBar .cmsState-down .toolbarMove {
-    gwt-image: "images.moveIconActive";
-}
 @sprite .optionBar .cmsState-up .toolbarMove, .optionBar .cmsState-up-disabled .toolbarMove, .optionBar .cmsState-down-disabled .toolbarMove {
     gwt-image: "images.moveIconDeactivated";
+}
+@sprite .optionBar .toolbarMove.cmsState-up-hovering .toolbarMove, .optionBar .toolbarMove.cmsState-down-hovering .toolbarMove, .optionBar .toolbarMove.cmsState-down .toolbarMove {
+    gwt-image: "images.moveIconActive";
 }
 @sprite .optionBar .cmsState-up-hovering .toolbarNew, .optionBar .cmsState-down-hovering .toolbarNew, .optionBar .cmsState-down .toolbarNew {
     gwt-image: "images.addIconActive";
@@ -259,6 +264,15 @@ div.groupcontainerPlaceholder{
 @sprite .optionBar .cmsState-up .toolbarProperties, .optionBar .cmsState-up-disabled .toolbarProperties, .optionBar .cmsState-down-disabled .toolbarProperties {
     gwt-image: "images.propertyIconDeactivated";
 }
+
+@sprite .optionBar .cmsState-up-hovering .toolbarInfo, .optionBar .cmsState-down-hovering .toolbarInfo, .optionBar .cmsState-down .toolbarInfo {
+    gwt-image: "images.infoIconActive";
+}
+
+@sprite .optionBar .cmsState-up .toolbarInfo, .optionBar .cmsState-up-disabled .toolbarInfo, .optionBar .cmsState-down-disabled .toolbarInfo {
+    gwt-image: "images.infoIconDeactivated";
+}
+
 @sprite .optionBar .cmsState-up-hovering .toolbarSelection, .optionBar .cmsState-down-hovering .toolbarSelection, .optionBar .cmsState-down .toolbarSelection {
     gwt-image: "images.selectionIconActive";
 }
@@ -266,4 +280,29 @@ div.groupcontainerPlaceholder{
     gwt-image: "images.selectionIconDeactivated";
 }
 
+<<<<<<< HEAD
 .toolbarBack{}
+=======
+@sprite .optionBar .cmsState-up-hovering .toolbarInherited, .optionBar .cmsState-down-hovering .toolbarInherited, .optionBar .cmsState-down .toolbarInherited {
+    gwt-image: "images.subSitemapIcon";
+}
+@sprite .optionBar .cmsState-up .toolbarInherited, .optionBar .cmsState-up-disabled .toolbarInherited, .optionBar .cmsState-down-disabled .toolbarInherited {
+    gwt-image: "images.subSitemapIconDeactivated";
+}
+
+
+@eval enlargedMinHeight org.opencms.ade.containerpage.client.ui.CmsSmallElementsHandler.getNecessaryHeight();
+
+.enlargeSmallElements .smallElement {
+	min-height: enlargedMinHeight; 
+}
+
+.ignoreSmallElements .smallElement .optionBar {
+	visibility: hidden; 
+}
+
+.elementInfoChanged {} 
+.elementInfoUnchanged {}
+
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485

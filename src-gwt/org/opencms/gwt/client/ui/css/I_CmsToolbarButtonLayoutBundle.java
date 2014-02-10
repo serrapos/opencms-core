@@ -37,15 +37,9 @@ import com.google.gwt.resources.client.CssResource.Shared;
  */
 public interface I_CmsToolbarButtonLayoutBundle extends I_CmsBigIconBundle {
 
-    /** The button CSS. */
+    /** The extended tool-bar button CSS. */
     @Shared
-    public interface I_CmsToolbarButtonCss extends I_CmsLayoutBundle.I_CmsStateCss {
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String toolbarAdd();
+    interface I_CmsExtendedToolbarButtonCss extends I_CmsToolbarButtonCss {
 
         /** Access method.<p>
          * 
@@ -57,13 +51,120 @@ public interface I_CmsToolbarButtonLayoutBundle extends I_CmsBigIconBundle {
          * 
          * @return the CSS class name
          */
-        String toolbarClipboard();
+        String toolbarContext();
 
         /** Access method.<p>
          * 
          * @return the CSS class name
          */
-        String toolbarContext();
+        String toolbarCopyLocale();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarDeleteLocale();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarElementInfo();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarGallery();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarPublish();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarRedo();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarRefresh();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarReset();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarSave();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarSaveExit();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarShowSmall();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarSitemap();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarToggleHelp();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarUndo();
+    }
+
+    /** The button CSS. */
+    @Shared
+    public interface I_CmsToolbarButtonCss extends I_CmsLayoutBundle.I_CmsStateCss {
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String elementInfoChanged();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String elementInfoUnchanged();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarAdd();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarClipboard();
 
         /** Access method.<p>
          * 
@@ -76,6 +177,18 @@ public interface I_CmsToolbarButtonLayoutBundle extends I_CmsBigIconBundle {
          * @return the CSS class name
          */
         String toolbarEdit();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarInfo();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String toolbarInherited();
 
         /** Access method.<p>
          * 
@@ -99,37 +212,13 @@ public interface I_CmsToolbarButtonLayoutBundle extends I_CmsBigIconBundle {
          * 
          * @return the CSS class name
          */
-        String toolbarPublish();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
         String toolbarRemove();
 
         /** Access method.<p>
          * 
          * @return the CSS class name
          */
-        String toolbarReset();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String toolbarSave();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
         String toolbarSelection();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String toolbarSitemap();
     }
 
     /** The bundle instance. */
@@ -141,6 +230,6 @@ public interface I_CmsToolbarButtonLayoutBundle extends I_CmsBigIconBundle {
      * @return the button CSS
      */
     @Source("toolbarButton.css")
-    I_CmsToolbarButtonCss toolbarButtonCss();
+    I_CmsExtendedToolbarButtonCss toolbarButtonCss();
 
 }

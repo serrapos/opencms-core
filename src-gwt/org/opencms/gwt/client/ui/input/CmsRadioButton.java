@@ -141,6 +141,16 @@ public class CmsRadioButton extends Composite implements HasHorizontalAlignment,
     }
 
     /**
+     * Returns the radio button.<p>
+     * 
+     * @return the radio button
+     */
+    public CmsToggleButton getRadioButton() {
+
+        return m_button;
+    }
+
+    /**
      * Returns true if the radio button is checked.<p>
      * 
      * @return true if the  radio button is checked 

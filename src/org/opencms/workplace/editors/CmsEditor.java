@@ -29,6 +29,7 @@ package org.opencms.workplace.editors;
 
 import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsProperty;
 import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsResource;
 import org.opencms.file.CmsResourceFilter;
@@ -168,25 +169,40 @@ public abstract class CmsEditor extends CmsEditorBase {
     /** The log object for this class. */
     private static final Log LOG = CmsLog.getLog(CmsEditor.class);
 
-    /** A cloned cms instance that prevents the broken link remotion during unmarshalling. */
-    private CmsObject m_cloneCms;
-
     /** The editor session info bean. */
     private CmsEditorSessionInfo m_editorSessionInfo;
+
     /** The encoding to use (will be read from the file property). */
     private String m_fileEncoding;
-    // some private members for parameter storage
+
+    /** Back link parameter. */
     private String m_paramBackLink;
+
+    /** Content parameter. */
     private String m_paramContent;
+
+    /** Direct edit parameter. */
     private String m_paramDirectedit;
+
+    /** Edit as text parameter. */
     private String m_paramEditAsText;
+
+    /** Editor mode parameter. */
     private String m_paramEditormode;
+
+    /** Element language parameter. */
     private String m_paramElementlanguage;
+
+    /** Load default parameter. */
     private String m_paramLoadDefault;
+
+    /** Modified parameter. */
     private String m_paramModified;
 
+    /** Old element language parameter. */
     private String m_paramOldelementlanguage;
 
+    /** Temporary file parameter. */
     private String m_paramTempFile;
 
     /** Helper variable to store the uri to the editors pictures. */
@@ -238,13 +254,13 @@ public abstract class CmsEditor extends CmsEditorBase {
     public String buildSelectElementLanguage(String attributes, String resourceName, Locale selectedLocale) {
 
         // get locale names based on properties and global settings
-        List locales = OpenCms.getLocaleManager().getAvailableLocales(getCms(), resourceName);
-        List options = new ArrayList(locales.size());
-        List selectList = new ArrayList(locales.size());
+        List<Locale> locales = OpenCms.getLocaleManager().getAvailableLocales(getCms(), resourceName);
+        List<String> options = new ArrayList<String>(locales.size());
+        List<String> selectList = new ArrayList<String>(locales.size());
         int currentIndex = -1;
 
         //get the locales already used in the resource
-        List contentLocales = new ArrayList();
+        List<Locale> contentLocales = new ArrayList<Locale>();
         try {
 
             CmsResource res = getCms().readResource(resourceName, CmsResourceFilter.IGNORE_EXPIRATION);
@@ -264,7 +280,7 @@ public abstract class CmsEditor extends CmsEditorBase {
 
         for (int counter = 0; counter < locales.size(); counter++) {
             // create the list of options and values
-            Locale curLocale = (Locale)locales.get(counter);
+            Locale curLocale = locales.get(counter);
             selectList.add(curLocale.toString());
             StringBuffer buf = new StringBuffer();
             buf.append(curLocale.getDisplayName(getLocale()));
@@ -282,7 +298,7 @@ public abstract class CmsEditor extends CmsEditorBase {
             // no matching element language found, use first element language in list
             if (selectList.size() > 0) {
                 currentIndex = 0;
-                setParamElementlanguage((String)selectList.get(0));
+                setParamElementlanguage(selectList.get(0));
             }
         }
 
@@ -387,6 +403,7 @@ public abstract class CmsEditor extends CmsEditorBase {
     /**
      * @see org.opencms.workplace.CmsWorkplace#checkLock(String, CmsLockType)
      */
+    @Override
     public void checkLock(String resource, CmsLockType type) throws CmsException {
 
         CmsResource res = getCms().readResource(resource, CmsResourceFilter.ALL);
@@ -742,7 +759,7 @@ public abstract class CmsEditor extends CmsEditorBase {
                     getJsp().include(FILE_DIALOG_CLOSE);
                 } else {
                     // forward to the workplace explorer view
-                    sendForward(CmsFrameset.JSP_WORKPLACE_URI, new HashMap());
+                    sendForward(CmsFrameset.JSP_WORKPLACE_URI, new HashMap<String, String[]>());
                 }
             }
         } finally {
@@ -770,7 +787,7 @@ public abstract class CmsEditor extends CmsEditorBase {
 
         CmsObject cms = getCms();
         CmsFile tempFile;
-        List properties;
+        List<CmsProperty> properties;
         try {
             switchToTempProject();
             tempFile = cms.readFile(getParamTempfile(), CmsResourceFilter.ALL);
@@ -790,16 +807,24 @@ public abstract class CmsEditor extends CmsEditorBase {
             // original file does not exist, remove visibility permission entries and copy temporary file
 
             // switch to the temporary file project
-            cms.getRequestContext().setCurrentProject(cms.readProject(getSettings().getProject()));
-            // lock the temporary file
-            cms.changeLock(getParamTempfile());
-            // remove visibility permissions for everybody on temporary file if possible
-            if (cms.hasPermissions(tempFile, CmsPermissionSet.ACCESS_CONTROL)) {
-                cms.rmacc(getParamTempfile(), I_CmsPrincipal.PRINCIPAL_GROUP, OpenCms.getDefaultUsers().getGroupUsers());
-                cms.rmacc(
-                    getParamTempfile(),
-                    I_CmsPrincipal.PRINCIPAL_GROUP,
-                    OpenCms.getDefaultUsers().getGroupProjectmanagers());
+            try {
+                switchToTempProject();
+                // lock the temporary file
+                cms.changeLock(getParamTempfile());
+                // remove visibility permissions for everybody on temporary file if possible
+                if (cms.hasPermissions(tempFile, CmsPermissionSet.ACCESS_CONTROL)) {
+                    cms.rmacc(
+                        getParamTempfile(),
+                        I_CmsPrincipal.PRINCIPAL_GROUP,
+                        OpenCms.getDefaultUsers().getGroupUsers());
+                    cms.rmacc(
+                        getParamTempfile(),
+                        I_CmsPrincipal.PRINCIPAL_GROUP,
+                        OpenCms.getDefaultUsers().getGroupProjectmanagers());
+                }
+            } finally {
+                // make sure the project is reset in case of any exception
+                switchToCurrentProject();
             }
 
             cms.copyResource(getParamTempfile(), getParamResource(), CmsResource.COPY_AS_NEW);
@@ -852,6 +877,7 @@ public abstract class CmsEditor extends CmsEditorBase {
      * @param paramValue the unencoded value of the parameter
      * @return the encoded value of the parameter
      */
+    @Override
     protected String decodeParamValue(String paramName, String paramValue) {
 
         if ((paramName != null) && (paramValue != null)) {
@@ -926,11 +952,9 @@ public abstract class CmsEditor extends CmsEditorBase {
      */
     protected CmsObject getCloneCms() throws CmsException {
 
-        if (m_cloneCms == null) {
-            m_cloneCms = OpenCms.initCmsObject(getCms());
-            m_cloneCms.getRequestContext().setRequestTime(CmsResource.DATE_RELEASED_EXPIRED_IGNORE);
-        }
-        return m_cloneCms;
+        CmsObject cloneCms = OpenCms.initCmsObject(getCms());
+        cloneCms.getRequestContext().setRequestTime(CmsResource.DATE_RELEASED_EXPIRED_IGNORE);
+        return cloneCms;
     }
 
     /**

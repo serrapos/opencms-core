@@ -35,7 +35,10 @@ import org.opencms.setup.xml.A_CmsXmlWorkplace;
 import org.opencms.setup.xml.CmsSetupXmlHelper;
 import org.opencms.setup.xml.CmsXmlUpdateAction;
 import org.opencms.util.CmsStringUtil;
+import org.opencms.workplace.explorer.menu.CmsMirAlwaysInvisible;
 import org.opencms.workplace.explorer.menu.CmsMirContainerpageInvisible;
+import org.opencms.workplace.explorer.menu.CmsMirEditProviderActive;
+import org.opencms.workplace.explorer.menu.CmsMirSitemapActive;
 import org.opencms.workplace.explorer.menu.CmsMirSitemapInvisible;
 
 import java.util.ArrayList;
@@ -213,6 +216,98 @@ public class CmsXmlUpdateMenuRules extends A_CmsXmlWorkplace {
                                 "adecheckfile",
                                 "org.opencms.workplace.explorer.menu.CmsMirAlwaysInvisible"),
                             "");
+                        return true;
+                    }
+                    return false;
+                }
+
+            });
+
+            m_updateActions.put(xpathForMenuRule("ade-undochanges"), new CmsXmlUpdateAction() {
+
+                @Override
+                public boolean executeUpdate(Document doc, String xpath, boolean forReal) {
+
+                    Element elem = (Element)doc.selectSingleNode(xpath);
+                    if (elem == null) {
+                        String[] classes = {
+                            "org.opencms.workplace.explorer.menu.CmsMirNonContainerpageInvisible",
+                            "org.opencms.workplace.explorer.menu.CmsMirPrOnlineInvisible",
+                            "org.opencms.workplace.explorer.menu.CmsMirPrOtherInvisible",
+                            "org.opencms.workplace.explorer.menu.CmsMirOtherSiteInactive",
+                            "org.opencms.workplace.explorer.menu.CmsMirPrSameUnlockedInactiveNotDeletedNoAl",
+                            "org.opencms.workplace.explorer.menu.CmsMirPrSameLockedActiveChangedAl",
+                            "org.opencms.workplace.explorer.menu.CmsMirPrSameOtherlockInvisible"};
+
+                        for (String className : classes) {
+                            CmsSetupXmlHelper.setValue(doc, xpathForMenuItemRule("ade-undochanges", className), "");
+                        }
+                        return true;
+                    }
+                    return false;
+
+                }
+            });
+
+            m_updateActions.put(xpathForMenuRule("containerpage-no-different-site"), new CmsXmlUpdateAction() {
+
+                @Override
+                public boolean executeUpdate(Document doc, String xpath, boolean forReal) {
+
+                    Element elem = (Element)doc.selectSingleNode(xpath);
+                    if (elem == null) {
+                        String[] classes = {
+                            "org.opencms.workplace.explorer.menu.CmsMirNonContainerpageInvisible",
+                            "org.opencms.workplace.explorer.menu.CmsMirOtherSiteInactive",
+                            "org.opencms.workplace.explorer.menu.CmsMirContainerPageActive"};
+                        for (String className : classes) {
+                            CmsSetupXmlHelper.setValue(
+                                doc,
+                                xpathForMenuItemRule("containerpage-no-different-site", className),
+                                "");
+                        }
+                        return true;
+                    }
+                    return false;
+
+                }
+            });
+
+            m_updateActions.put(xpathForMenuRule("editprovider"), new CmsXmlUpdateAction() {
+
+                @Override
+                public boolean executeUpdate(Document doc, String xpath, boolean forReal) {
+
+                    Element elem = (Element)doc.selectSingleNode(xpath);
+                    String[] classNames = new String[] {
+                        CmsMirEditProviderActive.class.getName(),
+                        CmsMirAlwaysInvisible.class.getName()};
+                    if (elem == null) {
+                        for (String classname : classNames) {
+                            CmsSetupXmlHelper.setValue(doc, xpathForMenuItemRule("editprovider", classname), "");
+                        }
+                        return true;
+                    }
+                    return false;
+
+                }
+            });
+
+            m_updateActions.put(xpathForMenuRule("sitemap"), new CmsXmlUpdateAction() {
+
+                @Override
+                public boolean executeUpdate(Document doc, String xpath, boolean forReal) {
+
+                    Element elem = (Element)doc.selectSingleNode(xpath);
+                    String[] classNames = new String[] {
+                        CmsMirSitemapActive.class.getName(),
+                        CmsMirAlwaysInvisible.class.getName()};
+
+                    if (elem == null) {
+                        for (String classname : classNames) {
+                            CmsSetupXmlHelper.setValue(doc, xpathForMenuItemRule("sitemap", classname), "");
+                        }
+                        return true;
                     }
                     return false;
                 }

@@ -61,7 +61,7 @@
 /** The highlight border color. Use it for highlighting special UI components e.g. errors. */
 @def borderColorHighlight #B31B34;
 /** The default border radius. */
-@def borderRadius 5px;
+@def borderRadius 3px;
 /** The default border radius for buttons. */
 @def borderRadiusButton 8px;
 
@@ -97,6 +97,11 @@
 @def backgroundColorSitemap #E1E1E1;
 /** This constant defines the background color of the sitemap entry that is highlighted. */
 @def backgroundColorSitemapHighlight #CCFFFF;
+/** Background color for sitemap entries marked as expired or not released. */
+@def backgroundColorSitemapExpired #D8DEEA;
+
+
+
 
 /**
  * The following constants define background colors for transparent background images.
@@ -120,14 +125,20 @@
 @def backgroundColorStateSubSitemap #FEFEDB;
 
 /**
- * The shadow background color definitions.
+ * The shadow color definitions.
  */
- 
 /** The box shadow color for the Internet explorer. */
 @def boxShadowColorIE #999999;
 /** The box shadow color for all other browsers. */
 @def boxShadowColorOther #666666;
 
+/**
+ * Background gradients.
+ */
+/** The form dialog background gradient. */
+@def gradientFormDialog literal("left, #FFFFFF 0%, #F4F7F9 80%, #E1E4E8 100%");  
+@def gradientFormDialogIE9 literal("url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZmZmZiIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjgwJSIgc3RvcC1jb2xvcj0iI2Y0ZjdmOSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNlMWU0ZTgiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+)");
+@def gradientFormDialogColor #EEEEEE;
 
 /**
  * The notification color definitions.
@@ -175,16 +186,16 @@
  */
  
  /** Used for popups and overlays. */
-@def zIndexPopup 2000000;
+@def zIndexPopup 200000;
 
-@def zIndexGroupContainer 1900000;
+@def zIndexGroupContainer 190000;
 /** Used during drag and drop. */
-@def zIndexDND 2500000;
+@def zIndexDND 250000;
 /** Used for highlighting. */
-@def zIndexHighlighting 1500000;
+@def zIndexHighlighting 150000;
 /** Used for positioned UI elements. */
-@def zIndexInline 1000000;
+@def zIndexInline 100000;
 
 /** For the menu. */ 
-@def zIndexMenu 1600000;
+@def zIndexMenu 160000;
 

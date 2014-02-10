@@ -28,13 +28,17 @@
 package org.opencms.ade.galleries.shared;
 
 import org.opencms.util.CmsStringUtil;
+import org.opencms.util.CmsUUID;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.gwt.user.client.rpc.IsSerializable;
 
 /**
  * Represents a single VFS resource entry for use by the VFS tab of the galleries.<p>
  */
-public class CmsVfsEntryBean implements IsSerializable {
+public class CmsVfsEntryBean implements IsSerializable, I_CmsGalleryTreeEntry<CmsVfsEntryBean> {
 
     /** Flag to indicate if the user has write permissions to the folder. */
     private boolean m_editable;
@@ -42,8 +46,17 @@ public class CmsVfsEntryBean implements IsSerializable {
     /** Flag indicating whether this is entry should be displayed at the top level of the tree. */
     private boolean m_isRoot;
 
-    /** The site path of this VFS entry. */
-    private String m_sitePath;
+    /** The list of children. */
+    private List<CmsVfsEntryBean> m_preloadedChildren;
+
+    /** The root path of the VFS entry. */
+    private String m_rootPath;
+
+    /** The site root of the entry. */
+    private String m_siteRoot;
+
+    /** The structure id. */
+    private CmsUUID m_structureId;
 
     /** The folder title. */
     private String m_title;
@@ -51,17 +64,28 @@ public class CmsVfsEntryBean implements IsSerializable {
     /**
      * Creates a new VFS entry bean.<p>
      * 
-     * @param sitePath the site path
+     * @param rootPath the root path 
+     * @param structureId the structure id
      * @param title the folder title
      * @param isRoot flag indicating whether this is entry should be displayed at the top level of the tree
      * @param editable <code>true</code> if the user has write permissions to the folder
+     * @param preloadedChildren the preloaded child nodes 
      */
-    public CmsVfsEntryBean(String sitePath, String title, boolean isRoot, boolean editable) {
+    public CmsVfsEntryBean(
+        String rootPath,
+        CmsUUID structureId,
+        String title,
+        boolean isRoot,
+        boolean editable,
+        List<CmsVfsEntryBean> preloadedChildren) {
 
-        m_sitePath = sitePath;
+        m_rootPath = rootPath;
+
+        m_structureId = structureId;
         m_isRoot = isRoot;
         m_editable = editable;
         m_title = title;
+        m_preloadedChildren = preloadedChildren;
     }
 
     /**
@@ -70,6 +94,25 @@ public class CmsVfsEntryBean implements IsSerializable {
     protected CmsVfsEntryBean() {
 
         // do nothing 
+    }
+
+    /**
+     * @see org.opencms.ade.galleries.shared.I_CmsGalleryTreeEntry#addChild(java.lang.Object)
+     */
+    public void addChild(CmsVfsEntryBean child) {
+
+        if (m_preloadedChildren == null) {
+            m_preloadedChildren = new ArrayList<CmsVfsEntryBean>();
+        }
+        m_preloadedChildren.add(child);
+    }
+
+    /**
+     * @see org.opencms.ade.galleries.shared.I_CmsGalleryTreeEntry#getChildren()
+     */
+    public List<CmsVfsEntryBean> getChildren() {
+
+        return m_preloadedChildren;
     }
 
     /**
@@ -83,9 +126,9 @@ public class CmsVfsEntryBean implements IsSerializable {
             return m_title;
         }
         if (m_isRoot) {
-            return m_sitePath;
+            return getRootPath();
         } else {
-            String fixedPath = m_sitePath.replaceFirst("/$", "");
+            String fixedPath = getRootPath().replaceFirst("/$", "");
             int lastSlash = fixedPath.lastIndexOf('/');
             if (lastSlash == -1) {
                 return fixedPath;
@@ -95,13 +138,33 @@ public class CmsVfsEntryBean implements IsSerializable {
     }
 
     /**
-     * Returns the site path of this VFS tree. 
+     * Gets the root path of the VFS entry.<p>
      * 
-     * @return the site path 
+     * @return the root path of the VFS entry 
      */
-    public String getSitePath() {
+    public String getRootPath() {
 
-        return m_sitePath;
+        return m_rootPath;
+    }
+
+    /**
+     * Gets the site root of this tree entry.<p>
+     * 
+     * @return the site root of this entry 
+     */
+    public String getSiteRoot() {
+
+        return m_siteRoot;
+    }
+
+    /**
+     * Returns the structure id.<p>
+     *
+     * @return the structure id
+     */
+    public CmsUUID getStructureId() {
+
+        return m_structureId;
     }
 
     /**
@@ -125,6 +188,16 @@ public class CmsVfsEntryBean implements IsSerializable {
     }
 
     /**
+     * Sets the list of children.<p>
+     * 
+     * @param children the list of children 
+     */
+    public void setChildren(List<CmsVfsEntryBean> children) {
+
+        m_preloadedChildren = children;
+    }
+
+    /**
      * Sets if the user has write permissions to the folder.<p>
      *
      * @param editable <code>true</code> if the user has write permissions to the folder
@@ -132,6 +205,16 @@ public class CmsVfsEntryBean implements IsSerializable {
     public void setEditable(boolean editable) {
 
         m_editable = editable;
+    }
+
+    /**
+     * Sets the site root of this tree entry.<p>
+     * 
+     * @param siteRoot the site root of this tree entry 
+     */
+    public void setSiteRoot(String siteRoot) {
+
+        m_siteRoot = siteRoot;
     }
 
 }

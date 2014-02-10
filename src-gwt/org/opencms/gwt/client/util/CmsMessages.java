@@ -71,10 +71,11 @@ public class CmsMessages {
         if (m_dictionaries == null) {
             m_dictionaries = new HashMap<String, Dictionary>();
         }
-        m_dictionary = m_dictionaries.get(bundleName);
+        m_bundleName = bundleName;
+        m_dictionary = m_dictionaries.get(m_bundleName);
         if (m_dictionary == null) {
-            m_dictionary = Dictionary.getDictionary(bundleName.replace('.', '_'));
-            m_dictionaries.put(bundleName, m_dictionary);
+            m_dictionary = Dictionary.getDictionary(m_bundleName.replace('.', '_'));
+            m_dictionaries.put(m_bundleName, m_dictionary);
         }
     }
 
@@ -93,36 +94,36 @@ public class CmsMessages {
             if (args[i] instanceof Date) {
                 Date date = (Date)args[i];
                 result = result.replace(getRegEx(i), CmsDateTimeUtil.getDateTime(date, CmsDateTimeUtil.Format.MEDIUM));
-                result = result.replace(getRegEx(i, "time"), CmsDateTimeUtil.getTime(
-                    date,
-                    CmsDateTimeUtil.Format.MEDIUM));
-                result = result.replace(getRegEx(i, "time", "short"), CmsDateTimeUtil.getTime(
-                    date,
-                    CmsDateTimeUtil.Format.SHORT));
-                result = result.replace(getRegEx(i, "time", "medium"), CmsDateTimeUtil.getTime(
-                    date,
-                    CmsDateTimeUtil.Format.MEDIUM));
-                result = result.replace(getRegEx(i, "time", "long"), CmsDateTimeUtil.getTime(
-                    date,
-                    CmsDateTimeUtil.Format.LONG));
-                result = result.replace(getRegEx(i, "time", "full"), CmsDateTimeUtil.getTime(
-                    date,
-                    CmsDateTimeUtil.Format.FULL));
-                result = result.replace(getRegEx(i, "date"), CmsDateTimeUtil.getDate(
-                    date,
-                    CmsDateTimeUtil.Format.MEDIUM));
-                result = result.replace(getRegEx(i, "date", "short"), CmsDateTimeUtil.getDate(
-                    date,
-                    CmsDateTimeUtil.Format.SHORT));
-                result = result.replace(getRegEx(i, "date", "medium"), CmsDateTimeUtil.getDate(
-                    date,
-                    CmsDateTimeUtil.Format.MEDIUM));
-                result = result.replace(getRegEx(i, "date", "long"), CmsDateTimeUtil.getDate(
-                    date,
-                    CmsDateTimeUtil.Format.LONG));
-                result = result.replace(getRegEx(i, "date", "full"), CmsDateTimeUtil.getDate(
-                    date,
-                    CmsDateTimeUtil.Format.FULL));
+                result = result.replace(
+                    getRegEx(i, "time"),
+                    CmsDateTimeUtil.getTime(date, CmsDateTimeUtil.Format.MEDIUM));
+                result = result.replace(
+                    getRegEx(i, "time", "short"),
+                    CmsDateTimeUtil.getTime(date, CmsDateTimeUtil.Format.SHORT));
+                result = result.replace(
+                    getRegEx(i, "time", "medium"),
+                    CmsDateTimeUtil.getTime(date, CmsDateTimeUtil.Format.MEDIUM));
+                result = result.replace(
+                    getRegEx(i, "time", "long"),
+                    CmsDateTimeUtil.getTime(date, CmsDateTimeUtil.Format.LONG));
+                result = result.replace(
+                    getRegEx(i, "time", "full"),
+                    CmsDateTimeUtil.getTime(date, CmsDateTimeUtil.Format.FULL));
+                result = result.replace(
+                    getRegEx(i, "date"),
+                    CmsDateTimeUtil.getDate(date, CmsDateTimeUtil.Format.MEDIUM));
+                result = result.replace(
+                    getRegEx(i, "date", "short"),
+                    CmsDateTimeUtil.getDate(date, CmsDateTimeUtil.Format.SHORT));
+                result = result.replace(
+                    getRegEx(i, "date", "medium"),
+                    CmsDateTimeUtil.getDate(date, CmsDateTimeUtil.Format.MEDIUM));
+                result = result.replace(
+                    getRegEx(i, "date", "long"),
+                    CmsDateTimeUtil.getDate(date, CmsDateTimeUtil.Format.LONG));
+                result = result.replace(
+                    getRegEx(i, "date", "full"),
+                    CmsDateTimeUtil.getDate(date, CmsDateTimeUtil.Format.FULL));
             } else {
                 result = result.replace(getRegEx(i), String.valueOf(args[i]));
             }
@@ -287,6 +288,16 @@ public class CmsMessages {
     public String getDateTime(long time) {
 
         return CmsDateTimeUtil.getDateTime(new Date(time), CmsDateTimeUtil.Format.SHORT);
+    }
+
+    /**
+     * Returns the internal dictionary.<p>
+     *
+     * @return the internal dictionary
+     */
+    public Dictionary getDictionary() {
+
+        return m_dictionary;
     }
 
     /**

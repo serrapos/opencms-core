@@ -27,12 +27,19 @@
 
 package org.opencms.jsp.util;
 
+import org.opencms.file.CmsObject;
 import org.opencms.file.CmsPropertyDefinition;
+import org.opencms.flex.CmsFlexController;
+import org.opencms.flex.CmsFlexRequest;
+import org.opencms.flex.CmsFlexResponse;
 import org.opencms.i18n.CmsAcceptLanguageHeaderParser;
 import org.opencms.i18n.CmsMessages;
 import org.opencms.jsp.CmsJspActionElement;
+import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
 import org.opencms.security.CmsRole;
+import org.opencms.site.CmsSite;
+import org.opencms.util.CmsRequestUtil;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.workplace.CmsWorkplace;
 
@@ -45,6 +52,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.PageContext;
+
+import org.apache.commons.logging.Log;
 
 /**
  * This bean provides methods to generate customized http status error pages, e.g. to handle 404 (not found) errors.<p>
@@ -72,6 +81,9 @@ public class CmsJspStatusBean extends CmsJspActionElement {
 
     /** The OpenCms VFS path containing the handler files. */
     public static final String VFS_FOLDER_HANDLER = CmsWorkplace.VFS_PATH_SYSTEM + "handler/";
+
+    /** The log object for this class. */
+    private static final Log LOG = CmsLog.getLog(CmsJspStatusBean.class);
 
     /** The error message. */
     private String m_errorMessage;
@@ -139,6 +151,58 @@ public class CmsJspStatusBean extends CmsJspActionElement {
 
         super(context, req, res);
         initMembers(req, t);
+    }
+
+    /**
+     * Tries to forward to the configured error page for the current site root if present.<p>
+     * 
+     * @param rootPath the resource to be used as error page
+     * 
+     * @return <code>true</code> if the forward was successful performed, <code>false</code> otherwise
+     */
+    public boolean forwardToErrorPage(String rootPath) {
+
+        try {
+
+            // get the site of the the error page resource
+            CmsSite site = OpenCms.getSiteManager().getSiteForRootPath(rootPath);
+
+            // initialize a CMS object for the given resource
+            CmsObject clone = OpenCms.initCmsObject(getCmsObject());
+            clone.getRequestContext().setSiteRoot(site.getSiteRoot());
+            String relPath = clone.getRequestContext().removeSiteRoot(rootPath);
+            clone.getRequestContext().setUri(relPath);
+
+            // create a new flex controller together with its flex request/response
+            // initialized with the context of the error page
+            CmsFlexController ori = CmsFlexController.getController(getRequest());
+            CmsFlexController controller = new CmsFlexController(
+                clone,
+                clone.readResource(relPath),
+                ori.getCmsCache(),
+                getRequest(),
+                getResponse(),
+                false,
+                false);
+            // controller.setForwardMode(true);
+            CmsFlexController.setController(getRequest(), controller);
+            CmsFlexRequest f_req = new CmsFlexRequest(getRequest(), controller);
+            CmsFlexResponse f_res = new CmsFlexResponse(getResponse(), controller, false, false);
+            controller.push(f_req, f_res);
+
+            // send the forward
+            CmsRequestUtil.forwardRequest(
+                OpenCms.getStaticExportManager().getVfsPrefix() + relPath,
+                getRequest(),
+                getResponse());
+
+        } catch (Throwable e) {
+            // something went wrong log the exception and return false 
+            LOG.error(e.getMessage(), e);
+            return false;
+        }
+        // return success flag
+        return true;
     }
 
     /**
@@ -313,9 +377,8 @@ public class CmsJspStatusBean extends CmsJspActionElement {
      * 
      * @throws JspException in case there were problems including the target
      */
-    @SuppressWarnings("unchecked")
-    // because parameterMap is based on untyped servlet API 
-    public void includeTemplatePart(String target, String element, Map parameterMap) throws JspException {
+    public void includeTemplatePart(String target, String element, Map<String, Object> parameterMap)
+    throws JspException {
 
         // store current site root and URI
         String currentSiteRoot = getRequestContext().getSiteRoot();
@@ -388,6 +451,16 @@ public class CmsJspStatusBean extends CmsJspActionElement {
 
         keyName += "_";
         return key(keyName + getStatusCodeMessage(), keyName + UNKKNOWN_STATUS_CODE);
+    }
+
+    /**
+     * Writes the exception into the 'opencms.log', if the exception is not <code>null</code>.<p>
+     */
+    public void logException() {
+
+        if (m_exception != null) {
+            LOG.error(m_exception.getMessage(), m_exception);
+        }
     }
 
     /**

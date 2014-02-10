@@ -101,11 +101,11 @@ public class CmsPropertyDefinition implements Cloneable, Comparable<CmsPropertyD
     /** The name of the VFS property that controls the caching. */
     public static final String PROPERTY_CACHE = "cache";
 
-    /** Property for the sitemap configuration file path. */
-    public static final String PROPERTY_CONFIG_SITEMAP = "config.sitemap";
-
     /** Property to define the function detail container for a template. */
     public static final String PROPERTY_CONTAINER_INFO = "container.info";
+
+    /** Property to configure the value which should be used instead of the template path when selecting the template in the GUI. Please note that this does not have to actually be a template provider configuration string, this is just the most common use case.  */
+    public static final String PROPERTY_TEMPLATE_PROVIDER = "template.provider";
 
     /** Property for the content conversion. */
     public static final String PROPERTY_CONTENT_CONVERSION = "content-conversion";
@@ -124,6 +124,9 @@ public class CmsPropertyDefinition implements Cloneable, Comparable<CmsPropertyD
 
     /** Property for the description. */
     public static final String PROPERTY_DESCRIPTION = "Description";
+
+    /** The name of the property which controls whether an element will be used as a copy model by the container page editor. */
+    public static final String PROPERTY_ELEMENT_MODEL = "element.model";
 
     /** Property for the resource title. */
     public static final String PROPERTY_ENABLE_NOTIFICATION = "enable-notification";
@@ -202,6 +205,12 @@ public class CmsPropertyDefinition implements Cloneable, Comparable<CmsPropertyD
 
     /** Property for the visible method in the administration view. */
     public static final String PROPERTY_VISIBLE = "visiblemethod";
+
+    /** Property for the XML sitemap change frequency. */
+    public static final String PROPERTY_XMLSITEMAP_CHANGEFREQ = "xmlsitemap.changefreq";
+
+    /** Property for the XML sitemap priority. */
+    public static final String PROPERTY_XMLSITEMAP_PRIORITY = "xmlsitemap.priority";
 
     /** The property definition type for resources. */
     public static final int PROPERYDEFINITION_RESOURCE = 1;

@@ -29,6 +29,7 @@ package org.opencms.setup.xml;
 
 import org.opencms.i18n.CmsEncoder;
 import org.opencms.setup.CmsSetupBean;
+import org.opencms.setup.CmsUpdateInfo;
 import org.opencms.util.CmsStringUtil;
 
 import java.util.ArrayList;
@@ -132,7 +133,7 @@ public class CmsSetupXmlManager {
      * 
      * @param detectedVersion detected mayor version
      */
-    public void initialize(int detectedVersion) {
+    public void initialize(double detectedVersion) {
 
         m_selectedPlugins = new ArrayList<String>();
         m_plugins = new ArrayList<I_CmsSetupXmlUpdate>();
@@ -168,6 +169,7 @@ public class CmsSetupXmlManager {
         m_plugins.add(new org.opencms.setup.xml.v7.CmsXmlAddDEHelpSearchIndex());
 
         m_plugins.add(new org.opencms.setup.xml.v8.CmsXmlAddADESearch());
+        m_plugins.add(new org.opencms.setup.xml.v8.CmsXmlAddSolrSearch());
 
         // system
         m_plugins.add(new org.opencms.setup.xml.v7.CmsXmlRemoveResourceHandlers());
@@ -199,6 +201,7 @@ public class CmsSetupXmlManager {
         m_plugins.add(new org.opencms.setup.xml.v8.CmsXmlAddWidgets());
         m_plugins.add(new org.opencms.setup.xml.v8.CmsXmlAddCollectors());
         m_plugins.add(new org.opencms.setup.xml.v8.CmsXmlAddTypeMappings());
+        m_plugins.add(new org.opencms.setup.xml.v8.CmsXmlAddTranslationRules());
         //m_plugins.add(new org.opencms.setup.xml.v8.CmsXmlUpdateSchemaTypes());
 
         // workplace
@@ -216,6 +219,12 @@ public class CmsSetupXmlManager {
         m_plugins.add(new org.opencms.setup.xml.v8.CmsXmlUpdateContextMenuEntries());
         m_plugins.add(new org.opencms.setup.xml.v8.CmsXmlChangeDefaultUpload());
         m_plugins.add(new org.opencms.setup.xml.v8.CmsXmlUpdateExplorerTypes());
+        if (CmsUpdateInfo.INSTANCE.needToSetCategoryFolder()) {
+            m_plugins.add(new org.opencms.setup.xml.v8.CmsXmlSetCategoryFolder());
+        }
+
+        m_plugins.add(new org.opencms.setup.xml.v9.CmsXmlCleanUpSearchConfiguration());
+
         setup();
     }
 

@@ -46,10 +46,11 @@ import com.google.gwt.user.client.ui.FlowPanel;
  */
 public class CmsImageFormatsTab extends A_CmsPreviewDetailTab {
 
+    /** The content panel. */
+    private FlowPanel m_content;
+
     /** The preview handler. */
     private CmsImagePreviewHandler m_handler;
-
-    private FlowPanel m_content;
 
     /**
      * The constructor.<p>
@@ -83,11 +84,13 @@ public class CmsImageFormatsTab extends A_CmsPreviewDetailTab {
      */
     public void fillContent(CmsImageInfoBean imageInfo) {
 
-        CmsCroppingDialog croppingDialog = new CmsCroppingDialog(
-            CmsCoreProvider.get().link(imageInfo.getResourcePath()));
+        String viewLink = imageInfo.getViewLink() != null ? imageInfo.getViewLink() : CmsCoreProvider.get().link(
+            imageInfo.getResourcePath());
+        CmsCroppingDialog croppingDialog = new CmsCroppingDialog(viewLink);
         m_handler.getGalleryDialog().getParentPanel().add(croppingDialog);
         CmsImageFormatHandler formatHandler = new CmsImageFormatHandler(
             getDialogMode(),
+            m_handler.getGalleryDialog(),
             imageInfo.getSelectedPath(),
             imageInfo.getHeight(),
             imageInfo.getWidth());

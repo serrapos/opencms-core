@@ -1,0 +1,42 @@
+<!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:cms="urn:import:org.opencms.gwt.client.ui"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui">
+	<ui:with field="resources" type="org.opencms.gwt.client.ui.css.I_CmsInputLayoutBundle" />
+	<ui:with field="mainCss" type="org.opencms.gwt.client.ui.css.I_CmsLayoutBundle" />
+	<ui:style field="m_style"  type="org.opencms.gwt.client.ui.input.category.CmsDataValue.I_Style">
+		.table{
+			float:right;
+			table-layout: fixed;
+			display: table;
+			border-spacing: 0px;
+			border-collapse: collapse;
+		}
+		.label{
+			padding: 2px 10px 2px 2px;
+		}
+		.parameter{
+			padding: 2px;
+		}
+		.label, .parameter{
+			text-overflow:ellipsis; 
+			white-space: nowrap;
+			overflow: hidden;
+		}
+		.icon{
+			float: left;
+			height: 16px;
+			width:16px;
+			margin:2px;
+		}
+		.buttonPanel{
+			top:0px;
+		}
+	</ui:style>
+	<cms:CmsHoverPanel ui:field="m_inputRow" addStyleNames="{resources.inputCss.dataValue}">
+		<g:FlexTable ui:field="m_table" styleName="{m_style.table}"/>
+		<g:SimplePanel ui:field="m_imagePanel" styleName="{m_style.icon}"/>	
+		<g:Label ui:field="m_label" styleName="{m_style.label}"/>
+		<g:FlowPanel ui:field="m_buttonPanel" styleName="{mainCss.listItemWidgetCss.buttonPanel}" addStyleNames="{m_style.buttonPanel}" />
+	</cms:CmsHoverPanel>	
+</ui:UiBinder> 

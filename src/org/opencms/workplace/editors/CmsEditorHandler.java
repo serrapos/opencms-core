@@ -27,9 +27,11 @@
 
 package org.opencms.workplace.editors;
 
+import org.opencms.file.CmsObject;
 import org.opencms.file.CmsResource;
 import org.opencms.file.CmsResourceFilter;
 import org.opencms.file.types.CmsResourceTypePlain;
+import org.opencms.file.types.CmsResourceTypeXmlContent;
 import org.opencms.jsp.CmsJspActionElement;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
@@ -60,6 +62,62 @@ public class CmsEditorHandler implements I_CmsEditorHandler {
     private static final Log LOG = CmsLog.getLog(CmsEditorHandler.class);
 
     /**
+     * @see org.opencms.workplace.editors.I_CmsEditorHandler#getEditorUri(org.opencms.file.CmsObject, java.lang.String, java.lang.String, boolean)
+     */
+    public String getEditorUri(CmsObject cms, String resourceType, String userAgent, boolean loadDefault) {
+
+        // get the editor URI from the editor manager
+        String editorUri = null;
+        if (loadDefault) {
+            // get default editor
+            editorUri = OpenCms.getWorkplaceManager().getWorkplaceEditorManager().getDefaultEditorUri(
+                cms.getRequestContext(),
+                resourceType,
+                userAgent);
+        } else {
+            // get preferred editor
+            editorUri = OpenCms.getWorkplaceManager().getWorkplaceEditorManager().getEditorUri(
+                cms.getRequestContext(),
+                resourceType,
+                userAgent);
+        }
+
+        try {
+            // check the presence of the editor
+            cms.readResource(editorUri);
+        } catch (Throwable t) {
+            // preferred or selected editor not found, try default editor
+            if (LOG.isInfoEnabled()) {
+                LOG.info(t);
+            }
+            editorUri = OpenCms.getWorkplaceManager().getWorkplaceEditorManager().getDefaultEditorUri(
+                cms.getRequestContext(),
+                resourceType,
+                userAgent);
+        }
+
+        Object resObj = cms.getRequestContext().getAttribute("EDITORHANDLER_RESOURCE");
+        if (resObj != null) {
+            CmsResource resource = (CmsResource)resObj;
+            if ((editorUri != null) && editorUri.contains("acacia")) {
+                if (CmsResourceTypeXmlContent.isXmlContent(resource)) {
+                    String fallback = "/system/workplace/editors/xmlcontent/editor.jsp";
+                    try {
+                        if (!CmsWorkplaceEditorManager.checkAcaciaEditorAvailable(cms, resource)) {
+                            editorUri = fallback;
+                        }
+                    } catch (CmsException e) {
+                        e.printStackTrace();
+                        editorUri = fallback;
+                    }
+                }
+            }
+        }
+
+        return editorUri;
+    }
+
+    /**
      * @see org.opencms.workplace.editors.I_CmsEditorHandler#getEditorUri(java.lang.String, CmsJspActionElement)
      */
     public String getEditorUri(String resource, CmsJspActionElement jsp) throws CmsException {
@@ -76,47 +134,16 @@ public class CmsEditorHandler implements I_CmsEditorHandler {
         } else {
             // get the resource type id of the edited resource
             CmsResource res = jsp.getCmsObject().readResource(resource, CmsResourceFilter.ALL);
+            jsp.getRequestContext().setAttribute("EDITORHANDLER_RESOURCE", res);
             resTypeId = res.getTypeId();
         }
 
         // get the resource type name
         resourceType = OpenCms.getResourceManager().getResourceType(resTypeId).getTypeName();
 
-        // get the editor URI from the editor manager
-        String editorUri = null;
-
         // get the browser identification from the request
         String userAgent = jsp.getRequest().getHeader(CmsRequestUtil.HEADER_USER_AGENT);
 
-        if (loadDefault) {
-            // get default editor because loaddefault parameter was found
-            editorUri = OpenCms.getWorkplaceManager().getWorkplaceEditorManager().getDefaultEditorUri(
-                jsp.getRequestContext(),
-                resourceType,
-                userAgent);
-        } else {
-            // get preferred editor
-            editorUri = OpenCms.getWorkplaceManager().getWorkplaceEditorManager().getEditorUri(
-                jsp.getRequestContext(),
-                resourceType,
-                userAgent);
-        }
-
-        try {
-            // check the presence of the editor
-            jsp.getCmsObject().readResource(editorUri);
-        } catch (Throwable t) {
-            // preferred or selected editor not found, try default editor
-            if (LOG.isInfoEnabled()) {
-                LOG.info(t);
-            }
-            editorUri = OpenCms.getWorkplaceManager().getWorkplaceEditorManager().getDefaultEditorUri(
-                jsp.getRequestContext(),
-                resourceType,
-                userAgent);
-        }
-
-        return editorUri;
+        return getEditorUri(jsp.getCmsObject(), resourceType, userAgent, loadDefault);
     }
-
 }

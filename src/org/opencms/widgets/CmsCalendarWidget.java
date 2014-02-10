@@ -28,16 +28,20 @@
 package org.opencms.widgets;
 
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsResource;
 import org.opencms.i18n.CmsMessages;
 import org.opencms.main.CmsLog;
 import org.opencms.util.CmsMacroResolver;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.workplace.CmsWorkplace;
+import org.opencms.xml.content.I_CmsXmlContentHandler.DisplayType;
+import org.opencms.xml.types.A_CmsXmlContentValue;
 
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
@@ -49,7 +53,7 @@ import org.apache.commons.logging.Log;
  * 
  * @since 6.0.0 
  */
-public class CmsCalendarWidget extends A_CmsWidget {
+public class CmsCalendarWidget extends A_CmsWidget implements I_CmsADEWidget {
 
     /** The log object for this class. */
     private static final Log LOG = CmsLog.getLog(CmsCalendarWidget.class);
@@ -115,7 +119,7 @@ public class CmsCalendarWidget extends A_CmsWidget {
         result.append("<script type=\"text/javascript\" src=\"");
         result.append(calendarPath);
         result.append("lang/calendar-");
-        result.append(locale.getLanguage());
+        result.append(getLanguageSuffix(locale.getLanguage()));
         result.append(".js\"></script>\n");
         result.append("<script type=\"text/javascript\" src=\"");
         result.append(calendarPath);
@@ -272,6 +276,51 @@ public class CmsCalendarWidget extends A_CmsWidget {
         return df.format(cal.getTime());
     }
 
+    /** 
+     * Returns the language suffix for the calendar-*.js localizations.<p>
+     * 
+     * @param language the language from the locale 
+     * 
+     * @return the suffix to use for the calendar-*js localication file 
+     */
+    private static String getLanguageSuffix(String language) {
+
+        if (language.equals(Locale.JAPANESE.getLanguage())) {
+            return "jp";
+        } else {
+            return language;
+        }
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getConfiguration(org.opencms.file.CmsObject, org.opencms.xml.types.A_CmsXmlContentValue, org.opencms.i18n.CmsMessages, org.opencms.file.CmsResource, java.util.Locale)
+     */
+    public String getConfiguration(
+        CmsObject cms,
+        A_CmsXmlContentValue schemaType,
+        CmsMessages messages,
+        CmsResource resource,
+        Locale contentLocale) {
+
+        return getConfiguration();
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getCssResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getCssResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getDefaultDisplayType()
+     */
+    public DisplayType getDefaultDisplayType() {
+
+        return DisplayType.singleline;
+    }
+
     /**
      * @see org.opencms.widgets.I_CmsWidget#getDialogIncludes(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog)
      */
@@ -333,6 +382,30 @@ public class CmsCalendarWidget extends A_CmsWidget {
     }
 
     /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getInitCall()
+     */
+    public String getInitCall() {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getJavaScriptResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getJavaScriptResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    public String getWidgetName() {
+
+        return CmsCalendarWidget.class.getName();
+    }
+
+    /**
      * @see org.opencms.widgets.A_CmsWidget#getWidgetStringValue(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog, org.opencms.widgets.I_CmsWidgetParameter)
      */
     @Override
@@ -355,6 +428,14 @@ public class CmsCalendarWidget extends A_CmsWidget {
             result = "";
         }
         return result;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#isInternal()
+     */
+    public boolean isInternal() {
+
+        return true;
     }
 
     /**

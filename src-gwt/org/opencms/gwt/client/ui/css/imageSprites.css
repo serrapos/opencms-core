@@ -10,6 +10,16 @@
     display: inline-block;
     vertical-align: middle;
 }
+@sprite .cmsState-down .menuIcon, .cmsState-up-hovering .menuIcon, .cmsState-down-hovering .menuIcon{
+    gwt-image: "icons.menuIconActive";
+    display: inline-block;
+    vertical-align: middle;
+}
+@sprite .cmsState-up .menuIcon, .cmsState-up-disabled .menuIcon, .cmsState-down-disabled .menuIcon{
+    gwt-image: "icons.menuIconDeactivated";
+    display: inline-block;
+    vertical-align: middle;
+}
 @sprite .cmsState-down .deleteIcon, .cmsState-up-hovering .deleteIcon, .cmsState-down-hovering .deleteIcon{
     gwt-image: "icons.deleteIconActive";
     display: inline-block;
@@ -30,16 +40,7 @@
     display: inline-block;
     vertical-align: middle;
 }
-@sprite .cmsState-down .changeOrderIcon, .cmsState-up-hovering .changeOrderIcon, .cmsState-down-hovering .changeOrderIcon{
-    gwt-image: "icons.changeOrderIconActive";
-    display: inline-block;
-    vertical-align: middle;
-}
-@sprite .cmsState-up .changeOrderIcon, .cmsState-up-disabled .changeOrderIcon, .cmsState-down-disabled .changeOrderIcon{
-    gwt-image: "icons.changeOrderIconDeactivated";
-    display: inline-block;
-    vertical-align: middle;
-}
+
 @sprite .cmsState-down .removeIcon, .cmsState-up-hovering .removeIcon, .cmsState-down-hovering .removeIcon{
     gwt-image: "icons.removeIconActive";
     display: inline-block;
@@ -60,26 +61,95 @@
     display: inline-block;
     vertical-align: middle;
 }
+@sprite .cmsState-down .arrowDownIcon, .cmsState-up-hovering .arrowDownIcon, .cmsState-down-hovering .arrowDownIcon{
+    gwt-image: "icons.arrowDownIconActive";
+    display: inline-block;
+    vertical-align: middle;
+}
+@sprite .cmsState-up .arrowDownIcon, .cmsState-up-disabled .arrowDownIcon, .cmsState-down-disabled .arrowDownIcon{
+    gwt-image: "icons.arrowDownIconDeactivated";
+    display: inline-block;
+    vertical-align: middle;
+}
+@sprite .cmsState-down .arrowUpIcon, .cmsState-up-hovering .arrowUpIcon, .cmsState-down-hovering .arrowUpIcon{
+    gwt-image: "icons.arrowUpIconActive";
+    display: inline-block;
+    vertical-align: middle;
+}
+@sprite .cmsState-up .arrowUpIcon, .cmsState-up-disabled .arrowUpIcon, .cmsState-down-disabled .arrowUpIcon{
+    gwt-image: "icons.arrowUpIconDeactivated";
+    display: inline-block;
+    vertical-align: middle;
+}
+@sprite .cmsState-down .popupIcon, .cmsState-up-hovering .popupIcon, .cmsState-down-hovering .popupIcon{
+    gwt-image: "icons.popupIconActive";
+    display: block;
+    vertical-align: middle;
+}
+@sprite .cmsState-up .popupIcon, .cmsState-up-disabled .popupIcon, .cmsState-down-disabled .popupIcon{
+    gwt-image: "icons.popupIconDeactivated";
+    display: block;
+    vertical-align: middle;
+}
+
+
 @sprite .cmsState-down .propertyIcon, .cmsState-up-hovering .propertyIcon, .cmsState-down-hovering .propertyIcon{
     gwt-image: "icons.propertyIconActive";
     display: inline-block;
     vertical-align: middle;
 }
+
+
 @sprite .cmsState-up .propertyIcon, .cmsState-up-disabled .propertyIcon, .cmsState-down-disabled .propertyIcon{
     gwt-image: "icons.propertyIconDeactivated";
     display: inline-block;
     vertical-align: middle;
 }
+
 @sprite .cmsState-down .searchIcon, .cmsState-up-hovering .searchIcon, .cmsState-down-hovering .searchIcon{
 	gwt-image: "icons.searchIconActive";
 	display: inline-block;
 	vertical-align: middle;
 }
+
+
 @sprite .cmsState-up .searchIcon, .cmsState-down-disabled .searchIcon, .cmsState-up-disabled .searchIcon{
 	gwt-image: "icons.searchIconDeactivated";
 	display: inline-block;
 	vertical-align: middle;
 }
+
+@sprite .cmsState-down .previewIcon, .cmsState-up-hovering .previewIcon, .cmsState-down-hovering .previewIcon {
+	gwt-image: "icons.previewIconActive";
+	display: inline-block;
+	vertical-align: middle;
+}
+
+@sprite .cmsState-up .previewIcon, .cmsState-down-disabled .previewIcon, .cmsState-up-disabled .previewIcon {
+	gwt-image: "icons.previewIconDeactivated";
+	display: inline-block;
+	vertical-align: middle;
+}
+
+@sprite .cmsState-down .checkIcon, .cmsState-up-hovering .checkIcon, .cmsState-down-hovering .checkIcon {
+	gwt-image: "icons.checkIconActive";
+	display: inline-block;
+	vertical-align: middle;
+}
+
+@sprite .cmsState-up .checkIcon, .cmsState-down-disabled .checkIcon, .cmsState-up-disabled .checkIcon {
+	gwt-image: "icons.checkIconDeactivated";
+	display: inline-block;
+	vertical-align: middle;
+}
+
+
+
+
+
+
+
+
 @sprite .cmsState-down .uploadIcon, .cmsState-up-hovering .uploadIcon, .cmsState-down-hovering .uploadIcon{
     gwt-image: "icons.uploadIconActive";
     display: inline-block;
@@ -87,6 +157,30 @@
 }
 @sprite .cmsState-up .uploadIcon, .cmsState-up-disabled .uploadIcon, .cmsState-down-disabled .uploadIcon{
     gwt-image: "icons.uploadIconDeactivated";
+    display: inline-block;
+    vertical-align: middle;
+}
+
+@sprite .cmsState-down .uploadSmallIcon, .cmsState-up-hovering .uploadSmallIcon, .cmsState-down-hovering .uploadSmallIcon{
+    gwt-image: "icons.uploadSmallIconActive";
+    display: inline-block;
+    vertical-align: middle;
+}
+@sprite .cmsState-up .uploadSmallIcon, .cmsState-up-disabled .uploadSmallIcon, .cmsState-down-disabled .uploadSmallIcon{
+    gwt-image: "icons.uploadSmallIconDeactivated";
+    display: inline-block;
+    vertical-align: middle;
+}
+
+
+
+@sprite .cmsState-down .lockIcon, .cmsState-up-hovering .lockIcon, .cmsState-down-hovering .lockIcon{
+    gwt-image: "icons.lockIconActive";
+    display: inline-block;
+    vertical-align: middle;
+}
+@sprite .cmsState-up .lockIcon, .cmsState-up-disabled .lockIcon, .cmsState-down-disabled .lockIcon{
+    gwt-image: "icons.lockIconDeactivated";
     display: inline-block;
     vertical-align: middle;
 }
@@ -133,10 +227,17 @@
 	cursor: pointer;
 }
 @sprite div.triangleRight, span.triangleRight{
+	gwt-image: "triangleRightImageDisabled";
+	display: inline-block;
+	cursor: pointer;
+}
+
+@sprite .cmsState-up-hovering div.triangleRight,.cmsState-up-hovering span.triangleRight, .openerHover .cmsState-up span.triangleRight, .openerHover .cmsState-up div.triangleRight{
 	gwt-image: "triangleRightImage";
 	display: inline-block;
 	cursor: pointer;
 }
+
 @sprite div.closeIcon, span.closeIcon{
 	gwt-image: "closeImage";
 	display: inline-block;
@@ -150,3 +251,35 @@
 @sprite table tr td.warningBigIcon, div.warningBigIcon, span.warningBigIcon{
 	gwt-image: "warningBigImage"; 
 }
+
+@sprite div.directoryIcon, span.directoryIcon{
+	gwt-image: "directorySmallImage"; 
+}
+
+@sprite div.imageSearchIcon, span.imageSearchIcon{
+	gwt-image: "imageSearchIcon";
+}
+
+@sprite div.downloadGalleryIcon, span.downloadGalleryIcon{
+	gwt-image: "downloadGalleryIcon";
+}
+
+@sprite div.linkGalleryIcon, span.linkGalleryIcon{
+	gwt-image: "linkGalleryIcon";
+}
+
+@sprite div.htmlGalleryIcon, span.htmlGalleryIcon{
+	gwt-image: "htmlGalleryIcon";
+}
+
+@sprite div.tableGalleryIcon, span.tableGalleryIcon{
+	gwt-image: "tableGalleryIcon";
+}
+
+@sprite .infoBigIcon {
+	gwt-image: "informationBigImage";
+}
+
+.openerNoHover {}
+
+.openerHover {}

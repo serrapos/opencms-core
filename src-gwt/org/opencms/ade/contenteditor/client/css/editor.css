@@ -1,0 +1,68 @@
+@sprite body.standAloneEditor{
+	gwt-image: "backgrounds.sitemapBackground";
+	overflow: hidden;
+	height: 100%;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	font-family: value("constants.css.fontFamily");
+	font-size: value("constants.css.fontSize");
+}
+
+@url editCursorGifUrl coreImages.editCursorGif;
+@url editCursorIcoUrl coreImages.editCursorIco;
+
+.inlineEditable, .inlineEditable:hover, .inlineEditable:focus{
+	cursor: editCursorIcoUrl, editCursorGifUrl, crosshair;
+	outline: none;
+}
+
+body.standAloneEditor div.basePanel{
+	background-image: none;
+}
+
+body.integratedEditor{
+	overflow: hidden !important;
+}
+
+.basePanel *, .basePanel table tr td{
+	margin: 0;
+	padding: 0;
+	border: none;
+	color: value("constants.css.textColor");
+	font-family: value("constants.css.fontFamily");
+	font-size: value("constants.css.fontSize");
+	line-height: value("constants.css.lineHeight");
+	background: transparent;
+	text-align: left;
+	height: auto;
+	width: auto;
+	min-height: 0;
+	max-height: none;
+	min-width: 0;
+	max-width: none;
+	box-sizing: content-box;
+	-moz-box-sizing: content-box;
+}
+
+@sprite .basePanel{
+	gwt-image: "backgrounds.sitemapBackground";
+	font-family: value("constants.css.fontFamily");
+	font-size: value("constants.css.fontSize");
+	position: fixed;
+	margin: 0;
+	bottom: 0;
+    overflow-y: scroll;
+    top: 35px;
+	padding: 20px 0px 0px 0px;
+	left:0;
+	right:0;
+	z-index: value("constants.css.zIndexPopup");
+	box-sizing: content-box;
+	-moz-box-sizing: content-box;
+}
+
+div.basePanel > div{
+	padding-left:2px;
+	padding-right: 2px;
+}

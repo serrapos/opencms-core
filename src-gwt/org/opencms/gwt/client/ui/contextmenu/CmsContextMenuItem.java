@@ -47,11 +47,11 @@ import com.google.gwt.user.client.ui.HTML;
  */
 public final class CmsContextMenuItem extends A_CmsContextMenuItem {
 
-    /** The panel containing the menu item text and optional the arrow and or a image in front of the text. */
-    private HTML m_panel;
-
     /** The command for this menu item. */
     private I_CmsContextMenuEntry m_entry;
+
+    /** The panel containing the menu item text and optional the arrow and or a image in front of the text. */
+    private HTML m_panel;
 
     /**
      * Constructs a context menu item.<p>
@@ -88,16 +88,21 @@ public final class CmsContextMenuItem extends A_CmsContextMenuItem {
     @Override
     public void onClick(ClickEvent event) {
 
-        getParentMenu().hide();
         if (m_entry != null) {
             m_entry.execute();
         }
+        // hide menu *after* executing the action, because hiding the menu may trigger mouseover events of the elements lying under it,
+        // and executing the action first gives it the opportunity to add a 'blocking notification' to prevent this 
+        getParentMenu().hideAll();
     }
 
     /**
-     * @see org.opencms.gwt.client.ui.contextmenu.A_CmsContextMenuItem#getMenuItemHtml(boolean)
+     * Generates the HTML for a menu item.<p>
+     * 
+     * @param hasSubMenu signals if this menu has a sub menu
+     * 
+     * @return the HTML for the menu item
      */
-    @Override
     protected String getMenuItemHtml(boolean hasSubMenu) {
 
         StringBuffer html = new StringBuffer();
@@ -109,22 +114,13 @@ public final class CmsContextMenuItem extends A_CmsContextMenuItem {
                 + I_CmsImageBundle.INSTANCE.style().triangleRight());
             html.append("\"></div>");
         }
-        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(m_entry.getImageClass())) {
-            // if an image class is set to the menu item show the image in front of the text
-            html.append("<div class=\"");
-            html.append(m_entry.getImageClass());
-            html.append(" " + I_CmsLayoutBundle.INSTANCE.contextmenuCss().itemIcon());
-            html.append("\"></div>");
-        } else if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(m_entry.getImagePath())) {
-            // if an image path is set to the menu item show the image in front of the text
-            html.append("<div class=\"");
-            html.append(I_CmsLayoutBundle.INSTANCE.contextmenuCss().image());
-            html.append(" " + I_CmsLayoutBundle.INSTANCE.contextmenuCss().itemIcon());
-            html.append("\" ");
-            html.append("style=\"background: transparent url('" + m_entry.getImagePath() + "') no-repeat scroll 0 0\"");
-            html.append("\"");
-            html.append("></div>");
+        String iconClass = m_entry.getIconClass();
+        if (iconClass == null) {
+            iconClass = "";
         }
+        String iconHtml = "<div class='" + iconClass + "'></div>";
+
+        html.append("<div class='" + I_CmsLayoutBundle.INSTANCE.contextmenuCss().iconBox() + "'>" + iconHtml + "</div>");
         // add the text to the item
         html.append("<div class=\"");
         html.append(I_CmsLayoutBundle.INSTANCE.contextmenuCss().label());

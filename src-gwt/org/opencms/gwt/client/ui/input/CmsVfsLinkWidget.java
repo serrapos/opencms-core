@@ -40,6 +40,7 @@ import java.util.Map;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 
@@ -60,7 +61,7 @@ public class CmsVfsLinkWidget extends Composite implements I_CmsFormWidget, I_Cm
     protected CmsTextBox m_textbox;
 
     /** The vfs-selector popup. */
-    protected CmsVfsSelector m_vfsSelector;
+    //protected CmsVfsSelector m_vfsSelector;
 
     /** The widget panel. */
     private FlowPanel m_main;
@@ -85,6 +86,14 @@ public class CmsVfsLinkWidget extends Composite implements I_CmsFormWidget, I_Cm
                 openSelector(getSelectorUrl());
             }
         });
+
+        /*m_textbox.addFocusHandler(new FocusHandler() {
+
+            public void onFocus(FocusEvent arg0) {
+
+                openSelector(getSelectorUrl());
+            }
+        });*/
         m_main.add(m_browseButton);
     }
 
@@ -124,6 +133,14 @@ public class CmsVfsLinkWidget extends Composite implements I_CmsFormWidget, I_Cm
     public void addInputStyleName(String styleName) {
 
         m_textbox.addStyleName(styleName);
+    }
+
+    /**
+     * @param handler
+     */
+    public void addValueChangeHandler(ValueChangeHandler<String> handler) {
+
+        m_textbox.addValueChangeHandler(handler);
     }
 
     /**
@@ -234,6 +251,7 @@ public class CmsVfsLinkWidget extends Composite implements I_CmsFormWidget, I_Cm
     public void setFormValueAsString(String value) {
 
         m_textbox.setFormValueAsString(value);
+        m_textbox.fireValueChangedEvent();
 
     }
 
@@ -273,21 +291,24 @@ public class CmsVfsLinkWidget extends Composite implements I_CmsFormWidget, I_Cm
      * @param selectorUrl the URL to the link selector popup
      */
     protected native void openSelector(String selectorUrl)/*-{
-        var newwin = $wnd
-                .open(
-                        selectorUrl,
-                        "file_selector",
-                        "toolbar=no,location=no,directories=no,status=yes,menubar=0,scrollbars=yes,resizable=yes,top=150,left=660,width=300,height=450");
-        if (newwin != null) {
-            if (newwin.opener == null) {
-                newwin.opener = $wnd.self;
-            }
-        }
-        newwin.focus();
-        var self = this;
-        $wnd.setFormValue = function(fileName) {
-            self.@org.opencms.gwt.client.ui.input.CmsVfsLinkWidget::setFormValueAsString(Ljava/lang/String;)(fileName);
-        }
+      var newwin = $wnd
+            .open(
+                  selectorUrl,
+                  "file_selector",
+                  "toolbar=no,location=no,directories=no,status=yes,menubar=0,scrollbars=yes,resizable=yes,top=150,left=660,width=300,height=450");
+      if (newwin != null) {
+         if (newwin.opener == null) {
+            newwin.opener = $wnd.self;
+         }
+      } else {
+         @org.opencms.gwt.client.util.CmsDomUtil::showPopupBlockerMessage()();
+         return;
+      }
+      newwin.focus();
+      var self = this;
+      $wnd.setFormValue = function(fileName) {
+         self.@org.opencms.gwt.client.ui.input.CmsVfsLinkWidget::setFormValueAsString(Ljava/lang/String;)(fileName);
+      }
     }-*/;
 
 }

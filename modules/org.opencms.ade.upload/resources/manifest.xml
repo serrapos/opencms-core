@@ -1,26 +1,48 @@
+<<<<<<< HEAD
 <?xml version="1.0" encoding="UTF-8"?><export>
   <info>
     <creator>Admin</creator>
     <opencms_version>8.0.0</opencms_version>
+=======
+<?xml version="1.0" encoding="UTF-8"?>
+
+<export>
+  <info>
+    <creator>Admin</creator>
+    <opencms_version>9.0.0</opencms_version>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     <createdate>Fri, 25 Feb 2011 13:06:35 GMT</createdate>
     <infoproject>Offline</infoproject>
     <export_version>7</export_version>
   </info>
   <module>
     <name>org.opencms.ade.upload</name>
+<<<<<<< HEAD
     <nicename><![CDATA[OpenCms 8 ADE Upload]]></nicename>
     <group>OpenCms ADE</group>
     <class/>
     <description><![CDATA[<p>This module provides the upload dialog for OpenCms 8</p>
 	<p><i>(c) 2012 by Alkacon Software GmbH (http://www.alkacon.com).</i></p>]]></description>
     <version>8.0.4</version>
+=======
+    <nicename><![CDATA[OpenCms 9 ADE Upload]]></nicename>
+    <group>OpenCms ADE</group>
+    <class/>
+    <description><![CDATA[<p>Gwt based upload dialog for OpenCms 8</p>
+					 <p><i>&copy; 2014 by Alkacon Software GmbH (http://www.alkacon.com).</i></p>]]></description>
+    <version>9.0.1</version>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     <authorname><![CDATA[Alkacon Software GmbH]]></authorname>
     <authoremail><![CDATA[info@alkacon.com]]></authoremail>
     <datecreated/>
     <userinstalled/>
     <dateinstalled/>
     <dependencies>
+<<<<<<< HEAD
       <dependency name="org.opencms.gwt" version="8.0.0"/>
+=======
+      <dependency name="org.opencms.ade.config" version="9.0.0"/>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     </dependencies>
     <exportpoints>
       <exportpoint uri="/system/modules/org.opencms.ade.upload/resources/" destination="resources/ade/"/>
@@ -28,10 +50,13 @@
     <resources>
       <resource uri="/system/modules/org.opencms.ade.upload/"/>
     </resources>
+<<<<<<< HEAD
     <parameters>
       
     <param name="gwt.buildid">20120411</param>
 </parameters>
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
   </module>
   <files>
     <file>
@@ -161,6 +186,7 @@
       <relations/>
       <accesscontrol/>
     </file>
+<<<<<<< HEAD
     <file>
       <source>system/modules/org.opencms.ade.upload/resources/upload/07B79EDA917A4EB940EFF2814B61B238.cache.png</source>
       <destination>system/modules/org.opencms.ade.upload/resources/upload/07B79EDA917A4EB940EFF2814B61B238.cache.png</destination>
@@ -1121,5 +1147,7 @@
       <relations/>
       <accesscontrol/>
     </file>
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
   </files>
 </export>

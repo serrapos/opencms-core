@@ -27,7 +27,7 @@
 
 package org.opencms.flex;
 
-import org.opencms.jsp.util.CmsJspDeviceSelector;
+import org.opencms.jsp.util.CmsJspDeviceSelectorDesktopMobileTablet;
 import org.opencms.jsp.util.I_CmsJspDeviceSelector;
 import org.opencms.main.CmsLog;
 
@@ -43,6 +43,7 @@ public class CmsFlexCacheConfiguration {
     /** The log object for this class. */
     private static final Log LOG = CmsLog.getLog(CmsFlexCacheConfiguration.class);
 
+    /** The average cache bytes. */
     private long m_avgCacheBytes;
 
     /** Indicates if the cache is enabled or not. */
@@ -67,8 +68,10 @@ public class CmsFlexCacheConfiguration {
      */
     private long m_maxCacheBytes;
 
+    /** The maximum entry bytes. */
     private int m_maxEntryBytes;
 
+    /** The maximum key. */
     private int m_maxKeys;
 
     /**
@@ -97,7 +100,7 @@ public class CmsFlexCacheConfiguration {
     public I_CmsJspDeviceSelector getDeviceSelector() {
 
         if (m_deviceSelector == null) {
-            m_deviceSelector = new CmsJspDeviceSelector();
+            m_deviceSelector = new CmsJspDeviceSelectorDesktopMobileTablet();
         }
         return m_deviceSelector;
     }

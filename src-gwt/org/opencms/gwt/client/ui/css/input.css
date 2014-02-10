@@ -1,18 +1,57 @@
 @external gwt-ToggleButton, cmsState-up-disabled, cmsState-down-disabled, cmsState-up, cmsState-up-hovering, cmsState-down-hovering, cmsState-down, cmsState-up-disabled, cmsState-down-disabled;
 
+@external html-face;
+
+.alignCheckboxBottom.alignCheckboxBottom.alignCheckboxBottom.alignCheckboxBottom *, .alignCheckboxBottom.alignCheckboxBottom.alignCheckboxBottom.alignCheckboxBottom { 
+	vertical-align: baseline;  
+}
+
+.alignCheckboxBottom.alignCheckboxBottom.alignCheckboxBottom.alignCheckboxBottom .html-face > span:first-child { 
+	vertical-align: -3px; 
+}
+
+
+
+
 /* inner text box of the text box widget */
 input.textBox {
 	border: none;
-	width: 100%;
+	width: 98%;
 	background: transparent;
+	padding: 0px;
+	margin: 0px;
+	border-radius: value("constants.css.borderRadius");
+	color: value("constants.css.textColor");
+	line-height: value("constants.css.lineHeight");
+	font-size: value("constants.css.fontSize");
+	box-shadow:none;
+	outline: none;
+	display: inline;
+	height: auto;
+	vertical-align: baseline;
 }
+input.textBox:focus{
+	box-shadow:none;
+}
+
+.multiCheckboxPanel {
+	border: 1px solid value("constants.css.borderColor");
+	overflow:hidden;
+}
+
+
 
 .highTextBoxes .textBox {
 	height: 20px;
 }
 
-.textboxGhostMode {
+input.textboxGhostMode {
 	font-style: oblique;
+	color: value("constants.css.textColorDisabled") /*!important*/;
+}
+
+.weakText * {
+	font-style: oblique !important;
 	color: value("constants.css.textColorDisabled") !important;
 }
 
@@ -22,14 +61,40 @@ input.textBoxReadOnly {
 	background-color: value("constants.css.backgroundColorDisabled");
 }
 
-.textBoxPanel, .textAreaContainer {
+.colorPicker {
+background-color: transparent;
+    border-radius: 3px 3px 3px 3px;
+    box-shadow: none;
+    display: block;
+    height: 20px;
+    width: auto;
+}
+
+
+
+.textBoxPanel {
 	border: 1px solid value("constants.css.borderColor");
 	overflow:hidden;
 }
 
-/* inner text area of the text area widget */
-.textArea {
-    border: none;
+div.textArea {
+    overflow:hidden;
+	position: relative;
+}
+div.textArea > div.disableTextArea {
+	position: absolute;
+	toP: 0px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	background: #FFFFFF;
+	opacity: 0.1;
+}
+.textAreaBoxPanel{
+	border: 1px solid value("constants.css.borderColor");
+}
+div.textArea textarea{
+	border:none;
 }
 
 .checkBox .gwt-ToggleButton {
@@ -69,6 +134,48 @@ input.textBoxReadOnly {
 @sprite .cmsState-down-hovering .checkBoxImage {
 	gwt-image: "inputImages.checkboxCheckedHover";
 }
+
+
+@sprite .triState .triStateOn {
+	gwt-image: "inputImages.checkboxChecked";
+	
+}
+
+@sprite .triState.cmsState-down-hovering .triStateOn,.triState.cmsState-up-hovering .triStateOn {
+	gwt-image: "inputImages.checkboxCheckedHover";
+}
+
+
+@sprite .triState .triStateOff {
+	gwt-image: "inputImages.checkboxUnchecked";
+	
+}
+
+@sprite .triState.cmsState-up-hovering .triStateOff, .triState.cmsState-down-hovering .triStateOff {
+	gwt-image: "inputImages.checkboxUncheckedHover";
+}
+
+
+@sprite .triState .triStateMedium {
+	gwt-image: "inputImages.checkboxCheckedSome";
+}
+
+@sprite .triState.cmsState-up-hovering .triStateMedium, .triState.cmsState-down-hovering .triStateMedium {
+	gwt-image: "inputImages.checkboxCheckedSomeHover";
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -153,7 +260,7 @@ input.textBoxReadOnly {
 	border-radius: value("constants.css.borderRadius");
 }
 
-.error {
+div.error, .error {
 	text-align: left;
 	border: 1px solid value("constants.css.borderColorHighlight");
 	background-color: value("constants.css.backgroundColorInfo");
@@ -162,6 +269,15 @@ input.textBoxReadOnly {
     padding: 3px;
     position: absolute;
     z-index: value("constants.css.zIndexInline");
+}
+
+.selectBoxRoot.selectBoxDisabled .selectBoxSelected{
+	background-color: value("constants.css.backgroundColorStateDisabled");
+	color: value("constants.css.textColorDisabled");
+	border-color: value("constants.css.textColorDisabled");
+}
+.selectBoxRoot.selectBoxDisabled .selectBoxSelected *{
+	color: value("constants.css.textColorDisabled");
 }
 
 @sprite .openerNoHover.selectBoxSelected {
@@ -179,6 +295,7 @@ input.textBoxReadOnly {
 	width: auto;
 	height: auto;
 	min-height: 0px;
+	cursor: pointer;
 	border: 1px solid value("constants.css.borderColor");
 	gwt-image: "backgrounds.stateBackground";
 	background-position: 50% 50%;
@@ -186,7 +303,20 @@ input.textBoxReadOnly {
 	background-color: value("constants.css.backgroundColorStateHover");
 }
 
-div.selectBoxSelector, div.selectorPopup div.selectBoxSelector{
+.transparentSelectBox .openerNoHover.selectBoxSelected, .transparentSelectBox .openerHover.selectBoxSelected {
+	background-image: none !important;
+	font-style: oblique !important; 
+}
+
+.transparentSelectBox * {
+	background-color: transparent !important; 
+}
+
+.transparentSelectBox .selectBoxOpener {
+	color: value("constants.css.textColorDisabled") !important; 
+}
+
+div.selectBoxSelector, div.selectorPopup.selectBoxSelector{
 	border: 1px solid value("constants.css.borderColor");
 	background-color: value("constants.css.backgroundColorDialog");
 	padding-bottom: 2px;
@@ -220,18 +350,20 @@ div.selectorPopup, .selectorPopup * {
 div.selectBoxCell, div.selectorPopup div.selectBoxSelector div.selectBoxCell{
 	color: value("constants.css.textColor");
 	background-color: value("constants.css.backgroundColorDialog");
-	padding-left: 5px;
+	padding: 1px 5px;
 	cursor: pointer;
+	font-family: value("constants.css.fontFamily");
+	font-size: value("constants.css.fontSize");
 }
 
-div.selectHover, div.selectorPopup div.selectBoxSelector div.selectBoxCell.selectHover{
+div.selectHover, div.selectorPopup.selectBoxSelector div.selectBoxCell.selectHover{
 	background-color: value("constants.css.backgroundColorHighlight");
 }
 
 .selectIcon { 
 	position: absolute;
 	right: 0;
-	top: 3px;
+	top: 2px;
 }
 
 .selectBoxRoot {
@@ -242,7 +374,138 @@ div.selectHover, div.selectorPopup div.selectBoxSelector div.selectBoxCell.selec
 }
 
 div.selectBoxOpener {
-	margin: 3px 12px 3px 5px;
+	margin: 2px 12px 2px 5px;
+	cursor: pointer;
+}
+
+.selectBoxSelected .comboBoxOpener{
+	border: medium none;
+    color: value("constants.css.textColor");
+    cursor: pointer;
+	font-family: value("constants.css.fontFamily");
+	font-size: value("constants.css.fontSize");
+    height: 16px;
+    padding: 0px 15px 2px 0px;
+    box-shadow: none;
+    background:  value("constants.css.backgroundColorDialog");
+    margin-left: 5px; 
+}
+
+
+div.dataValue {
+	height: 20px;
+	margin-top: 2px;
+	margin-right: 2px;
+	border: 1px solid #7788AA;
+	border-radius: 3px;
+	margin: 0 2px;
+	cursor: pointer;
+	position: relative;
+}
+
+div.categoryScrollPanel{
+	margin-top: 6px;
+	border: 1px solid value("constants.css.borderColor");
+	background-color: value("constants.css.backgroundColorDialog"); 
+}
+
+.disabled div.dataValue{
+	cursor: default;
+}
+
+div.categoryItem{
+	margin-top: 6px;
+}
+
+@def FADER_LEFT_RIGHT literal("left, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%"); 
+@def FADER_TOP_BOTTOM literal("top, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,1) 100%");  
+
+@if user.agent ie8 {
+	div.dataValue{
+		background-color: value("constants.css.gradientFormDialogColor");
+	}
+	div.fader {
+		filter: literal("progid:DXImageTransform.Microsoft.gradient( startColorstr='#00ffffff', endColorstr='#ffffff',GradientType=1 );");
+	}
+	div.textArea div.fader{
+		filter: literal("progid:DXImageTransform.Microsoft.gradient( startColorstr='#00ffffff', endColorstr='#ffffff',GradientType=0 );");
+	}
+} @else {
+	div.dataValue{
+		background-image: value("constants.css.gradientFormDialogIE9");
+		background-image: literal("-moz-linear-gradient(")value("constants.css.gradientFormDialog") literal(")");
+		background-image: literal("-ms-linear-gradient(")value("constants.css.gradientFormDialog") literal(")");
+		background-image: literal("-webkit-linear-gradient(")value("constants.css.gradientFormDialog") literal(")");
+		background-image: literal("-o-linear-gradient(")value("constants.css.gradientFormDialog") literal(")");
+		background-image: literal("linear-gradient(")value("constants.css.gradientFormDialog") literal(")");
+	}
+	div.fader, div.textArea div.fader {
+		background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZmZmZiIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmZmZmZmYiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
+		background-image: literal("-moz-linear-gradient(")FADER_LEFT_RIGHT literal(")") !important;
+		background-image: literal("-ms-linear-gradient(")FADER_LEFT_RIGHT literal(")") !important;
+		background-image: literal("-webkit-linear-gradient(")FADER_LEFT_RIGHT literal(")") !important;
+		background-image: literal("-o-linear-gradient(")FADER_LEFT_RIGHT literal(")") !important;
+		background-image: literal("linear-gradient(")FADER_LEFT_RIGHT literal(")") !important;
+	}
+	div.textArea div.fader{
+		background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZmZmZiIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjkwJSIgc3RvcC1jb2xvcj0iI2ZmZmZmZiIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmZmZmZmYiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
+		background-image: literal("-moz-linear-gradient(")FADER_TOP_BOTTOM literal(")") !important;
+		background-image: literal("-ms-linear-gradient(")FADER_TOP_BOTTOM literal(")") !important;
+		background-image: literal("-webkit-linear-gradient(")FADER_TOP_BOTTOM literal(")") !important;
+		background-image: literal("-o-linear-gradient(")FADER_TOP_BOTTOM literal(")") !important;
+		background-image: literal("linear-gradient(")FADER_TOP_BOTTOM literal(")") !important;
+	}
+} 
+
+div.fader{
+	cursor: pointer;
+    overflow: hidden;
+    height: 17px;
+    width: 40px;
+    position: absolute;
+}
+
+div.selectBoxRoot div.fader{   	
+	bottom: 1px;
+    right: 15px;
+}
+div.selectionInput{
+	border: 1px solid value("constants.css.borderColor");
+	padding: 0px 21px 0px 4px;
+	height: 18px;
+}
+
+div.selectionInput>input[type=text]{
+	height: 18px;
+	width: 100%;
+	outline:none;
+	border: none;
+}
+
+div.selectionInput div.fader{   	
+	right: 21px;
+	bottom: 1px;
+}
+div.selectionInput .opener{
+	position: absolute;
+	right: 2px;
+	bottom: 1px;
+}
+
+div.textArea div.fader{
+	width: auto;
+	border-radius: 0 0 0 3px;
+    bottom: 1px;
+    left:1px;
+    right:12px;
+}
+div.selectionInput{
+	position: relative;
+}
+input.comboBoxOpener:disabled{
+	background-color: #FFFFFF;
+	color: value("constants.css.textColorDisabled");
+	border: value("constants.css.textColorDisabled");
 }
 
 .openerNoHover {}
@@ -269,12 +532,12 @@ div.selectBoxOpener {
 	white-space: nowrap;
 }
 
-.labelInput {
+input.labelInput {
 	background: transparent;
 	border: none;
 	vertical-align: middle;
 }
-
+	
 .alignBottom {
 	vertical-align: bottom;
 }
@@ -295,41 +558,38 @@ div.formRow {
 	gwt-image: "baseImages.minusImage";
 }
 
-@def fieldOpenerWidth 32px ; 
-@def formLabelWidth 160px ;
-
+@eval formLabelWidth org.opencms.gwt.client.ui.input.form.CmsFormRow.getLabelWidth();
 @eval openerWidth org.opencms.gwt.client.ui.input.form.CmsFormRow.getOpenerWidth();
+@eval widgetContainerWidth org.opencms.gwt.client.ui.input.form.CmsFormRow.getWidgetContainerWidth();
 @eval widgetContainerMargin org.opencms.gwt.client.ui.input.form.CmsFormRow.getWidgetContainerLeftMargin();  
 
-.formOpener {
+div.formOpener {
 	width: openerWidth;
 	float: left;
 	vertical-align: top; 
 }
 
-.formInfo {
+div.formInfo {
 	margin-left: 5px;
 	margin-top: 5px;
 	margin-bottom: 12px;
 	font-weight: bold; 
 }
 
-.formLabel { 
+div.formLabel { 
 	width: formLabelWidth;
 	overflow: hidden;
 	vertical-align: top;
 	margin-top: 2px;
-/*	margin-left: openerWidth; */ 
 	float: left;
-	width: widgetContainerMargin;
 }
 
-.formWidgetContainer {
-	width: 356px;
+div.formWidgetContainer {
+	width: widgetContainerWidth;
 	margin-left: widgetContainerMargin;
 }
 
-.separator {
+div.separator {
 	width: 100%;
 	height: 1px;
 	margin-top: 5px;
@@ -338,16 +598,16 @@ div.formRow {
 	background-color: value("constants.css.borderColor");
 }
 
-.formDescriptionLabel {
+div.formDescriptionLabel {
 	margin-bottom: 5px;
 	margin-top: 5px;
-}
-
-.weakText { 
-	color: value("constants.css.textColorDisabled"); 
 }
 
 .subtitleSuffix {
 	font-weight: bold;
 	margin-left: 8px;
 }
+
+.textAreaBox{}
+.selectBoxPopup{}
+

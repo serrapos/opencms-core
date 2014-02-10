@@ -38,6 +38,7 @@ import org.opencms.main.OpenCms;
 import org.opencms.security.CmsRole;
 import org.opencms.staticexport.CmsLinkManager;
 import org.opencms.util.CmsCollectionsGenericWrapper;
+import org.opencms.util.CmsParameterEscaper;
 import org.opencms.util.CmsRequestUtil;
 
 import java.util.Arrays;
@@ -79,6 +80,9 @@ public class CmsFlexRequest extends HttpServletRequestWrapper {
 
     /** Flag to decide if this request can be cached or not. */
     private boolean m_canCache;
+
+    /** The parameter escaper. */
+    private CmsParameterEscaper m_escaper;
 
     /** The CmsFlexController for this request. */
     private CmsFlexController m_controller;
@@ -249,6 +253,7 @@ public class CmsFlexRequest extends HttpServletRequestWrapper {
                 } else if (CmsJspStandardContextBean.ATTRIBUTE_NAME.equals(key)) {
                     CmsJspStandardContextBean bean = (CmsJspStandardContextBean)entry.getValue();
                     bean.updateCmsObject(m_controller.getCmsObject());
+                    bean.updateRequestData(this);
                 }
                 attributes.put(key, entry.getValue());
             }
@@ -308,6 +313,17 @@ public class CmsFlexRequest extends HttpServletRequestWrapper {
         }
 
         return m_parameters;
+    }
+
+    /**
+     * Enables escaping for all parameters which are not in the list of exceptions.<p>
+     */
+    public void enableParameterEscaping() {
+
+        if (m_escaper == null) {
+            LOG.info("Enabling parameter escaping for the current flex request");
+            m_escaper = new CmsParameterEscaper();
+        }
     }
 
     /**
@@ -398,10 +414,24 @@ public class CmsFlexRequest extends HttpServletRequestWrapper {
 
         String[] values = m_parameters.get(name);
         if (values != null) {
-            return (values[0]);
+            if (m_escaper != null) {
+                return m_escaper.escape(name, values[0]);
+            } else {
+                return (values[0]);
+            }
         } else {
             return (null);
         }
+    }
+
+    /**
+     * Gets the parameter escaper.<p>
+     * 
+     * @return the parameter escaper 
+     */
+    public CmsParameterEscaper getParameterEscaper() {
+
+        return m_escaper;
     }
 
     /**
@@ -419,6 +449,8 @@ public class CmsFlexRequest extends HttpServletRequestWrapper {
     @Override
     public Map<String, String[]> getParameterMap() {
 
+        // NOTE: The parameters in this map are not escaped, so when escaping is enabled,
+        // its values may be different from those obtained via getParameter/getParameterValues
         return m_parameters;
     }
 
@@ -451,7 +483,11 @@ public class CmsFlexRequest extends HttpServletRequestWrapper {
     @Override
     public String[] getParameterValues(String name) {
 
-        return m_parameters.get(name);
+        if (m_escaper != null) {
+            return m_escaper.escape(name, m_parameters.get(name));
+        } else {
+            return m_parameters.get(name);
+        }
     }
 
     /** 

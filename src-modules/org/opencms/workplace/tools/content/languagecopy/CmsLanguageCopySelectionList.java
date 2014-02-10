@@ -118,8 +118,14 @@ public class CmsLanguageCopySelectionList extends A_CmsListDialog {
     /** The request parameter for the target language. */
     public static final String PARAM_TARGET_LANGUAGE = "targetlanguage";
 
+    /** The request parameter for the target language. */
+    public static final String PARAM_DELETE = "delete";
+
     /** The log object for this class. */
     private static final Log LOG = CmsLog.getLog(CmsLanguageCopySelectionList.class);
+
+    /** Signals whether to delete the original language node or not. */
+    private String m_paramDelete;
 
     /** The source language. */
     private String m_paramSourcelanguage;
@@ -231,7 +237,12 @@ public class CmsLanguageCopySelectionList extends A_CmsListDialog {
             }
             params.put(
                 CmsLanguageCopyFolderAndLanguageSelectDialog.PARAM_COPYRESOURCES,
+<<<<<<< HEAD
                 paths.toArray(new String[paths.size()]));
+=======
+                new String[] {CmsStringUtil.listAsString(paths, ",")});
+            params.put(PARAM_DELETE, new String[] {getParamDelete()});
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
             // the source language
             params.put(PARAM_SOURCE_LANGUAGE, new String[] {getParamSourcelanguage()});
             // the target language
@@ -299,6 +310,26 @@ public class CmsLanguageCopySelectionList extends A_CmsListDialog {
     public String getParamTargetlanguage() {
 
         return m_paramTargetlanguage;
+    }
+
+    /**
+     * Returns the paramDelete.<p>
+     *
+     * @return the paramDelete
+     */
+    public String getParamDelete() {
+
+        return m_paramDelete;
+    }
+
+    /**
+     * Sets the paramDelete.<p>
+     *
+     * @param paramDelete the paramDelete to set
+     */
+    public void setParamDelete(String paramDelete) {
+
+        m_paramDelete = paramDelete;
     }
 
     /**
@@ -448,11 +479,11 @@ public class CmsLanguageCopySelectionList extends A_CmsListDialog {
     protected void setMultiActions(final CmsListMetadata metadata) {
 
         // add copy multi action
-        CmsListMultiAction deleteMultiAction = new CmsListMultiAction(LIST_MACTION_COPY);
-        deleteMultiAction.setName(Messages.get().container(Messages.GUI_LIST_SEARCHINDEX_MACTION_COPY_NAME_0));
-        deleteMultiAction.setHelpText(Messages.get().container(Messages.GUI_LIST_SEARCHINDEX_MACTION_COPY_HELP_0));
-        deleteMultiAction.setIconPath(ICON_MULTI_ADD);
-        metadata.addMultiAction(deleteMultiAction);
+        CmsListMultiAction copyAction = new CmsListMultiAction(LIST_MACTION_COPY);
+        copyAction.setName(Messages.get().container(Messages.GUI_LIST_SEARCHINDEX_MACTION_COPY_NAME_0));
+        copyAction.setHelpText(Messages.get().container(Messages.GUI_LIST_SEARCHINDEX_MACTION_COPY_HELP_0));
+        copyAction.setIconPath(ICON_MULTI_ADD);
+        metadata.addMultiAction(copyAction);
     }
 
     /**

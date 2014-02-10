@@ -57,10 +57,10 @@ public class CmsListCollectorEditor extends A_CmsDirectEditButtons {
     }
 
     /**
-     * @see org.opencms.gwt.client.ui.A_CmsDirectEditButtons#setPosition(org.opencms.gwt.client.util.CmsPositionBean, com.google.gwt.user.client.Element)
+     * @see org.opencms.gwt.client.ui.A_CmsDirectEditButtons#setPosition(org.opencms.gwt.client.util.CmsPositionBean, com.google.gwt.dom.client.Element)
      */
     @Override
-    public void setPosition(CmsPositionBean position, com.google.gwt.user.client.Element containerElement) {
+    public void setPosition(CmsPositionBean position, Element containerElement) {
 
         m_position = position;
         Element parent = CmsDomUtil.getPositioningParent(getElement());
@@ -70,14 +70,20 @@ public class CmsListCollectorEditor extends A_CmsDirectEditButtons {
             parent = containerElement;
         }
         Style style = getElement().getStyle();
-        style.setRight(parent.getOffsetWidth()
-            - (m_position.getLeft() + m_position.getWidth() - parent.getAbsoluteLeft()), Unit.PX);
+        style.setRight(
+            parent.getOffsetWidth() - ((m_position.getLeft() + m_position.getWidth()) - parent.getAbsoluteLeft()),
+            Unit.PX);
         int top = m_position.getTop() - parent.getAbsoluteTop();
+        if (m_position.getHeight() < 24) {
+            // if the highlighted area has a lesser height than the buttons, center vertically
+            top -= (24 - m_position.getHeight()) / 2;
+        }
         if (top < 25) {
             // if top is <25 the buttons might overlap with the option bar, so increase to 25
             top = 25;
         }
         style.setTop(top, Unit.PX);
+        updateExpiredOverlayPosition(parent);
     }
 
     /**
@@ -95,9 +101,9 @@ public class CmsListCollectorEditor extends A_CmsDirectEditButtons {
     protected void onClickDelete() {
 
         removeHighlighting();
-        openWarningDialog();
-        CmsDomUtil.ensureMouseOut(m_delete.getElement());
         CmsDomUtil.ensureMouseOut(getElement());
+        openWarningDialog();
+        m_delete.clearHoverState();
     }
 
     /**

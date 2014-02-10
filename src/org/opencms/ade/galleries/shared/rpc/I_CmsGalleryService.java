@@ -27,13 +27,18 @@
 
 package org.opencms.ade.galleries.shared.rpc;
 
+import org.opencms.ade.galleries.shared.CmsGalleryConfiguration;
 import org.opencms.ade.galleries.shared.CmsGalleryDataBean;
 import org.opencms.ade.galleries.shared.CmsGalleryFolderBean;
 import org.opencms.ade.galleries.shared.CmsGallerySearchBean;
+import org.opencms.ade.galleries.shared.CmsResultItemBean;
+import org.opencms.ade.galleries.shared.CmsSitemapEntryBean;
 import org.opencms.ade.galleries.shared.CmsVfsEntryBean;
 import org.opencms.gwt.CmsRpcException;
+import org.opencms.util.CmsUUID;
 
 import java.util.List;
+import java.util.Set;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 
@@ -58,6 +63,13 @@ public interface I_CmsGalleryService extends RemoteService {
     void deleteResource(String resourcePath) throws CmsRpcException;
 
     /**
+     * Loads the gallery configuration for the adeView mode.<p>
+     * 
+     * @return the gallery configuration
+     */
+    CmsGalleryConfiguration getAdeViewModeConfiguration();
+
+    /**
      * Returns the available galleries depending on the given resource types.<p>
      * 
      * @param resourceTypes the resource types
@@ -69,13 +81,27 @@ public interface I_CmsGalleryService extends RemoteService {
     List<CmsGalleryFolderBean> getGalleries(List<String> resourceTypes) throws CmsRpcException;
 
     /**
+     * Returns the resource info for a single resource.<p>
+     * 
+     * @param path the resource path
+     * @param locale the content locale
+     * 
+     * @return the resource info
+     * 
+     * @throws CmsRpcException if something goes wrong
+     */
+    CmsResultItemBean getInfoForResource(String path, String locale) throws CmsRpcException;
+
+    /**
      * Returns the initial data for the given gallery mode.<p>
+     * 
+     * @param conf the gallery configuration
      * 
      * @return the data bean
      * 
      * @throws CmsRpcException if something goes wrong
      */
-    CmsGalleryDataBean getInitialSettings() throws CmsRpcException;
+    CmsGalleryDataBean getInitialSettings(CmsGalleryConfiguration conf) throws CmsRpcException;
 
     /**
      * Performs an initial search based on the given data bean and the available parameters of the request.<p>
@@ -98,6 +124,18 @@ public interface I_CmsGalleryService extends RemoteService {
     CmsGallerySearchBean getSearch(CmsGallerySearchBean searchObj) throws CmsRpcException;
 
     /**
+     * Returns the sub entries to the given sitemap path.<p>
+     * 
+     * @param rootPath the root path 
+     * @param isRoot <code>true</code> if the requested entry is the root entry
+     * 
+     * @return the sub entries 
+     * 
+     * @throws CmsRpcException if something goes wrong
+     */
+    List<CmsSitemapEntryBean> getSubEntries(String rootPath, boolean isRoot) throws CmsRpcException;
+
+    /**
      * Gets the sub-folders of a folder.<p>
      * 
      * @param path the path of a folder
@@ -107,5 +145,36 @@ public interface I_CmsGalleryService extends RemoteService {
      * @throws CmsRpcException if something goes wrong 
      */
     List<CmsVfsEntryBean> getSubFolders(String path) throws CmsRpcException;
+
+    /**
+     * Loads the root VFS entry bean for the given site root.
+     * 
+     * @param path the site root
+     * 
+     * @return the root VFS entry bean for the given site root 
+     * 
+     *  @throws CmsRpcException if something goes wrong 
+     * */
+    CmsVfsEntryBean loadVfsEntryBean(String path) throws CmsRpcException;
+
+    /**
+     * Saves the tree open state for a tree tab.<p>
+     * 
+     * @param treeName the tree name for which to save the tree state  
+     * @param treeToken the tree token for which to save the tree state 
+     * @param siteRoot the site root 
+     * @param openItems the set of structure ids of open tree items 
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    void saveTreeOpenState(String treeName, String treeToken, String siteRoot, Set<CmsUUID> openItems)
+    throws CmsRpcException;
+
+    /**
+     * Updates the offline indices.<p>
+     * 
+     * @throws CmsRpcException if something goes wrong
+     */
+    void updateIndex() throws CmsRpcException;
 
 }

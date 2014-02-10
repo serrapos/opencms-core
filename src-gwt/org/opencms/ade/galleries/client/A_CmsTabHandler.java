@@ -27,8 +27,13 @@
 
 package org.opencms.ade.galleries.client;
 
+import org.opencms.ade.galleries.shared.CmsGallerySearchBean;
+import org.opencms.util.CmsUUID;
+
 import com.google.gwt.event.logical.shared.CloseEvent;
 import com.google.gwt.event.logical.shared.CloseHandler;
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
+import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.ui.PopupPanel;
 
 /**
@@ -52,6 +57,18 @@ public abstract class A_CmsTabHandler implements CloseHandler<PopupPanel> {
     public A_CmsTabHandler(CmsGalleryController controller) {
 
         m_controller = controller;
+    }
+
+    /**
+     * Adds a change handler for the gallery search bean.<p>
+     * 
+     * @param handler the handler
+     * 
+     * @return the handler registration
+     */
+    public HandlerRegistration addSearchChangeHandler(ValueChangeHandler<CmsGallerySearchBean> handler) {
+
+        return m_controller.addValueChangeHandler(handler);
     }
 
     /**
@@ -91,10 +108,48 @@ public abstract class A_CmsTabHandler implements CloseHandler<PopupPanel> {
     public abstract void onSort(String sortParams, String filter);
 
     /**
+     * Removes the search parameter with the given key from the search object.<p>
+     * 
+     * @param paramKey the parameter key
+     */
+    public abstract void removeParam(String paramKey);
+
+    /**
+     * Selects the given resource and sets its path into the xml-content field or editor link.<p>
+     * 
+     * @param resourcePath the item resource path 
+     * @param structureId the structure id
+     * @param title the resource title
+     * @param resourceType the item resource type
+     */
+    public void selectResource(String resourcePath, CmsUUID structureId, String title, String resourceType) {
+
+        m_controller.selectResource(resourcePath, structureId, title, resourceType);
+    }
+
+    /**
      * Selects the result tab.<p>
      */
     public void selectResultTab() {
 
         m_controller.selectResultTab();
+    }
+
+    /**
+     * Delegates the clear input action (click on the clear button) to the controller.<p>
+     * 
+     * @param searchQuery the search query
+     */
+    public void setSearchQuery(String searchQuery) {
+
+        m_controller.addSearchQuery(searchQuery);
+    }
+
+    /**
+     * Updates the gallery index and triggers a new search afterwards.<p>
+     */
+    public void updateIndex() {
+
+        m_controller.updateIndex();
     }
 }

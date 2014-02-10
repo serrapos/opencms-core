@@ -29,9 +29,12 @@ package org.opencms.ade.containerpage.client;
 
 import org.opencms.ade.containerpage.client.ui.CmsAddToFavoritesButton;
 import org.opencms.ade.containerpage.client.ui.CmsContainerPageElementPanel;
+import org.opencms.ade.containerpage.client.ui.CmsToolbarAllGalleriesMenu;
 import org.opencms.ade.containerpage.client.ui.CmsToolbarClipboardMenu;
 import org.opencms.ade.containerpage.client.ui.CmsToolbarEditButton;
+import org.opencms.ade.containerpage.client.ui.CmsToolbarElementInfoButton;
 import org.opencms.ade.containerpage.client.ui.CmsToolbarGalleryMenu;
+import org.opencms.ade.containerpage.client.ui.CmsToolbarInfoButton;
 import org.opencms.ade.containerpage.client.ui.CmsToolbarMoveButton;
 import org.opencms.ade.containerpage.client.ui.CmsToolbarPublishButton;
 import org.opencms.ade.containerpage.client.ui.CmsToolbarRemoveButton;
@@ -44,6 +47,7 @@ import org.opencms.ade.containerpage.client.ui.css.I_CmsLayoutBundle;
 import org.opencms.gwt.client.A_CmsEntryPoint;
 import org.opencms.gwt.client.CmsCoreProvider;
 import org.opencms.gwt.client.CmsPingTimer;
+import org.opencms.gwt.client.dnd.CmsCompositeDNDController;
 import org.opencms.gwt.client.dnd.CmsDNDHandler;
 import org.opencms.gwt.client.ui.CmsPopup;
 import org.opencms.gwt.client.ui.CmsPushButton;
@@ -68,13 +72,14 @@ import java.util.Map.Entry;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
-import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.core.client.Scheduler.RepeatingCommand;
 import com.google.gwt.dom.client.Style.Overflow;
 import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.logical.shared.CloseEvent;
+import com.google.gwt.event.logical.shared.CloseHandler;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.Widget;
@@ -98,6 +103,9 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
     /** Add menu. */
     private CmsToolbarGalleryMenu m_add;
 
+    /** The button for the 'complete galleries' dialog. */
+    private CmsToolbarAllGalleriesMenu m_allGalleries;
+
     /** Add to favorites button. */
     private CmsAddToFavoritesButton m_addToFavorites;
 
@@ -112,6 +120,12 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
 
     /** Edit button. */
     private CmsToolbarEditButton m_edit;
+
+    /** Button for the elements information. */
+    private CmsToolbarElementInfoButton m_elementsInfo;
+
+    /** Info button. */
+    private CmsToolbarInfoButton m_info;
 
     /** Move button. */
     private CmsToolbarMoveButton m_move;
@@ -137,6 +151,12 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
     /** Sitemap button. */
     private CmsToolbarSitemapButton m_sitemap;
 
+    /** The style variable for the display mode for small elements. */
+    private CmsStyleVariable m_smallElementsStyle;
+
+    /** The toggle tool-bar button. */
+    private CmsPushButton m_toggleToolbarButton;
+
     /** The tool-bar. */
     private CmsToolbar m_toolbar;
 
@@ -150,6 +170,12 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
         return Z_INDEX_MANAGER;
     }
 
+    /**
+     * Opens a message dialog with the given content.<p>
+     * 
+     * @param title the dialog title
+     * @param displayHtmlContent the dialog content
+     */
     private static void openMessageDialog(String title, String displayHtmlContent) {
 
         HTMLPanel content = new HTMLPanel(displayHtmlContent);
@@ -159,6 +185,8 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
         content.getElement().getStyle().setProperty("maxHeight", dialog.getAvailableHeight(100), Unit.PX);
         dialog.setWidth(-1);
         dialog.addDialogClose(null);
+        dialog.setModal(true);
+        dialog.setGlassEnabled(true);
         dialog.centerHorizontally(100);
     }
 
@@ -171,6 +199,39 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
 
         reinitializeButtons();
         m_save.disable(reason);
+        m_add.disable(reason);
+        m_clipboard.disable(reason);
+    }
+
+    /**
+     * Deactivates all toolbar buttons.<p>
+     */
+    public void disableToolbarButtons() {
+
+        for (Widget button : m_toolbar.getAll()) {
+            if (button instanceof I_CmsToolbarButton) {
+                ((I_CmsToolbarButton)button).setEnabled(false);
+            }
+        }
+        m_toolbar.setVisible(false);
+        m_toggleToolbarButton.setVisible(false);
+    }
+
+    /**
+     * Enables the toolbar buttons.<p>
+     * 
+     * @param hasChanges if the page has changes 
+     */
+    public void enableToolbarButtons(boolean hasChanges) {
+
+        for (Widget button : m_toolbar.getAll()) {
+            // enable all buttons that are not equal save or reset or the page has changes 
+            if ((button instanceof I_CmsToolbarButton) && (((button != m_save) && (button != m_reset)) || hasChanges)) {
+                ((I_CmsToolbarButton)button).setEnabled(true);
+            }
+        }
+        m_toolbar.setVisible(true);
+        m_toggleToolbarButton.setVisible(true);
     }
 
     /**
@@ -298,7 +359,9 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
         final CmsContainerpageController controller = new CmsContainerpageController();
         final CmsContainerpageHandler containerpageHandler = new CmsContainerpageHandler(controller, this);
         CmsContentEditorHandler contentEditorHandler = new CmsContentEditorHandler(containerpageHandler);
-        CmsContainerpageDNDController dndController = new CmsContainerpageDNDController(controller);
+        CmsCompositeDNDController dndController = new CmsCompositeDNDController();
+        dndController.addController(new CmsContainerpageDNDController(controller));
+        controller.setDndController(dndController);
         CmsDNDHandler dndHandler = new CmsDNDHandler(dndController);
 
         ClickHandler clickHandler = new ClickHandler() {
@@ -310,6 +373,9 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
 
                 I_CmsToolbarButton source = (I_CmsToolbarButton)event.getSource();
                 source.onToolbarClick();
+                if (source instanceof CmsPushButton) {
+                    ((CmsPushButton)source).clearHoverState();
+                }
             }
         };
 
@@ -317,14 +383,14 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
         m_toolbar = new CmsToolbar();
         RootPanel root = RootPanel.get();
         root.add(m_toolbar);
-        CmsPushButton toggleToolbarButton = new CmsPushButton();
-        toggleToolbarButton.setButtonStyle(ButtonStyle.TEXT, null);
-        toggleToolbarButton.setSize(Size.small);
-        toggleToolbarButton.setImageClass(I_CmsImageBundle.INSTANCE.style().opencmsSymbol());
-        toggleToolbarButton.removeStyleName(org.opencms.gwt.client.ui.css.I_CmsLayoutBundle.INSTANCE.generalCss().buttonCornerAll());
-        toggleToolbarButton.addStyleName(org.opencms.gwt.client.ui.css.I_CmsLayoutBundle.INSTANCE.generalCss().cornerAll());
-        root.add(toggleToolbarButton);
-        toggleToolbarButton.addClickHandler(new ClickHandler() {
+        m_toggleToolbarButton = new CmsPushButton();
+        m_toggleToolbarButton.setButtonStyle(ButtonStyle.TEXT, null);
+        m_toggleToolbarButton.setSize(Size.small);
+        m_toggleToolbarButton.setImageClass(I_CmsImageBundle.INSTANCE.style().opencmsSymbol());
+        m_toggleToolbarButton.removeStyleName(org.opencms.gwt.client.ui.css.I_CmsLayoutBundle.INSTANCE.generalCss().buttonCornerAll());
+        m_toggleToolbarButton.addStyleName(org.opencms.gwt.client.ui.css.I_CmsLayoutBundle.INSTANCE.generalCss().cornerAll());
+        root.add(m_toggleToolbarButton);
+        m_toggleToolbarButton.addClickHandler(new ClickHandler() {
 
             /**
              * @see com.google.gwt.event.dom.client.ClickHandler#onClick(com.google.gwt.event.dom.client.ClickEvent)
@@ -335,10 +401,12 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
             }
 
         });
-        toggleToolbarButton.addStyleName(I_CmsLayoutBundle.INSTANCE.containerpageCss().toolbarToggle());
+        m_toggleToolbarButton.addStyleName(I_CmsLayoutBundle.INSTANCE.containerpageCss().toolbarToggle());
 
         m_save = new CmsToolbarSaveButton(containerpageHandler);
         m_save.addClickHandler(clickHandler);
+        // save and reset buttons are hidden, as changes will be saved immediately
+        m_save.setVisible(false);
         m_toolbar.addLeft(m_save);
 
         m_publish = new CmsToolbarPublishButton(containerpageHandler);
@@ -354,6 +422,7 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
         m_remove = new CmsToolbarRemoveButton(containerpageHandler);
 
         m_properties = new CmsToolbarSettingsButton(containerpageHandler);
+        m_info = new CmsToolbarInfoButton(containerpageHandler);
 
         m_clipboard = new CmsToolbarClipboardMenu(containerpageHandler);
         m_clipboard.addClickHandler(clickHandler);
@@ -362,6 +431,14 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
         m_add = new CmsToolbarGalleryMenu(containerpageHandler, dndHandler);
         m_add.addClickHandler(clickHandler);
         m_toolbar.addLeft(m_add);
+
+        m_allGalleries = new CmsToolbarAllGalleriesMenu(containerpageHandler, dndHandler);
+        m_allGalleries.addClickHandler(clickHandler);
+        m_toolbar.addLeft(m_allGalleries);
+
+        m_elementsInfo = new CmsToolbarElementInfoButton(containerpageHandler, controller);
+        m_elementsInfo.addClickHandler(clickHandler);
+        m_toolbar.addLeft(m_elementsInfo);
 
         m_selection = new CmsToolbarSelectionButton(containerpageHandler);
         m_selection.addClickHandler(clickHandler);
@@ -375,6 +452,18 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
         m_sitemap.addClickHandler(clickHandler);
         m_toolbar.addRight(m_sitemap);
 
+        Window.addCloseHandler(new CloseHandler<Window>() {
+
+            public void onClose(CloseEvent<Window> event) {
+
+                controller.onWindowClose();
+            }
+
+        });
+
+        RootPanel.get().addStyleName(
+            org.opencms.gwt.client.ui.css.I_CmsLayoutBundle.INSTANCE.toolbarCss().hideButtonShowSmallElements());
+
         if (CmsStringUtil.isEmptyOrWhitespaceOnly(controller.getData().getSitemapUri())) {
             m_sitemap.setEnabled(false);
         }
@@ -382,8 +471,10 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
         m_reset = new CmsToolbarResetButton(containerpageHandler);
         m_reset.addClickHandler(clickHandler);
         m_toolbar.addRight(m_reset);
+        // save and reset buttons are hidden, as changes will be saved immediately
+        m_reset.setVisible(false);
         containerpageHandler.enableSaveReset(false);
-        m_toolbarVisibility = new CmsStyleVariable(root);
+        m_toolbarVisibility = new CmsStyleVariable(m_toolbar);
         m_toolbarVisibility.setValue(org.opencms.gwt.client.ui.css.I_CmsLayoutBundle.INSTANCE.toolbarCss().toolbarHide());
         if (CmsCoreProvider.get().isToolbarVisible()) {
             showToolbar(true);
@@ -392,24 +483,16 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
 
         CmsContainerpageUtil containerpageUtil = new CmsContainerpageUtil(
             controller,
-            m_selection,
-            m_move,
             m_edit,
-            m_remove,
+            m_move,
+            m_info,
             m_properties,
-            m_addToFavorites);
+            m_addToFavorites,
+            m_remove);
         controller.init(containerpageHandler, dndHandler, contentEditorHandler, containerpageUtil);
 
         // export open stack trace dialog function
         exportStacktraceDialogMethod();
-        Scheduler.get().scheduleFixedDelay(new RepeatingCommand() {
-
-            public boolean execute() {
-
-                updateAllElements();
-                return true;
-            }
-        }, 1000);
     }
 
     /**
@@ -431,17 +514,6 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
     public void showToolbar(boolean show) {
 
         CmsToolbar.showToolbar(m_toolbar, show, m_toolbarVisibility);
-    }
-
-    /**
-     * Perform layout corrections for the current container elements.<p>
-     */
-    public void updateAllElements() {
-
-        List<CmsContainerPageElementPanel> pageElements = getAllContainerPageElements();
-        for (CmsContainerPageElementPanel pageElement : pageElements) {
-            pageElement.update();
-        }
     }
 
     /**
@@ -467,7 +539,11 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
         return elemWidgets;
     }
 
+    /**
+     * Exports the openMessageDialog method to the page context.<p>
+     */
     private native void exportStacktraceDialogMethod() /*-{
+<<<<<<< HEAD
         $wnd.__openStacktraceDialog = function(event) {
             event = (event) ? event : ((window.event) ? window.event : "");
             var elem = (event.target) ? event.target : event.srcElement;
@@ -481,5 +557,20 @@ public class CmsContainerpageEditor extends A_CmsEntryPoint {
             }
         }
     }-*/;
+=======
+                                                       $wnd.__openStacktraceDialog = function(event) {
+                                                       event = (event) ? event : ((window.event) ? window.event : "");
+                                                       var elem = (event.target) ? event.target : event.srcElement;
+                                                       if (elem != null) {
+                                                       var children = elem.getElementsByTagName("span");
+                                                       if (children.length > 0) {
+                                                       var title = children[0].getAttribute("title");
+                                                       var content = children[0].innerHTML;
+                                                       @org.opencms.ade.containerpage.client.CmsContainerpageEditor::openMessageDialog(Ljava/lang/String;Ljava/lang/String;)(title,content);
+                                                       }
+                                                       }
+                                                       }
+                                                       }-*/;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
 }

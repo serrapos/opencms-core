@@ -200,7 +200,11 @@ public final class CmsPreviewUtil {
         var id = $wnd[@org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants::KEY_HASH_ID];
         var additional = $wnd.parent['cms_additional_' + id];
         if (additional) {
+<<<<<<< HEAD
             return additional['useFormats'];
+=======
+            return additional[@org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants::CONFIG_USE_FORMATS];
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         }
         return false;
     }-*/;
@@ -267,6 +271,10 @@ public final class CmsPreviewUtil {
     public static native void setResourcePath(String path) /*-{
         //the id of the input field in the xml content
         var fieldId = $wnd[@org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants::KEY_FIELD_ID];
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         if (fieldId != null && fieldId != "") {
             var inputField = $wnd.parent.document.getElementById(fieldId);
             inputField.setAttribute('value', path);
@@ -277,6 +285,10 @@ public final class CmsPreviewUtil {
             } catch (e) {
             }
         }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         $wnd.setTimeout(function() {
             $wnd.parent.cmsCloseDialog(fieldId);
         }, 10);
@@ -346,9 +358,15 @@ public final class CmsPreviewUtil {
     }-*/;
 
     /**
+<<<<<<< HEAD
      * Returns if the editor plugin should show a select button.<p>
      * 
      * @return <code>true</code> if the editor plugin should show a select button
+=======
+     * Returns if the select button should be shown.<p>
+     * 
+     * @return <code>true</code> if the select button should be shown
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      */
     public static native boolean shouldShowSelectButton()/*-{
         return "true" == $wnd[@org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants::KEY_SHOW_SELECT];
@@ -363,7 +381,11 @@ public final class CmsPreviewUtil {
         var id = $wnd[@org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants::KEY_HASH_ID];
         var additional = $wnd.parent['cms_additional_' + id];
         if (additional) {
+<<<<<<< HEAD
             return additional['imageFormatNames'];
+=======
+            return additional[@org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants::CONFIG_IMAGE_FORMAT_NAMES];
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         }
         return null;
     }-*/;
@@ -377,7 +399,11 @@ public final class CmsPreviewUtil {
         var id = $wnd[@org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants::KEY_HASH_ID];
         var additional = $wnd.parent['cms_additional_' + id];
         if (additional) {
+<<<<<<< HEAD
             return additional['imageFormats'];
+=======
+            return additional[@org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants::CONFIG_IMAGE_FORMATS];
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         }
         return null;
     }-*/;

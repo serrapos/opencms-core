@@ -28,6 +28,7 @@
 package org.opencms.widgets;
 
 import org.opencms.file.CmsObject;
+import org.opencms.i18n.CmsMessages;
 import org.opencms.json.JSONArray;
 import org.opencms.json.JSONException;
 import org.opencms.json.JSONObject;
@@ -120,7 +121,7 @@ public class CmsVfsImageWidgetConfiguration extends CmsGalleryWidgetConfiguratio
      */
     public CmsVfsImageWidgetConfiguration(
         CmsObject cms,
-        I_CmsWidgetDialog widgetDialog,
+        CmsMessages widgetDialog,
         I_CmsWidgetParameter param,
         String configuration) {
 
@@ -199,13 +200,13 @@ public class CmsVfsImageWidgetConfiguration extends CmsGalleryWidgetConfiguratio
      * @param configuration the widget configuration string
      */
     @Override
-    protected void init(CmsObject cms, I_CmsWidgetDialog widgetDialog, I_CmsWidgetParameter param, String configuration) {
+    protected void init(CmsObject cms, CmsMessages widgetDialog, I_CmsWidgetParameter param, String configuration) {
 
         if (configuration == null) {
             // no configuration String found, return
             return;
         }
-        configuration = CmsMacroResolver.resolveMacros(configuration, cms, widgetDialog.getMessages());
+        configuration = CmsMacroResolver.resolveMacros(configuration, cms, widgetDialog);
         JSONObject jsonObj = new JSONObject();
         try {
             jsonObj = new JSONObject(configuration);
@@ -316,6 +317,25 @@ public class CmsVfsImageWidgetConfiguration extends CmsGalleryWidgetConfiguratio
     private void setShowFormat(boolean showFormat) {
 
         m_showFormat = showFormat;
+    }
+
+    /**
+     * Returns the values as a parameter string.<p>
+     * 
+     * @return the values as a parameter string
+     * */
+    @Override
+    public String getConfigString() {
+
+        String result = "";
+        if (m_startup != null) {
+            result += "&startup=" + m_startup;
+        }
+        if (m_type != null) {
+            result += "&type=" + m_type;
+        }
+
+        return result;
     }
 
 }

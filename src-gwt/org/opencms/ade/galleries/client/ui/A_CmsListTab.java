@@ -30,35 +30,49 @@ package org.opencms.ade.galleries.client.ui;
 import org.opencms.ade.galleries.client.Messages;
 import org.opencms.ade.galleries.client.ui.css.I_CmsLayoutBundle;
 import org.opencms.ade.galleries.client.ui.css.I_CmsLayoutBundle.I_CmsGalleryDialogCss;
+import org.opencms.ade.galleries.shared.CmsGallerySearchBean;
 import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants.GalleryTabId;
-import org.opencms.ade.upload.client.ui.CmsUploadButton;
+import org.opencms.ade.upload.client.I_CmsUploadContext;
+import org.opencms.ade.upload.client.ui.CmsDialogUploadButtonHandler;
 import org.opencms.gwt.client.ui.CmsList;
+import org.opencms.gwt.client.ui.CmsPushButton;
+import org.opencms.gwt.client.ui.CmsScrollPanel;
 import org.opencms.gwt.client.ui.I_CmsButton.ButtonStyle;
 import org.opencms.gwt.client.ui.I_CmsListItem;
 import org.opencms.gwt.client.ui.css.I_CmsImageBundle;
 import org.opencms.gwt.client.ui.input.CmsCheckBox;
 import org.opencms.gwt.client.ui.input.CmsSelectBox;
 import org.opencms.gwt.client.ui.input.CmsTextBox;
+import org.opencms.gwt.client.ui.input.upload.CmsUploadButton;
 import org.opencms.gwt.client.ui.tree.CmsTreeItem;
-import org.opencms.util.CmsPair;
 import org.opencms.util.CmsStringUtil;
+import org.opencms.util.CmsUUID;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
+import com.google.common.base.Supplier;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.core.client.Scheduler.ScheduledCommand;
+import com.google.gwt.dom.client.Style;
+import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
+import com.google.gwt.event.dom.client.KeyCodes;
+import com.google.gwt.event.dom.client.KeyPressEvent;
+import com.google.gwt.event.dom.client.KeyPressHandler;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
+import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HasText;
 import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.ScrollPanel;
 import com.google.gwt.user.client.ui.Widget;
 
 /**
@@ -69,10 +83,13 @@ import com.google.gwt.user.client.ui.Widget;
 public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandler<String> {
 
     /** Selection handler to handle check box click events and double clicks on the list items. */
-    protected abstract class A_SelectionHandler implements ClickHandler, DoubleClickHandler {
+    protected abstract class A_SelectionHandler implements ClickHandler {
 
         /** The reference to the checkbox. */
         private CmsCheckBox m_checkBox;
+
+        /** The the select button, can be used instead of a double click to select and search. */
+        private CmsPushButton m_selectButton;
 
         /**
          * Constructor.<p>
@@ -85,23 +102,36 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
         }
 
         /**
+         * Returns the select button.<p>
+         * 
+         * @return the select button 
+         */
+        public CmsPushButton getSelectButton() {
+
+            return m_selectButton;
+        }
+
+        /**
          * @see com.google.gwt.event.dom.client.ClickHandler#onClick(com.google.gwt.event.dom.client.ClickEvent)
          */
         public void onClick(ClickEvent event) {
 
-            onSelectionChange();
+            if (event.getSource().equals(m_checkBox)) {
+                onSelectionChange();
+            } else {
+                selectBeforeGoingToResultTab();
+                getTabHandler().selectResultTab();
+            }
         }
 
         /**
-         * @see com.google.gwt.event.dom.client.DoubleClickHandler#onDoubleClick(com.google.gwt.event.dom.client.DoubleClickEvent)
+         * Sets the select button, can be used instead of a double click to select and search.<p>
+         * 
+         * @param button the select button
          */
-        public void onDoubleClick(DoubleClickEvent event) {
+        public void setSelectButton(CmsPushButton button) {
 
-            m_checkBox.setChecked(true);
-            onSelectionChange();
-            getTabHandler().selectResultTab();
-            event.stopPropagation();
-            event.preventDefault();
+            m_selectButton = button;
         }
 
         /**
@@ -118,6 +148,66 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
          * Executed on selection change. Either when the check box was clicked or on double click on a list item.<p>
          */
         protected abstract void onSelectionChange();
+
+        /**
+         * This method is called if a list item is selected in a way such that the result tab should be displayed
+         * immediately.<p>
+         */
+        protected void selectBeforeGoingToResultTab() {
+
+            m_checkBox.setChecked(true);
+            onSelectionChange();
+        }
+    }
+
+    /**
+     * Special click handler to use with select button.<p>
+     */
+    protected class SelectHandler implements ClickHandler, DoubleClickHandler {
+
+        /** The id of the selected item. */
+        private String m_resourcePath;
+
+        /** The resource type of the selected item. */
+        private String m_resourceType;
+
+        /** The structure id. */
+        private CmsUUID m_structureId;
+
+        /** The resource title. */
+        private String m_title;
+
+        /**
+         * Constructor.<p>
+         * 
+         * @param resourcePath the item resource path 
+         * @param structureId the structure id
+         * @param title the resource title
+         * @param resourceType the item resource type
+         */
+        public SelectHandler(String resourcePath, CmsUUID structureId, String title, String resourceType) {
+
+            m_resourcePath = resourcePath;
+            m_structureId = structureId;
+            m_resourceType = resourceType;
+            m_title = title;
+        }
+
+        /**
+         * @see com.google.gwt.event.dom.client.ClickHandler#onClick(com.google.gwt.event.dom.client.ClickEvent)
+         */
+        public void onClick(ClickEvent event) {
+
+            getTabHandler().selectResource(m_resourcePath, m_structureId, m_title, m_resourceType);
+        }
+
+        /**
+         * @see com.google.gwt.event.dom.client.DoubleClickHandler#onDoubleClick(com.google.gwt.event.dom.client.DoubleClickEvent)
+         */
+        public void onDoubleClick(DoubleClickEvent event) {
+
+            getTabHandler().selectResource(m_resourcePath, m_structureId, m_title, m_resourceType);
+        }
     }
 
     /**
@@ -144,17 +234,20 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
 
     /** The borded panel to hold the scrollable list. */
     @UiField
-    protected ScrollPanel m_list;
+    protected CmsScrollPanel m_list;
 
     /** The option panel. */
     @UiField
     protected FlowPanel m_options;
 
-    /** The Quick filter text box. */
-    protected CmsTextBox m_quickFilter;
+    /** The quick search box. */
+    protected CmsTextBox m_quickSearch;
 
     /** The scrollable list panel. */
     protected CmsList<? extends I_CmsListItem> m_scrollList;
+
+    /** The quick search button. */
+    protected CmsPushButton m_searchButton;
 
     /** The select box to change the sort order. */
     protected CmsSelectBox m_sortSelectBox;
@@ -165,6 +258,9 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
 
     /** The quick filter timer. */
     private Timer m_filterTimer;
+
+    /** The quick search handler registration. */
+    private HandlerRegistration m_quickSearchRegistration;
 
     /**
      * The default constructor with drag handler.<p>
@@ -186,35 +282,6 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
         super(tabId);
         uiBinder.createAndBindUi(this);
         initWidget(uiBinder.createAndBindUi(this));
-        List<CmsPair<String, String>> sortList = getSortList();
-        if (sortList != null) {
-            m_sortSelectBox = new CmsSelectBox(sortList);
-            m_sortSelectBox.addValueChangeHandler(this);
-            m_sortSelectBox.addStyleName(DIALOG_CSS.selectboxWidth());
-            m_sortSelectBox.truncate(TM_GALLERY_SORT, 200);
-            m_options.add(m_sortSelectBox);
-            Label infoLabel = new Label();
-            infoLabel.setStyleName(DIALOG_CSS.infoLabel());
-            m_infoLabel = infoLabel;
-            m_options.insert(infoLabel, 0);
-            m_quickFilter = new CmsTextBox();
-            m_quickFilter.setVisible(hasQuickFilter());
-            m_quickFilter.addValueChangeHandler(this);
-            m_quickFilter.addStyleName(DIALOG_CSS.quickFilterBox());
-            m_quickFilter.setTriggerChangeOnKeyPress(true);
-            m_quickFilter.setGhostValue(Messages.get().key(Messages.GUI_QUICK_FINDER_SEARCH_0), true);
-            m_quickFilter.setGhostModeClear(true);
-            m_options.insert(m_quickFilter, 0);
-        }
-        m_filterTimer = new Timer() {
-
-            @Override
-            public void run() {
-
-                getTabHandler().onSort(m_sortSelectBox.getFormValueAsString(), m_quickFilter.getFormValueAsString());
-
-            }
-        };
         m_scrollList = createScrollList();
         m_list.add(m_scrollList);
     }
@@ -224,9 +291,23 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
      *
      * @return the list
      */
-    public ScrollPanel getList() {
+    public CmsScrollPanel getList() {
 
         return m_list;
+    }
+
+    /**
+     * Call on content change to update the layout.<p>
+     */
+    public void onContentChange() {
+
+        Scheduler.get().scheduleDeferred(new ScheduledCommand() {
+
+            public void execute() {
+
+                m_list.onResizeDescendant();
+            }
+        });
     }
 
     /**
@@ -238,14 +319,40 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
 
         cancelQuickFilterTimer();
         if (event.getSource() == m_sortSelectBox) {
-            getTabHandler().onSort(event.getValue(), hasQuickFilter() ? m_quickFilter.getFormValueAsString() : null);
+            // depending on the sort value the tab may or may not have the quick filter ability
+            if (hasQuickFilter()) {
+                if (m_quickSearch == null) {
+                    createQuickBox();
+                }
+            } else {
+                removeQuickBox();
+            }
+            getTabHandler().onSort(event.getValue(), hasQuickFilter() ? m_quickSearch.getFormValueAsString() : null);
         }
-        if ((event.getSource() == m_quickFilter)
-            && (CmsStringUtil.isEmptyOrWhitespaceOnly(event.getValue()) || (event.getValue().length() >= 3))) {
-            // only act if filter length is at least 3 characters or empty
-            scheduleQuickFilterTimer();
+        if ((event.getSource() == m_quickSearch)) {
+            if (hasQuickFilter()) {
+
+                if ((CmsStringUtil.isEmptyOrWhitespaceOnly(event.getValue()) || (event.getValue().length() >= 3))) {
+                    // only act if filter length is at least 3 characters or empty
+                    scheduleQuickFilterTimer();
+                }
+            } else {
+                checkQuickSearchStatus();
+            }
         }
-        m_quickFilter.setVisible(hasQuickFilter());
+    }
+
+    /**
+     * Sets the value selected in the sort select box, if possible.<p>
+     * 
+     * @param value the new value for the sort select box 
+     * @param fireEvents if true, the change event of the select box is fired 
+     */
+    public void setSortSelectBoxValue(String value, boolean fireEvents) {
+
+        if ((m_sortSelectBox != null) && (value != null)) {
+            m_sortSelectBox.setFormValue(value, fireEvents);
+        }
     }
 
     /**
@@ -256,6 +363,7 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
     protected void addWidgetToFrontOfList(Widget listItem) {
 
         m_scrollList.insert(listItem, 0);
+        onContentChange();
 
     }
 
@@ -267,6 +375,7 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
     protected void addWidgetToList(Widget listItem) {
 
         m_scrollList.add(listItem);
+        onContentChange();
     }
 
     /**
@@ -286,7 +395,23 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
      */
     protected void cancelQuickFilterTimer() {
 
-        m_filterTimer.cancel();
+        if (m_filterTimer != null) {
+            m_filterTimer.cancel();
+        }
+    }
+
+    /**
+     * Checks the quick search input and enables/disables the search button accordingly.<p>
+     */
+    protected void checkQuickSearchStatus() {
+
+        if ((m_quickSearch != null) && (m_searchButton != null)) {
+            if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(m_quickSearch.getFormValueAsString())) {
+                m_searchButton.enable();
+            } else {
+                m_searchButton.disable("Enter a search query");
+            }
+        }
     }
 
     /**
@@ -295,6 +420,7 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
     protected void clearList() {
 
         m_scrollList.clearList();
+        onContentChange();
     }
 
     /**
@@ -308,21 +434,84 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
     }
 
     /**
+     * Creates a select button.<p>
+     * 
+     * @param selectionHandler the selction handler
+     * 
+     * @return the select button
+     */
+    protected CmsPushButton createSelectButton(A_SelectionHandler selectionHandler) {
+
+        CmsPushButton selectButton = new CmsPushButton();
+        selectButton.setImageClass(I_CmsImageBundle.INSTANCE.style().searchIcon());
+        selectButton.setTitle(Messages.get().key(Messages.GUI_TAB_SEARCH_SEARCH_EXISTING_0));
+        selectButton.setButtonStyle(ButtonStyle.TRANSPARENT, null);
+        selectionHandler.setSelectButton(selectButton);
+        selectButton.addClickHandler(selectionHandler);
+        return selectButton;
+    }
+
+    /**
+     * Creates a button widget to select the specified resource.<p>
+     * 
+     * @param resourcePath the item resource path 
+     * @param structureId the structure id
+     * @param title the resource title
+     * @param resourceType the item resource type
+     * 
+     * @return the initialized select resource button
+     */
+    protected CmsPushButton createSelectResourceButton(
+        String resourcePath,
+        CmsUUID structureId,
+        String title,
+        String resourceType) {
+
+        CmsPushButton result = new CmsPushButton();
+        result.setImageClass(I_CmsImageBundle.INSTANCE.style().checkIcon());
+        result.setButtonStyle(ButtonStyle.TRANSPARENT, null);
+        result.setTitle(Messages.get().key(Messages.GUI_PREVIEW_BUTTON_SELECT_0));
+        result.addClickHandler(new SelectHandler(resourcePath, structureId, title, resourceType));
+        return result;
+    }
+
+    /**
      * Creates an upload button for the given target.<p>
      * 
      * @param target the upload target folder
+     * @param isRootPath true if target is a root path 
      * 
      * @return the upload button
      */
-    protected CmsUploadButton createUploadButtonForTarget(String target) {
+    protected CmsUploadButton createUploadButtonForTarget(String target, boolean isRootPath) {
 
-        CmsUploadButton uploadButton = new CmsUploadButton();
-        uploadButton.setTargetFolder(target);
+        CmsDialogUploadButtonHandler buttonHandler = new CmsDialogUploadButtonHandler(
+
+        new Supplier<I_CmsUploadContext>() {
+
+            public I_CmsUploadContext get() {
+
+                return new I_CmsUploadContext() {
+
+                    public void onUploadFinished(List<String> uploadedFiles) {
+
+                        getTabHandler().updateIndex();
+                    }
+
+                };
+            }
+        });
+
+        buttonHandler.setTargetFolder(target);
+        buttonHandler.setIsTargetRootPath(isRootPath);
+        CmsUploadButton uploadButton = new CmsUploadButton(buttonHandler);
+
+        //uploadButton.setTargetFolder(target);
         uploadButton.setText(null);
         uploadButton.setTitle(Messages.get().key(Messages.GUI_GALLERY_UPLOAD_TITLE_1, target));
         uploadButton.setButtonStyle(ButtonStyle.TRANSPARENT, null);
         uploadButton.setImageClass(I_CmsImageBundle.INSTANCE.style().uploadIcon());
-        uploadButton.setDialogCloseHandler(getTabHandler());
+        //uploadButton.setDialogCloseHandler(getTabHandler());
         return uploadButton;
     }
 
@@ -331,14 +520,59 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
      * 
      * @return list of sort order value/text pairs
      */
-    protected abstract List<CmsPair<String, String>> getSortList();
+    protected abstract LinkedHashMap<String, String> getSortList();
 
     /**
      * Returns if this tab has quick filter enabled.<p>
      * 
      * @return <code>true</code> if this tab has quick filter enabled
      */
-    protected abstract boolean hasQuickFilter();
+    protected boolean hasQuickFilter() {
+
+        return false;
+    }
+
+    /**
+     * Returns if the tab has the quick search box.<p>
+     * 
+     * @return <code>true</code> if the tab has the quick search box
+     */
+    protected boolean hasQuickSearch() {
+
+        return false;
+    }
+
+    /**
+     * Call after all handlers have been set.<p>
+     */
+    protected void init() {
+
+        LinkedHashMap<String, String> sortList = getSortList();
+        if (sortList != null) {
+            m_sortSelectBox = new CmsSelectBox(sortList);
+            m_sortSelectBox.addValueChangeHandler(this);
+            m_sortSelectBox.addStyleName(DIALOG_CSS.selectboxWidth());
+            m_sortSelectBox.truncate(TM_GALLERY_SORT, 200);
+            m_options.add(m_sortSelectBox);
+            Label infoLabel = new Label();
+            infoLabel.setStyleName(DIALOG_CSS.infoLabel());
+            m_infoLabel = infoLabel;
+            m_options.insert(infoLabel, 0);
+            createQuickBox();
+        }
+
+    }
+
+    /**
+     * Sets the search query an selects the result tab.<p>
+     */
+    protected void quickSearch() {
+
+        if ((m_quickSearch != null) && CmsStringUtil.isNotEmptyOrWhitespaceOnly(m_quickSearch.getFormValueAsString())) {
+            getTabHandler().setSearchQuery(m_quickSearch.getFormValueAsString());
+            getTabHandler().selectResultTab();
+        }
+    }
 
     /**
      * Schedules the quick filter action.<p>
@@ -375,5 +609,87 @@ public abstract class A_CmsListTab extends A_CmsTab implements ValueChangeHandle
             }
         }
         return resultItem;
+    }
+
+    /**
+     * Creates the quick search/finder box.<p>
+     */
+    private void createQuickBox() {
+
+        if (hasQuickSearch() || hasQuickFilter()) {
+            m_quickSearch = new CmsTextBox();
+            //   m_quickFilter.setVisible(hasQuickFilter());
+            m_quickSearch.addStyleName(DIALOG_CSS.quickFilterBox());
+            m_quickSearch.setTriggerChangeOnKeyPress(true);
+            m_quickSearch.setGhostValue(Messages.get().key(Messages.GUI_QUICK_FINDER_SEARCH_0), true);
+            m_quickSearch.setGhostModeClear(true);
+            m_options.insert(m_quickSearch, 0);
+            m_searchButton = new CmsPushButton();
+            m_searchButton.setImageClass(I_CmsImageBundle.INSTANCE.style().searchIcon());
+            m_searchButton.setButtonStyle(ButtonStyle.TRANSPARENT, null);
+            m_searchButton.getElement().getStyle().setFloat(Style.Float.RIGHT);
+            m_searchButton.getElement().getStyle().setMarginTop(1, Unit.PX);
+            m_options.insert(m_searchButton, 0);
+            m_quickSearch.addValueChangeHandler(this);
+            if (hasQuickFilter()) {
+                m_filterTimer = new Timer() {
+
+                    @Override
+                    public void run() {
+
+                        getTabHandler().onSort(
+                            m_sortSelectBox.getFormValueAsString(),
+                            m_quickSearch.getFormValueAsString());
+
+                    }
+                };
+                m_searchButton.setTitle(Messages.get().key(Messages.GUI_QUICK_FINDER_SEARCH_0));
+            } else {
+                m_quickSearch.addKeyPressHandler(new KeyPressHandler() {
+
+                    public void onKeyPress(KeyPressEvent event) {
+
+                        if (event.getNativeEvent().getKeyCode() == KeyCodes.KEY_ENTER) {
+                            quickSearch();
+                        }
+                    }
+                });
+                m_searchButton.addClickHandler(new ClickHandler() {
+
+                    public void onClick(ClickEvent arg0) {
+
+                        quickSearch();
+                    }
+                });
+                m_quickSearchRegistration = getTabHandler().addSearchChangeHandler(
+                    new ValueChangeHandler<CmsGallerySearchBean>() {
+
+                        public void onValueChange(ValueChangeEvent<CmsGallerySearchBean> event) {
+
+                            m_quickSearch.setFormValueAsString(event.getValue().getQuery());
+                        }
+                    });
+                m_searchButton.setTitle(Messages.get().key(Messages.GUI_TAB_SEARCH_SEARCH_EXISTING_0));
+            }
+        }
+    }
+
+    /**
+     * Removes the quick search/finder box.<p>
+     */
+    private void removeQuickBox() {
+
+        if (m_quickSearch != null) {
+            m_quickSearch.removeFromParent();
+            m_quickSearch = null;
+        }
+        if (m_searchButton != null) {
+            m_searchButton.removeFromParent();
+            m_searchButton = null;
+        }
+        if (m_quickSearchRegistration != null) {
+            m_quickSearchRegistration.removeHandler();
+            m_quickSearchRegistration = null;
+        }
     }
 }

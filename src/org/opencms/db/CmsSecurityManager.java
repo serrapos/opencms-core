@@ -19,7 +19,7 @@
  *
  * For further information about OpenCms, please see the
  * project website: http://www.opencms.org
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -53,17 +53,21 @@ import org.opencms.file.history.CmsHistoryPrincipal;
 import org.opencms.file.history.CmsHistoryProject;
 import org.opencms.file.history.I_CmsHistoryResource;
 import org.opencms.file.types.CmsResourceTypeJsp;
+import org.opencms.gwt.shared.alias.CmsAliasImportResult;
+import org.opencms.gwt.shared.alias.CmsAliasMode;
 import org.opencms.i18n.CmsMessageContainer;
 import org.opencms.lock.CmsLock;
 import org.opencms.lock.CmsLockException;
 import org.opencms.lock.CmsLockFilter;
 import org.opencms.lock.CmsLockManager;
 import org.opencms.lock.CmsLockType;
+import org.opencms.main.CmsEvent;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsIllegalArgumentException;
 import org.opencms.main.CmsInitException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.CmsMultiException;
+import org.opencms.main.I_CmsEventListener;
 import org.opencms.main.OpenCms;
 import org.opencms.publish.CmsPublishEngine;
 import org.opencms.relations.CmsLink;
@@ -92,6 +96,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -103,10 +108,10 @@ import org.apache.commons.logging.Log;
 
 /**
  * The OpenCms security manager.<p>
- * 
- * The security manager checks the permissions required for a user action invoke by the Cms object. If permissions 
+ *
+ * The security manager checks the permissions required for a user action invoke by the Cms object. If permissions
  * are granted, the security manager invokes a method on the OpenCms driver manager to access the database.<p>
- * 
+ *
  * @since 6.0.0
  */
 public final class CmsSecurityManager {
@@ -136,13 +141,13 @@ public final class CmsSecurityManager {
 
     /**
      * Creates a new instance of the OpenCms security manager.<p>
-     * 
+     *
      * @param configurationManager the configuration manager
      * @param runtimeInfoFactory the initialized OpenCms runtime info factory
      * @param publishEngine the publish engine
-     * 
+     *
      * @return a new instance of the OpenCms security manager
-     * 
+     *
      * @throws CmsInitException if the security manager could not be initialized
      */
     public static CmsSecurityManager newInstance(
@@ -163,16 +168,35 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Adds a new relation to a given resource.<p>
+     * Adds an alias.<p>
      * 
+     * @param context the current request context 
+     * @param alias the alias to add 
+     * @throws CmsException if something goes wrong 
+     */
+    public void addAlias(CmsRequestContext context, CmsAlias alias) throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(context);
+        try {
+            m_driverManager.addAlias(dbc, context.getCurrentProject(), alias);
+        } catch (Exception e) {
+            dbc.report(null, Messages.get().container(Messages.ERR_DB_OPERATION_0), e);
+        } finally {
+            dbc.clear();
+        }
+    }
+
+    /**
+     * Adds a new relation to a given resource.<p>
+     *
      * @param context the request context
      * @param resource the resource to add the relation to
      * @param target the target of the relation
      * @param type the type of the relation
      * @param importCase if importing relations
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see #deleteRelationsForResource(CmsRequestContext, CmsResource, CmsRelationFilter)
      * @see CmsObject#addRelationToResource(String, String, String)
      */
@@ -205,13 +229,13 @@ public final class CmsSecurityManager {
 
     /**
      * Adds a resource to the given organizational unit.<p>
-     * 
+     *
      * @param context the current request context
      * @param orgUnit the organizational unit to add the resource to
      * @param resource the resource that is to be added to the organizational unit
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see org.opencms.security.CmsOrgUnitManager#addResourceToOrgUnit(CmsObject, String, String)
      * @see org.opencms.security.CmsOrgUnitManager#removeResourceFromOrgUnit(CmsObject, String, String)
      */
@@ -267,12 +291,12 @@ public final class CmsSecurityManager {
 
     /**
      * Changes the lock of a resource to the current user, that is "steals" the lock from another user.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to change the lock for
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see org.opencms.file.types.I_CmsResourceType#changeLock(CmsObject, CmsSecurityManager, CmsResource)
      */
     public void changeLock(CmsRequestContext context, CmsResource resource) throws CmsException {
@@ -295,7 +319,7 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Returns a list with all sub resources of a given folder that have set the given property, 
+     * Returns a list with all sub resources of a given folder that have set the given property,
      * matching the current property's value with the given old value and replacing it by a given new value.<p>
      *
      * @param context the current request context
@@ -304,10 +328,10 @@ public final class CmsSecurityManager {
      * @param oldValue the old value of the property definition
      * @param newValue the new value of the property definition
      * @param recursive if true, change recursively all property values on sub-resources (only for folders)
-     * 
+     *
      * @return a list with the <code>{@link CmsResource}</code>'s where the property value has been changed
      *
-     * @throws CmsVfsException for now only when the search for the old value fails 
+     * @throws CmsVfsException for now only when the search for the old value fails
      * @throws CmsException if operation was not successful
      */
     public synchronized List<CmsResource> changeResourcesInFolderWithProperty(
@@ -343,7 +367,7 @@ public final class CmsSecurityManager {
 
     /**
      * Checks if the current user has management access to the given project.<p>
-     * 
+     *
      * @param dbc the current database context
      * @param project the project to check
      *
@@ -377,12 +401,12 @@ public final class CmsSecurityManager {
     /**
      * Checks if the project in the given database context is not the "Online" project,
      * and throws an Exception if this is the case.<p>
-     *  
+     *
      * This is used to ensure a user is in an "Offline" project
      * before write access to VFS resources is granted.<p>
-     * 
+     *
      * @param dbc the current OpenCms users database context
-     * 
+     *
      * @throws CmsVfsException if the project in the given database context is the "Online" project
      */
     public void checkOfflineProject(CmsDbContext dbc) throws CmsVfsException {
@@ -398,16 +422,16 @@ public final class CmsSecurityManager {
      *
      * If the required permissions are not satisfied by the permissions the user has on the resource,
      * an exception is thrown.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource on which permissions are required
      * @param requiredPermissions the set of permissions required to access the resource
-     * @param checkLock if true, the lock status of the resource is also checked 
+     * @param checkLock if true, the lock status of the resource is also checked
      * @param filter the filter for the resource
-     * 
+     *
      * @throws CmsException in case of any i/o error
      * @throws CmsSecurityException if the required permissions are not satisfied
-     * 
+     *
      * @see #checkPermissions(CmsRequestContext, CmsResource, CmsPermissionSet, I_CmsPermissionHandler.CmsPermissionCheckResult)
      */
     public void checkPermissions(
@@ -427,15 +451,15 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Checks if the current user has the permissions to publish the given publish list 
+     * Checks if the current user has the permissions to publish the given publish list
      * (which contains the information about the resources / project to publish).<p>
-     * 
+     *
      * @param dbc the current OpenCms users database context
      * @param publishList the publish list to check (contains the information about the resources / project to publish)
-     * 
+     *
      * @throws CmsException if the user does not have the required permissions because of project lock state
-     * @throws CmsMultiException if issues occur like a direct publish is attempted on a resource 
-     *         whose parent folder is new or deleted in the offline project, 
+     * @throws CmsMultiException if issues occur like a direct publish is attempted on a resource
+     *         whose parent folder is new or deleted in the offline project,
      *         or if the current user has no management access to the current project
      */
     public void checkPublishPermissions(CmsDbContext dbc, CmsPublishList publishList)
@@ -444,7 +468,7 @@ public final class CmsSecurityManager {
         // is the current project an "offline" project?
         checkOfflineProject(dbc);
 
-        // check if this is a "direct publish" attempt        
+        // check if this is a "direct publish" attempt
         if (!publishList.isDirectPublish()) {
             // check if the user is a manager of the current project, in this case he has publish permissions
             checkManagerOfProjectRole(dbc, dbc.getRequestContext().getCurrentProject());
@@ -509,15 +533,15 @@ public final class CmsSecurityManager {
     /**
      * Checks if the user of the current database context has permissions to impersonate the given role
      * in the given organizational unit.<p>
-     *  
+     *
      * If the organizational unit is <code>null</code>, this method will check if the
      * given user has the given role for at least one organizational unit.<p>
-     *  
+     *
      * @param dbc the current OpenCms users database context
      * @param role the role to check
-     * 
+     *
      * @throws CmsRoleViolationException if the user does not have the required role permissions
-     * 
+     *
      * @see org.opencms.security.CmsRoleManager#checkRole(CmsObject, CmsRole)
      */
     public void checkRole(CmsDbContext dbc, CmsRole role) throws CmsRoleViolationException {
@@ -533,13 +557,13 @@ public final class CmsSecurityManager {
 
     /**
      * Checks if the user of the current context has permissions to impersonate the given role.<p>
-     *  
+     *
      * If the organizational unit is <code>null</code>, this method will check if the
      * given user has the given role for at least one organizational unit.<p>
-     *  
+     *
      * @param context the current request context
      * @param role the role to check
-     * 
+     *
      * @throws CmsRoleViolationException if the user does not have the required role permissions
      */
     public void checkRole(CmsRequestContext context, CmsRole role) throws CmsRoleViolationException {
@@ -553,15 +577,15 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Checks if the user of the current database context has permissions to impersonate the given role 
+     * Checks if the user of the current database context has permissions to impersonate the given role
      * for the given resource.<p>
-     *  
+     *
      * @param dbc the current OpenCms users database context
      * @param role the role to check
      * @param resource the resource to check the role for
-     * 
+     *
      * @throws CmsRoleViolationException if the user does not have the required role permissions
-     * 
+     *
      * @see org.opencms.security.CmsRoleManager#checkRole(CmsObject, CmsRole)
      */
     public void checkRoleForResource(CmsDbContext dbc, CmsRole role, CmsResource resource)
@@ -575,11 +599,11 @@ public final class CmsSecurityManager {
     /**
      * Checks if the user of the current context has permissions to impersonate the given role
      * for the given resource.<p>
-     *  
+     *
      * @param context the current request context
      * @param role the role to check
      * @param resource the resource to check the role for
-     * 
+     *
      * @throws CmsRoleViolationException if the user does not have the required role permissions
      */
     public void checkRoleForResource(CmsRequestContext context, CmsRole role, CmsResource resource)
@@ -595,18 +619,18 @@ public final class CmsSecurityManager {
 
     /**
      * Changes the resource flags of a resource.<p>
-     * 
+     *
      * The resource flags are used to indicate various "special" conditions
-     * for a resource. Most notably, the "internal only" setting which signals 
+     * for a resource. Most notably, the "internal only" setting which signals
      * that a resource can not be directly requested with it's URL.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to change the flags for
      * @param flags the new resource flags for this resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (({@link CmsPermissionSet#ACCESS_WRITE} required)
-     * 
+     *
      * @see org.opencms.file.types.I_CmsResourceType#chflags(CmsObject, CmsSecurityManager, CmsResource, int)
      */
     public void chflags(CmsRequestContext context, CmsResource resource, int flags)
@@ -629,20 +653,20 @@ public final class CmsSecurityManager {
 
     /**
      * Changes the resource type of a resource.<p>
-     * 
+     *
      * OpenCms handles resources according to the resource type,
-     * not the file suffix. This is e.g. why a JSP in OpenCms can have the 
+     * not the file suffix. This is e.g. why a JSP in OpenCms can have the
      * suffix ".html" instead of ".jsp" only. Changing the resource type
      * makes sense e.g. if you want to make a plain text file a JSP resource,
-     * or a binary file an image, etc.<p> 
-     * 
+     * or a binary file an image, etc.<p>
+     *
      * @param context the current request context
      * @param resource the resource to change the type for
      * @param type the new resource type for this resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (({@link CmsPermissionSet#ACCESS_WRITE} required))
-     * 
+     *
      * @see org.opencms.file.types.I_CmsResourceType#chtype(CmsObject, CmsSecurityManager, CmsResource, int)
      * @see CmsObject#chtype(String, int)
      */
@@ -672,11 +696,11 @@ public final class CmsSecurityManager {
      * Copies the access control entries of a given resource to a destination resource.<p>
      *
      * Already existing access control entries of the destination resource are removed.<p>
-     * 
+     *
      * @param context the current request context
      * @param source the resource to copy the access control entries from
      * @param destination the resource to which the access control entries are copied
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource ({@link CmsPermissionSet#ACCESS_CONTROL} required)
      */
@@ -705,17 +729,17 @@ public final class CmsSecurityManager {
 
     /**
      * Copies a resource.<p>
-     * 
+     *
      * You must ensure that the destination path is an absolute, valid and
      * existing VFS path. Relative paths from the source are currently not supported.<p>
-     * 
+     *
      * The copied resource will always be locked to the current user
      * after the copy operation.<p>
-     * 
-     * In case the target resource already exists, it is overwritten with the 
+     *
+     * In case the target resource already exists, it is overwritten with the
      * source resource.<p>
-     * 
-     * The <code>siblingMode</code> parameter controls how to handle siblings 
+     *
+     * The <code>siblingMode</code> parameter controls how to handle siblings
      * during the copy operation.<br>
      * Possible values for this parameter are: <br>
      * <ul>
@@ -723,15 +747,15 @@ public final class CmsSecurityManager {
      * <li><code>{@link org.opencms.file.CmsResource#COPY_AS_SIBLING}</code></li>
      * <li><code>{@link org.opencms.file.CmsResource#COPY_PRESERVE_SIBLING}</code></li>
      * </ul><p>
-     * 
+     *
      * @param context the current request context
      * @param source the resource to copy
      * @param destination the name of the copy destination with complete path
      * @param siblingMode indicates how to handle siblings during copy
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * @throws CmsSecurityException if resource could not be copied 
-     * 
+     * @throws CmsSecurityException if resource could not be copied
+     *
      * @see CmsObject#copyResource(String, String, CmsResource.CmsResourceCopyMode)
      * @see org.opencms.file.types.I_CmsResourceType#copyResource(CmsObject, CmsSecurityManager, CmsResource, String, CmsResource.CmsResourceCopyMode)
      */
@@ -768,13 +792,13 @@ public final class CmsSecurityManager {
 
     /**
      * Copies a resource to the current project of the user.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to apply this operation to
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsRoleViolationException if the current user does not have management access to the project
-     * 
+     *
      * @see org.opencms.file.types.I_CmsResourceType#copyResourceToProject(CmsObject, CmsSecurityManager, CmsResource)
      */
     public void copyResourceToProject(CmsRequestContext context, CmsResource resource)
@@ -804,9 +828,9 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param id the id of the project
-     * 
+     *
      * @return the amount of locked resources in this project
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsRoleViolationException if the current user does not have management access to the project
      */
@@ -836,12 +860,12 @@ public final class CmsSecurityManager {
 
     /**
      * Counts the total number of users which match the given search criteria.<p>
-     * 
-     * @param requestContext the request context 
+     *
+     * @param requestContext the request context
      * @param searchParams the search criteria object
-     *  
-     * @return the number of users which match the search criteria 
-     * @throws CmsException if something goes wrong 
+     *
+     * @return the number of users which match the search criteria
+     * @throws CmsException if something goes wrong
      */
     public long countUsers(CmsRequestContext requestContext, CmsUserSearchParameters searchParams) throws CmsException {
 
@@ -864,9 +888,9 @@ public final class CmsSecurityManager {
      * @param description the description for the new group
      * @param flags the flags for the new group
      * @param parent the name of the parent group (or <code>null</code>)
-     * 
+     *
      * @return a <code>{@link CmsGroup}</code> object representing the newly created group
-     * 
+     *
      * @throws CmsException if operation was not successful.
      * @throws CmsRoleViolationException if the  role {@link CmsRole#ACCOUNT_MANAGER} is not owned by the current user
      */
@@ -889,18 +913,18 @@ public final class CmsSecurityManager {
 
     /**
      * Creates a new organizational unit.<p>
-     * 
+     *
      * @param context the current request context
      * @param ouFqn the fully qualified name of the new organizational unit
      * @param description the description of the new organizational unit
      * @param flags the flags for the new organizational unit
      * @param resource the first associated resource
      *
-     * @return a <code>{@link CmsOrganizationalUnit}</code> object representing 
+     * @return a <code>{@link CmsOrganizationalUnit}</code> object representing
      *          the newly created organizational unit
      *
      * @throws CmsException if operation was not successful
-     * 
+     *
      * @see org.opencms.security.CmsOrgUnitManager#createOrganizationalUnit(CmsObject, String, String, int, String)
      */
     public CmsOrganizationalUnit createOrganizationalUnit(
@@ -938,9 +962,9 @@ public final class CmsSecurityManager {
      * @param groupname the project user group to be set
      * @param managergroupname the project manager group to be set
      * @param projecttype the type of the project
-     * 
+     *
      * @return the created project
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsRoleViolationException if the current user does not own the role {@link CmsRole#PROJECT_MANAGER}
      */
@@ -975,12 +999,12 @@ public final class CmsSecurityManager {
      * Creates a property definition.<p>
      *
      * Property definitions are valid for all resource types.<p>
-     * 
+     *
      * @param context the current request context
      * @param name the name of the property definition to create
-     * 
+     *
      * @return the created property definition
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the current project is online.
      * @throws CmsRoleViolationException if the current user does not own the role {@link CmsRole#WORKPLACE_MANAGER}
@@ -1005,16 +1029,16 @@ public final class CmsSecurityManager {
 
     /**
      * Creates a new resource with the provided content and properties.<p>
-     * An exception is thrown if a resource with the given name already exists.<p> 
-     * 
+     * An exception is thrown if a resource with the given name already exists.<p>
+     *
      * @param context the current request context
      * @param resourcePath the name of the resource to create (full path)
      * @param resource the new resource to create
      * @param content the content for the new resource
      * @param properties the properties for the new resource
-    * 
+    *
      * @return the created resource
-     * 
+     *
      * @throws CmsVfsResourceAlreadyExistsException if a resource with the given name already exists
      * @throws CmsVfsException if the project in the given database context is the "Online" project
      * @throws CmsException if something goes wrong
@@ -1050,19 +1074,19 @@ public final class CmsSecurityManager {
 
     /**
      * Creates a new resource of the given resource type with the provided content and properties.<p>
-     * 
-     * If the provided content is null and the resource is not a folder, the content will be set to an empty byte array.<p>  
-     * 
+     *
+     * If the provided content is null and the resource is not a folder, the content will be set to an empty byte array.<p>
+     *
      * @param context the current request context
      * @param resourcename the name of the resource to create (full path)
      * @param type the type of the resource to create
      * @param content the content for the new resource
      * @param properties the properties for the new resource
-     * 
+     *
      * @return the created resource
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see org.opencms.file.types.I_CmsResourceType#createResource(CmsObject, CmsSecurityManager, String, byte[], List)
      */
     public synchronized CmsResource createResource(
@@ -1072,7 +1096,11 @@ public final class CmsSecurityManager {
         byte[] content,
         List<CmsProperty> properties) throws CmsException {
 
-        if (existsResource(context, resourcename, CmsResourceFilter.IGNORE_EXPIRATION)) {
+        String checkExistsPath = "/".equals(resourcename) ? "/" : CmsFileUtil.removeTrailingSeparator(resourcename);
+        // We use checkExistsPath instead of resourcename because when creating a folder /foo/bar/, we want to fail
+        // if a file /foo/bar already exists. 
+
+        if (existsResource(context, checkExistsPath, CmsResourceFilter.ALL)) {
             // check if the resource already exists by name
             throw new CmsVfsResourceAlreadyExistsException(org.opencms.db.generic.Messages.get().container(
                 org.opencms.db.generic.Messages.ERR_RESOURCE_WITH_NAME_ALREADY_EXISTS_1,
@@ -1093,16 +1121,16 @@ public final class CmsSecurityManager {
 
     /**
      * Creates a new sibling of the source resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param source the resource to create a sibling for
      * @param destination the name of the sibling to create with complete path
      * @param properties the individual properties for the new sibling
-     * 
+     *
      * @return the new created sibling
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see org.opencms.file.types.I_CmsResourceType#createSibling(CmsObject, CmsSecurityManager, CmsResource, String, List)
      */
     public CmsResource createSibling(
@@ -1112,7 +1140,6 @@ public final class CmsSecurityManager {
         List<CmsProperty> properties) throws CmsException {
 
         CmsDbContext dbc = m_dbContextFactory.getDbContext(context);
-
         CmsResource sibling = null;
         try {
             checkOfflineProject(dbc);
@@ -1132,9 +1159,9 @@ public final class CmsSecurityManager {
      * Creates the project for the temporary workplace files.<p>
      *
      * @param context the current request context
-     * 
+     *
      * @return the created project for the temporary workplace files
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsProject createTempfileProject(CmsRequestContext context) throws CmsException {
@@ -1163,9 +1190,9 @@ public final class CmsSecurityManager {
      * @param additionalInfos the additional infos for the user
      *
      * @return the created user
-     * 
+     *
      * @see CmsObject#createUser(String, String, String, Map)
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsRoleViolationException if the current user does not own the rule {@link CmsRole#ACCOUNT_MANAGER}
      */
@@ -1196,11 +1223,32 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Deletes all entries in the published resource table.<p>
+     * Deletes alias entries matching a filter.<p>
      * 
+     * @param context the request context 
+     * @param filter the alias filter 
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    public void deleteAliases(CmsRequestContext context, CmsAliasFilter filter) throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(context);
+        try {
+            m_driverManager.deleteAliases(dbc, context.getCurrentProject(), filter);
+        } catch (Exception e) {
+            dbc.report(null, Messages.get().container(Messages.ERR_DB_OPERATION_0), e);
+        } finally {
+            dbc.clear();
+        }
+
+    }
+
+    /**
+     * Deletes all entries in the published resource table.<p>
+     *
      * @param context the current request context
      * @param linkType the type of resource deleted (0= non-parameter, 1=parameter)
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void deleteAllStaticExportPublishedResources(CmsRequestContext context, int linkType) throws CmsException {
@@ -1218,7 +1266,7 @@ public final class CmsSecurityManager {
     /**
      * Deletes a group, where all permissions, users and children of the group
      * are transfered to a replacement group.<p>
-     * 
+     *
      * @param context the current request context
      * @param groupId the id of the group to be deleted
      * @param replacementId the id of the group to be transfered, can be <code>null</code>
@@ -1236,12 +1284,12 @@ public final class CmsSecurityManager {
         }
         CmsDbContext dbc = m_dbContextFactory.getDbContext(context);
         try {
-            // catch own exception as special cause for general "Error deleting group". 
+            // catch own exception as special cause for general "Error deleting group".
             checkRole(dbc, CmsRole.ACCOUNT_MANAGER.forOrgUnit(getParentOrganizationalUnit(group.getName())));
-            // this is needed because 
+            // this is needed because
             // I_CmsUserDriver#removeAccessControlEntriesForPrincipal(CmsDbContext, CmsProject, CmsProject, CmsUUID)
             // expects an offline project, if not, data will become inconsistent
-            checkOfflineProject(dbc);
+            checkProjectForDeletePrincipal(dbc);
             m_driverManager.deleteGroup(dbc, group, replacementId);
         } catch (Exception e) {
             dbc.report(null, Messages.get().container(Messages.ERR_DELETE_GROUP_1, group.getName()), e);
@@ -1253,8 +1301,8 @@ public final class CmsSecurityManager {
     /**
      * Delete a user group.<p>
      *
-     * Only groups that contain no subgroups can be deleted.<p> 
-     * 
+     * Only groups that contain no subgroups can be deleted.<p>
+     *
      * @param context the current request context
      * @param name the name of the group that is to be deleted
      *
@@ -1271,12 +1319,12 @@ public final class CmsSecurityManager {
         }
         CmsDbContext dbc = m_dbContextFactory.getDbContext(context);
         try {
-            // catch own exception as special cause for general "Error deleting group". 
+            // catch own exception as special cause for general "Error deleting group".
             checkRole(dbc, CmsRole.ACCOUNT_MANAGER.forOrgUnit(getParentOrganizationalUnit(name)));
-            // this is needed because 
+            // this is needed because
             // I_CmsUserDriver#removeAccessControlEntriesForPrincipal(CmsDbContext, CmsProject, CmsProject, CmsUUID)
             // expects an offline project, if not data will become inconsistent
-            checkOfflineProject(dbc);
+            checkProjectForDeletePrincipal(dbc);
             m_driverManager.deleteGroup(dbc, group, null);
         } catch (Exception e) {
             dbc.report(null, Messages.get().container(Messages.ERR_DELETE_GROUP_1, name), e);
@@ -1287,13 +1335,13 @@ public final class CmsSecurityManager {
 
     /**
      * Deletes the versions from the history tables, keeping the given number of versions per resource.<p>
-     * 
+     *
      * @param context the current request context
-     * @param versionsToKeep number of versions to keep, is ignored if negative 
+     * @param versionsToKeep number of versions to keep, is ignored if negative
      * @param versionsDeleted number of versions to keep for deleted resources, is ignored if negative
      * @param timeDeleted deleted resources older than this will also be deleted, is ignored if negative
      * @param report the report for output logging
-     * 
+     *
      * @throws CmsException if operation was not successful
      * @throws CmsRoleViolationException if the current user does not own the role {@link CmsRole#WORKPLACE_MANAGER}
      */
@@ -1324,12 +1372,12 @@ public final class CmsSecurityManager {
 
     /**
      * Deletes all log entries matching the given filter.<p>
-     * 
+     *
      * @param context the current user context
      * @param filter the filter to use for deletion
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see #getLogEntries(CmsRequestContext, CmsLogFilter)
      * @see CmsObject#deleteLogEntries(CmsLogFilter)
      */
@@ -1350,17 +1398,17 @@ public final class CmsSecurityManager {
      * Deletes an organizational unit.<p>
      *
      * Only organizational units that contain no sub organizational unit can be deleted.<p>
-     * 
-     * The organizational unit can not be delete if it is used in the request context, 
+     *
+     * The organizational unit can not be delete if it is used in the request context,
      * or if the current user belongs to it.<p>
-     * 
+     *
      * All users and groups in the given organizational unit will be deleted.<p>
-     * 
+     *
      * @param context the current request context
      * @param organizationalUnit the organizational unit to delete
-     * 
+     *
      * @throws CmsException if operation was not successful
-     * 
+     *
      * @see org.opencms.security.CmsOrgUnitManager#deleteOrganizationalUnit(CmsObject, String)
      */
     public void deleteOrganizationalUnit(CmsRequestContext context, CmsOrganizationalUnit organizationalUnit)
@@ -1388,10 +1436,10 @@ public final class CmsSecurityManager {
      * Deletes a project.<p>
      *
      * All modified resources currently inside this project will be reset to their online state.<p>
-     * 
+     *
      * @param context the current request context
      * @param projectId the ID of the project to be deleted
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsRoleViolationException if the current user does not own management access to the project
      */
@@ -1421,7 +1469,7 @@ public final class CmsSecurityManager {
 
     /**
      * Deletes a property definition.<p>
-     * 
+     *
      * @param context the current request context
      * @param name the name of the property definition to delete
      *
@@ -1446,13 +1494,13 @@ public final class CmsSecurityManager {
 
     /**
      * Deletes all relations for the given resource matching the given filter.<p>
-     * 
+     *
      * @param context the current user context
      * @param resource the resource to delete the relations for
      * @param filter the filter to use for deletion
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see #addRelationToResource(CmsRequestContext, CmsResource, CmsResource, CmsRelationType, boolean)
      * @see CmsObject#deleteRelationsFromResource(String, CmsRelationFilter)
      */
@@ -1476,22 +1524,22 @@ public final class CmsSecurityManager {
 
     /**
      * Deletes a resource given its name.<p>
-     * 
-     * The <code>siblingMode</code> parameter controls how to handle siblings 
+     *
+     * The <code>siblingMode</code> parameter controls how to handle siblings
      * during the delete operation.<br>
      * Possible values for this parameter are: <br>
      * <ul>
      * <li><code>{@link CmsResource#DELETE_REMOVE_SIBLINGS}</code></li>
      * <li><code>{@link CmsResource#DELETE_PRESERVE_SIBLINGS}</code></li>
      * </ul><p>
-     * 
+     *
      * @param context the current request context
      * @param resource the name of the resource to delete (full path)
      * @param siblingMode indicates how to handle siblings of the deleted resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user does not have {@link CmsPermissionSet#ACCESS_WRITE} on the given resource
-     *  
+     *
      * @see org.opencms.file.types.I_CmsResourceType#deleteResource(CmsObject, CmsSecurityManager, CmsResource, CmsResource.CmsResourceDeleteMode)
      */
     public void deleteResource(
@@ -1531,12 +1579,12 @@ public final class CmsSecurityManager {
 
     /**
      * Deletes an entry in the published resource table.<p>
-     * 
+     *
      * @param context the current request context
      * @param resourceName The name of the resource to be deleted in the static export
      * @param linkType the type of resource deleted (0= non-parameter, 1=parameter)
      * @param linkParameter the parameters of the resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void deleteStaticExportPublishedResource(
@@ -1563,7 +1611,7 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param userId the Id of the user to be deleted
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void deleteUser(CmsRequestContext context, CmsUUID userId) throws CmsException {
@@ -1597,7 +1645,7 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param username the name of the user to be deleted
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void deleteUser(CmsRequestContext context, String username) throws CmsException {
@@ -1608,7 +1656,7 @@ public final class CmsSecurityManager {
 
     /**
      * Destroys this security manager.<p>
-     * 
+     *
      * @throws Throwable if something goes wrong
      */
     public synchronized void destroy() throws Throwable {
@@ -1647,19 +1695,19 @@ public final class CmsSecurityManager {
 
     /**
      * Checks the availability of a resource in the VFS,
-     * using the <code>{@link CmsResourceFilter#DEFAULT}</code> filter.<p> 
+     * using the <code>{@link CmsResourceFilter#DEFAULT}</code> filter.<p>
      *
-     * A resource may be of type <code>{@link CmsFile}</code> or 
-     * <code>{@link CmsFolder}</code>.<p>  
+     * A resource may be of type <code>{@link CmsFile}</code> or
+     * <code>{@link CmsFolder}</code>.<p>
      *
-     * The specified filter controls what kind of resources should be "found" 
-     * during the read operation. This will depend on the application. For example, 
+     * The specified filter controls what kind of resources should be "found"
+     * during the read operation. This will depend on the application. For example,
      * using <code>{@link CmsResourceFilter#DEFAULT}</code> will only return currently
      * "valid" resources, while using <code>{@link CmsResourceFilter#IGNORE_EXPIRATION}</code>
      * will ignore the date release / date expired information of the resource.<p>
-     * 
-     * This method also takes into account the user permissions, so if 
-     * the given resource exists, but the current user has not the required 
+     *
+     * This method also takes into account the user permissions, so if
+     * the given resource exists, but the current user has not the required
      * permissions, then this method will return <code>false</code>.<p>
      *
      * @param context the current request context
@@ -1667,7 +1715,7 @@ public final class CmsSecurityManager {
      * @param filter the resource filter to use while reading
      *
      * @return <code>true</code> if the resource is available
-     * 
+     *
      * @see CmsObject#existsResource(CmsUUID, CmsResourceFilter)
      * @see CmsObject#existsResource(CmsUUID)
      */
@@ -1688,19 +1736,19 @@ public final class CmsSecurityManager {
 
     /**
      * Checks the availability of a resource in the VFS,
-     * using the <code>{@link CmsResourceFilter#DEFAULT}</code> filter.<p> 
+     * using the <code>{@link CmsResourceFilter#DEFAULT}</code> filter.<p>
      *
-     * A resource may be of type <code>{@link CmsFile}</code> or 
-     * <code>{@link CmsFolder}</code>.<p>  
+     * A resource may be of type <code>{@link CmsFile}</code> or
+     * <code>{@link CmsFolder}</code>.<p>
      *
-     * The specified filter controls what kind of resources should be "found" 
-     * during the read operation. This will depend on the application. For example, 
+     * The specified filter controls what kind of resources should be "found"
+     * during the read operation. This will depend on the application. For example,
      * using <code>{@link CmsResourceFilter#DEFAULT}</code> will only return currently
      * "valid" resources, while using <code>{@link CmsResourceFilter#IGNORE_EXPIRATION}</code>
      * will ignore the date release / date expired information of the resource.<p>
-     * 
-     * This method also takes into account the user permissions, so if 
-     * the given resource exists, but the current user has not the required 
+     *
+     * This method also takes into account the user permissions, so if
+     * the given resource exists, but the current user has not the required
      * permissions, then this method will return <code>false</code>.<p>
      *
      * @param context the current request context
@@ -1708,7 +1756,7 @@ public final class CmsSecurityManager {
      * @param filter the resource filter to use while reading
      *
      * @return <code>true</code> if the resource is available
-     * 
+     *
      * @see CmsObject#existsResource(String, CmsResourceFilter)
      * @see CmsObject#existsResource(String)
      */
@@ -1729,18 +1777,18 @@ public final class CmsSecurityManager {
 
     /**
      * Fills the given publish list with the the VFS resources that actually get published.<p>
-     * 
+     *
      * Please refer to the source code of this method for the rules on how to decide whether a
      * new/changed/deleted <code>{@link CmsResource}</code> object can be published or not.<p>
-     * 
+     *
      * @param context the current request context
      * @param publishList must be initialized with basic publish information (Project or direct publish operation)
-     * 
-     * @return the given publish list filled with all new/changed/deleted files from the current (offline) project 
+     *
+     * @return the given publish list filled with all new/changed/deleted files from the current (offline) project
      *      that will be published actually
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see org.opencms.db.CmsPublishList
      */
     public CmsPublishList fillPublishList(CmsRequestContext context, CmsPublishList publishList) throws CmsException {
@@ -1773,13 +1821,13 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the list of access control entries of a resource given its name.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to read the access control entries for
      * @param getInherited true if the result should include all access control entries inherited by parent folders
-     * 
+     *
      * @return a list of <code>{@link CmsAccessControlEntry}</code> objects defining all permissions for the given resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsAccessControlEntry> getAccessControlEntries(
@@ -1801,15 +1849,15 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the access control list (summarized access control entries) of a given resource.<p>
-     * 
+     *
      * If <code>inheritedOnly</code> is set, only inherited access control entries are returned.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource
      * @param inheritedOnly skip non-inherited entries if set
-     * 
+     *
      * @return the access control list of the resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsAccessControlList getAccessControlList(
@@ -1831,15 +1879,65 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Returns all projects which are owned by the current user or which are 
+     * Gets the aliases for a given site.<p>
+     * 
+     * @param requestContext the current request context 
+     * @param siteRoot the site root 
+     * 
+     * @return the list of aliases for the given site root 
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    public List<CmsAlias> getAliasesForSite(CmsRequestContext requestContext, String siteRoot) throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(requestContext);
+        try {
+            List<CmsAlias> aliases = m_driverManager.readAliasesBySite(
+                dbc,
+                requestContext.getCurrentProject(),
+                siteRoot);
+            return aliases;
+        } catch (Exception e) {
+            dbc.report(null, Messages.get().container(Messages.ERR_DB_OPERATION_0), e);
+            return null; // will never be executed
+        } finally {
+            dbc.clear();
+        }
+    }
+
+    /**
+     * Gets all access control entries.<p>
+     *  
+     * @param context the current request context 
+     * @return the list of all access control entries
+     *  
+     * @throws CmsException if something goes wrong 
+     */
+    public List<CmsAccessControlEntry> getAllAccessControlEntries(CmsRequestContext context) throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(context);
+        List<CmsAccessControlEntry> result = null;
+        try {
+            result = m_driverManager.getAllAccessControlEntries(dbc);
+        } catch (Exception e) {
+            dbc.report(null, Messages.get().container(Messages.ERR_GET_ACL_ENTRIES_1, "<all resources>"), e);
+        } finally {
+            dbc.clear();
+        }
+        return result;
+
+    }
+
+    /**
+     * Returns all projects which are owned by the current user or which are
      * accessible for the group of the user.<p>
      *
      * @param context the current request context
      * @param orgUnit the organizational unit to search project in
      * @param includeSubOus if to include sub organizational units
-     * 
+     *
      * @return a list of objects of type <code>{@link CmsProject}</code>
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsProject> getAllAccessibleProjects(
@@ -1866,10 +1964,10 @@ public final class CmsSecurityManager {
      * Returns a list with all projects from history.<p>
      *
      * @param context the current request context
-     * 
-     * @return list of <code>{@link CmsHistoryProject}</code> objects 
+     *
+     * @return list of <code>{@link CmsHistoryProject}</code> objects
      *           with all projects from history.
-     * 
+     *
      * @throws CmsException if operation was not successful
      */
     public List<CmsHistoryProject> getAllHistoricalProjects(CmsRequestContext context) throws CmsException {
@@ -1896,9 +1994,9 @@ public final class CmsSecurityManager {
      * @param context the current request context
      * @param orgUnit the organizational unit to search project in
      * @param includeSubOus if to include sub organizational units
-     * 
+     *
      * @return a list of objects of type <code>{@link CmsProject}</code>
-     * 
+     *
      * @throws CmsException if operation was not successful
      */
     public List<CmsProject> getAllManageableProjects(
@@ -1923,7 +2021,7 @@ public final class CmsSecurityManager {
 
     /**
      * Returns all child groups of a group.<p>
-     * 
+     *
      * This method also returns all sub-child groups of the current group.<p>
      *
      * @param context the current request context
@@ -1931,7 +2029,7 @@ public final class CmsSecurityManager {
      * @param includeSubChildren if set also returns all sub-child groups of the given group
      *
      * @return a list of all child <code>{@link CmsGroup}</code> objects or <code>null</code>
-     * 
+     *
      * @throws CmsException if operation was not successful
      */
     public List<CmsGroup> getChildren(CmsRequestContext context, String groupname, boolean includeSubChildren)
@@ -1954,14 +2052,14 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the date when the resource was last visited by the user.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param user the user to check the date
      * @param resource the resource to check the date
-     * 
+     *
      * @return the date when the resource was last visited by the user
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public long getDateLastVisitedBy(CmsRequestContext context, String poolName, CmsUser user, CmsResource resource)
@@ -1992,11 +2090,11 @@ public final class CmsSecurityManager {
      * @param orgUnit the organizational unit to get the groups for
      * @param includeSubOus if all groups of sub-organizational units should be retrieved too
      * @param readRoles if to read roles or groups
-     * 
+     *
      * @return all <code>{@link CmsGroup}</code> objects in the organizational unit
      *
      * @throws CmsException if operation was not successful
-     * 
+     *
      * @see org.opencms.security.CmsOrgUnitManager#getResourcesForOrganizationalUnit(CmsObject, String)
      * @see org.opencms.security.CmsOrgUnitManager#getGroups(CmsObject, String, boolean)
      * @see org.opencms.security.CmsOrgUnitManager#getUsers(CmsObject, String, boolean)
@@ -2028,10 +2126,10 @@ public final class CmsSecurityManager {
      * @param includeChildOus include groups of child organizational units
      * @param readRoles if to read roles or groups
      * @param directGroupsOnly if set only the direct assigned groups will be returned, if not also indirect roles
-     * @param remoteAddress the IP address to filter the groups in the result list 
+     * @param remoteAddress the IP address to filter the groups in the result list
      *
      * @return a list of <code>{@link CmsGroup}</code> objects filtered by the given IP address
-     * 
+     *
      * @throws CmsException if operation was not successful
      */
     public List<CmsGroup> getGroupsOfUser(
@@ -2064,12 +2162,12 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the lock state of a resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to return the lock state for
-     * 
+     *
      * @return the lock state of the resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsLock getLock(CmsRequestContext context, CmsResource resource) throws CmsException {
@@ -2092,9 +2190,9 @@ public final class CmsSecurityManager {
      * @param context the current request context
      * @param resource the folder to search in
      * @param filter the lock filter
-     * 
+     *
      * @return a list of locked resource paths (relative to current site)
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<String> getLockedResources(CmsRequestContext context, CmsResource resource, CmsLockFilter filter)
@@ -2123,9 +2221,9 @@ public final class CmsSecurityManager {
      * @param context the current request context
      * @param resource the folder to search in
      * @param filter the lock filter
-     * 
+     *
      * @return a list of locked resource paths (relative to current site)
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsResource> getLockedResourcesObjects(
@@ -2156,10 +2254,10 @@ public final class CmsSecurityManager {
      * @param context the current request context
      * @param resource the folder to search in
      * @param filter the lock filter
-     * @param cache the cache to use 
-     * 
+     * @param cache the cache to use
+     *
      * @return a list of locked resource paths (relative to current site)
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsResource> getLockedResourcesObjectsWithCache(
@@ -2186,8 +2284,8 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Returns the lock manger.<p> 
-     * 
+     * Returns the lock manger.<p>
+     *
      * @return the lock manager
      */
     public CmsLockManager getLockManager() {
@@ -2196,15 +2294,15 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Returns all log entries matching the given filter.<p> 
-     * 
+     * Returns all log entries matching the given filter.<p>
+     *
      * @param context the current user context
      * @param filter the filter to match the log entries
-     * 
+     *
      * @return all log entries matching the given filter
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see CmsObject#getLogEntries(CmsLogFilter)
      */
     public List<CmsLogEntry> getLogEntries(CmsRequestContext context, CmsLogFilter filter) throws CmsException {
@@ -2222,14 +2320,14 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Returns all resources of organizational units for which the current user has 
+     * Returns all resources of organizational units for which the current user has
      * the given role role.<p>
-     * 
+     *
      * @param context the current request context
      * @param role the role to check
-     *  
+     *
      * @return a list of {@link org.opencms.file.CmsResource} objects
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsResource> getManageableResources(CmsRequestContext context, CmsRole role) throws CmsException {
@@ -2245,17 +2343,17 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Returns all child organizational units of the given parent organizational unit including 
+     * Returns all child organizational units of the given parent organizational unit including
      * hierarchical deeper organization units if needed.<p>
      *
      * @param context the current request context
      * @param parent the parent organizational unit
      * @param includeChildren if hierarchical deeper organization units should also be returned
-     * 
+     *
      * @return a list of <code>{@link CmsOrganizationalUnit}</code> objects
-     * 
+     *
      * @throws CmsException if operation was not successful
-     * 
+     *
      * @see org.opencms.security.CmsOrgUnitManager#getOrganizationalUnits(CmsObject, String, boolean)
      */
     public List<CmsOrganizationalUnit> getOrganizationalUnits(
@@ -2277,13 +2375,13 @@ public final class CmsSecurityManager {
 
     /**
      * Returns all the organizational units for which the current user has the given role.<p>
-     * 
+     *
      * @param requestContext the current request context
      * @param role the role to check
-     * @param includeSubOus if sub organizational units should be included in the search 
-     *  
+     * @param includeSubOus if sub organizational units should be included in the search
+     *
      * @return a list of {@link org.opencms.security.CmsOrganizationalUnit} objects
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsOrganizationalUnit> getOrgUnitsForRole(
@@ -2311,9 +2409,9 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param groupname the name of the group
-     * 
+     *
      * @return group the parent group or <code>null</code>
-     * 
+     *
      * @throws CmsException if operation was not successful
      */
     public CmsGroup getParent(CmsRequestContext context, String groupname) throws CmsException {
@@ -2332,13 +2430,13 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the set of permissions of the current user for a given resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource
      * @param user the user
-     * 
+     *
      * @return bit set with allowed permissions
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsPermissionSetCustom getPermissions(CmsRequestContext context, CmsResource resource, CmsUser user)
@@ -2360,15 +2458,15 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Returns the uuid id for the given id, 
+     * Returns the uuid id for the given id,
      * remove this method as soon as possible.<p>
-     * 
+     *
      * @param context the current cms context
      * @param id the old project id
-     * 
+     *
      * @return the new uuid for the given id
-     * 
-     * @throws CmsException if something goes wrong 
+     *
+     * @throws CmsException if something goes wrong
      */
     public CmsUUID getProjectId(CmsRequestContext context, int id) throws CmsException {
 
@@ -2385,18 +2483,18 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Returns a new publish list that contains the unpublished resources related 
-     * to all resources in the given publish list, the related resources exclude 
+     * Returns a new publish list that contains the unpublished resources related
+     * to all resources in the given publish list, the related resources exclude
      * all resources in the given publish list and also locked (by other users) resources.<p>
-     * 
+     *
      * @param context the current cms context
      * @param publishList the publish list to exclude from result
      * @param filter the relation filter to use to get the related resources
-     * 
+     *
      * @return a new publish list that contains the related resources
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see org.opencms.publish.CmsPublishManager#getRelatedResourcesToPublish(CmsObject, CmsPublishList)
      */
     public CmsPublishList getRelatedResourcesToPublish(
@@ -2428,16 +2526,16 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Returns all relations for the given resource matching the given filter.<p> 
-     * 
+     * Returns all relations for the given resource matching the given filter.<p>
+     *
      * @param context the current user context
      * @param resource the resource to retrieve the relations for
-     * @param filter the filter to match the relation 
-     * 
+     * @param filter the filter to match the relation
+     *
      * @return all {@link org.opencms.relations.CmsRelation} objects for the given resource matching the given filter
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see CmsObject#getRelationsForResource(String, CmsRelationFilter)
      */
     public List<CmsRelation> getRelationsForResource(
@@ -2471,11 +2569,11 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param orgUnit the organizational unit to get all resources for
-     * 
+     *
      * @return all <code>{@link CmsResource}</code> objects in the organizational unit
      *
      * @throws CmsException if operation was not successful
-     * 
+     *
      * @see org.opencms.security.CmsOrgUnitManager#getResourcesForOrganizationalUnit(CmsObject, String)
      * @see org.opencms.security.CmsOrgUnitManager#getGroups(CmsObject, String, boolean)
      * @see org.opencms.security.CmsOrgUnitManager#getUsers(CmsObject, String, boolean)
@@ -2496,23 +2594,23 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Returns all resources associated to a given principal via an ACE with the given permissions.<p> 
-     * 
-     * If the <code>includeAttr</code> flag is set it returns also all resources associated to 
-     * a given principal through some of following attributes.<p> 
-     * 
+     * Returns all resources associated to a given principal via an ACE with the given permissions.<p>
+     *
+     * If the <code>includeAttr</code> flag is set it returns also all resources associated to
+     * a given principal through some of following attributes.<p>
+     *
      * <ul>
      *    <li>User Created</li>
      *    <li>User Last Modified</li>
      * </ul><p>
-     * 
+     *
      * @param context the current request context
      * @param principalId the id of the principal
      * @param permissions a set of permissions to match, can be <code>null</code> for all ACEs
      * @param includeAttr a flag to include resources associated by attributes
-     * 
+     *
      * @return a set of <code>{@link CmsResource}</code> objects
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public Set<CmsResource> getResourcesForPrincipal(
@@ -2540,15 +2638,39 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Gets the groups which constitute a given role.<p>
-     * 
-     * @param context the request context 
-     * @param role the role 
-     * @param directUsersOnly if true, only direct users of the role group will be returned 
-     * 
-     * @return the role's groups 
+     * Gets the rewrite aliases matching a given filter.<p>
+     *  
+     * @param requestContext the current request context 
+     * @param filter the filter used for selecting the rewrite aliases 
+     * @return the rewrite aliases matching the given filter 
      * 
      * @throws CmsException if something goes wrong 
+     */
+    public List<CmsRewriteAlias> getRewriteAliases(CmsRequestContext requestContext, CmsRewriteAliasFilter filter)
+    throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(requestContext);
+        try {
+            return m_driverManager.getRewriteAliases(dbc, filter);
+        } catch (Exception e) {
+            dbc.report(null, Messages.get().container(Messages.ERR_DB_OPERATION_0), e);
+            return null; // will never be executed
+        } finally {
+            dbc.clear();
+        }
+
+    }
+
+    /**
+     * Gets the groups which constitute a given role.<p>
+     *
+     * @param context the request context
+     * @param role the role
+     * @param directUsersOnly if true, only direct users of the role group will be returned
+     *
+     * @return the role's groups
+     *
+     * @throws CmsException if something goes wrong
      */
     public Set<CmsGroup> getRoleGroups(CmsRequestContext context, CmsRole role, boolean directUsersOnly)
     throws CmsException {
@@ -2558,7 +2680,7 @@ public final class CmsSecurityManager {
             return m_driverManager.getRoleGroups(dbc, role.getGroupName(), directUsersOnly);
         } catch (Exception e) {
             dbc.report(null, Messages.get().container(Messages.ERR_GET_ROLE_GROUPS_1, role.toString()), e);
-            return null; // will never be executed 
+            return null; // will never be executed
         } finally {
             dbc.clear();
         }
@@ -2566,13 +2688,13 @@ public final class CmsSecurityManager {
 
     /**
      * Returns all roles the given user has for the given resource.<p>
-     *  
+     *
      * @param context the current request context
      * @param user the user to check
      * @param resource the resource to check the roles for
-     * 
+     *
      * @return a list of {@link CmsRole} objects
-     * 
+     *
      * @throws CmsException is something goes wrong
      */
     public List<CmsRole> getRolesForResource(CmsRequestContext context, CmsUser user, CmsResource resource)
@@ -2598,7 +2720,7 @@ public final class CmsSecurityManager {
 
     /**
      * Returns an instance of the common sql manager.<p>
-     * 
+     *
      * @return an instance of the common sql manager
      */
     public CmsSqlManager getSqlManager() {
@@ -2612,11 +2734,11 @@ public final class CmsSecurityManager {
      * @param context the current request context
      * @param orgUnit the organizational unit to get the users for
      * @param recursive if all users of sub-organizational units should be retrieved too
-     * 
+     *
      * @return all <code>{@link CmsUser}</code> objects in the organizational unit
      *
      * @throws CmsException if operation was not successful
-     * 
+     *
      * @see org.opencms.security.CmsOrgUnitManager#getResourcesForOrganizationalUnit(CmsObject, String)
      * @see org.opencms.security.CmsOrgUnitManager#getGroups(CmsObject, String, boolean)
      * @see org.opencms.security.CmsOrgUnitManager#getUsers(CmsObject, String, boolean)
@@ -2642,12 +2764,12 @@ public final class CmsSecurityManager {
      * @param context the current request context
      * @param groupname the name of the group to list users from
      * @param includeOtherOuUsers include users of other organizational units
-     * @param directUsersOnly if set only the direct assigned users will be returned, 
+     * @param directUsersOnly if set only the direct assigned users will be returned,
      *                          if not also indirect users, ie. members of child groups
      * @param readRoles if to read roles or groups
      *
      * @return all <code>{@link CmsUser}</code> objects in the group
-     * 
+     *
      * @throws CmsException if operation was not successful
      */
     public List<CmsUser> getUsersOfGroup(
@@ -2676,11 +2798,11 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the current user's publish list.<p>
-     * 
+     *
      * @param context the request context
-     * 
+     *
      * @return the current user's publish list
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsResource> getUsersPubList(CmsRequestContext context) throws CmsException {
@@ -2707,11 +2829,11 @@ public final class CmsSecurityManager {
      * @param context the current request context
      * @param orgUnit the organizational unit to get the users for
      * @param recursive if all users of sub-organizational units should be retrieved too
-     * 
+     *
      * @return all <code>{@link CmsUser}</code> objects in the organizational unit
      *
      * @throws CmsException if operation was not successful
-     * 
+     *
      * @see org.opencms.security.CmsOrgUnitManager#getResourcesForOrganizationalUnit(CmsObject, String)
      * @see org.opencms.security.CmsOrgUnitManager#getGroups(CmsObject, String, boolean)
      * @see org.opencms.security.CmsOrgUnitManager#getUsers(CmsObject, String, boolean)
@@ -2735,27 +2857,27 @@ public final class CmsSecurityManager {
 
     /**
      * Performs a non-blocking permission check on a resource.<p>
-     * 
+     *
      * This test will not throw an exception in case the required permissions are not
-     * available for the requested operation. Instead, it will return one of the 
+     * available for the requested operation. Instead, it will return one of the
      * following values:<ul>
      * <li><code>{@link I_CmsPermissionHandler#PERM_ALLOWED}</code></li>
      * <li><code>{@link I_CmsPermissionHandler#PERM_FILTERED}</code></li>
      * <li><code>{@link I_CmsPermissionHandler#PERM_DENIED}</code></li></ul><p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource on which permissions are required
      * @param requiredPermissions the set of permissions required for the operation
-     * @param checkLock if true, a lock for the current user is required for 
+     * @param checkLock if true, a lock for the current user is required for
      *      all write operations, if false it's ok to write as long as the resource
      *      is not locked by another user
      * @param filter the resource filter to use
-     * 
+     *
      * @return <code>{@link I_CmsPermissionHandler#PERM_ALLOWED}</code> if the user has sufficient permissions on the resource
      *      for the requested operation
-     * 
+     *
      * @throws CmsException in case of i/o errors (NOT because of insufficient permissions)
-     * 
+     *
      * @see #hasPermissions(CmsDbContext, CmsResource, CmsPermissionSet, boolean, CmsResourceFilter)
      */
     public I_CmsPermissionHandler.CmsPermissionCheckResult hasPermissions(
@@ -2777,14 +2899,14 @@ public final class CmsSecurityManager {
 
     /**
      * Checks if the given user has the given role in the given organizational unit.<p>
-     *  
+     *
      * If the organizational unit is <code>null</code>, this method will check if the
      * given user has the given role for at least one organizational unit.<p>
-     *  
+     *
      * @param dbc the current OpenCms users database context
      * @param user the user to check the role for
      * @param role the role to check
-     * 
+     *
      * @return <code>true</code> if the given user has the given role in the given organizational unit
      */
     public boolean hasRole(CmsDbContext dbc, CmsUser user, CmsRole role) {
@@ -2822,14 +2944,14 @@ public final class CmsSecurityManager {
 
     /**
      * Checks if the given user has the given role in the given organizational unit.<p>
-     *  
+     *
      * If the organizational unit is <code>null</code>, this method will check if the
      * given user has the given role for at least one organizational unit.<p>
-     *  
+     *
      * @param context the current request context
      * @param user the user to check the role for
      * @param role the role to check
-     * 
+     *
      * @return <code>true</code> if the given user has the given role in the given organizational unit
      */
     public boolean hasRole(CmsRequestContext context, CmsUser user, CmsRole role) {
@@ -2846,12 +2968,12 @@ public final class CmsSecurityManager {
 
     /**
      * Checks if the given user has the given role for the given resource.<p>
-     *  
+     *
      * @param dbc the current OpenCms users database context
      * @param user the user to check the role for
      * @param role the role to check
      * @param resource the resource to check the role for
-     * 
+     *
      * @return <code>true</code> if the given user has the given role for the given resource
      */
     public boolean hasRoleForResource(CmsDbContext dbc, CmsUser user, CmsRole role, CmsResource resource) {
@@ -2935,12 +3057,12 @@ public final class CmsSecurityManager {
 
     /**
      * Checks if the given user has the given role for the given resource.<p>
-     *  
+     *
      * @param context the current request context
      * @param user the user to check
      * @param role the role to check
      * @param resource the resource to check the role for
-     * 
+     *
      * @return <code>true</code> if the given user has the given role for the given resource
      */
     public boolean hasRoleForResource(CmsRequestContext context, CmsUser user, CmsRole role, CmsResource resource) {
@@ -2957,18 +3079,18 @@ public final class CmsSecurityManager {
 
     /**
      * Writes a list of access control entries as new access control entries of a given resource.<p>
-     * 
+     *
      * Already existing access control entries of this resource are removed before.<p>
-     * 
+     *
      * Access is granted, if:<p>
      * <ul>
      * <li>the current user has control permission on the resource</li>
      * </ul><p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource
      * @param acEntries a list of <code>{@link CmsAccessControlEntry}</code> objects
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the required permissions are not satisfied
      */
@@ -2994,26 +3116,26 @@ public final class CmsSecurityManager {
 
     /**
      * Creates a new resource with the provided content and properties.<p>
-     * 
+     *
      * The <code>content</code> parameter may be null if the resource id already exists.
      * If so, the created resource will be made a sibling of the existing resource,
      * the existing content will remain unchanged.
-     * This is used during file import for import of siblings as the 
-     * <code>manifest.xml</code> only contains one binary copy per file. 
+     * This is used during file import for import of siblings as the
+     * <code>manifest.xml</code> only contains one binary copy per file.
      * If the resource id exists but the <code>content</code> is not null,
      * the created resource will be made a sibling of the existing resource,
      * and both will share the new content.<p>
-     * 
+     *
      * @param context the current request context
      * @param resourcePath the name of the resource to create (full path)
      * @param resource the new resource to create
      * @param content the content for the new resource
      * @param properties the properties for the new resource
-     * @param importCase if <code>true</code>, signals that this operation is done while importing resource, 
+     * @param importCase if <code>true</code>, signals that this operation is done while importing resource,
      *                   causing different lock behavior and potential "lost and found" usage
-     * 
+     *
      * @return the created resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsResource importResource(
@@ -3041,8 +3163,38 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Creates a new user by import.<p>
+     * Imports a rewrite alias.<p>
      * 
+     * @param requestContext the current request context 
+     * @param siteRoot the site root 
+     * @param source the rewrite alias source 
+     * @param target the rewrite alias target 
+     * @param mode the alias mode 
+     * @return the import result
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    public CmsAliasImportResult importRewriteAlias(
+        CmsRequestContext requestContext,
+        String siteRoot,
+        String source,
+        String target,
+        CmsAliasMode mode) throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(requestContext);
+        try {
+            return m_driverManager.importRewriteAlias(dbc, siteRoot, source, target, mode);
+        } catch (Exception e) {
+            dbc.report(null, Messages.get().container(Messages.ERR_DB_OPERATION_0), e);
+            return null;
+        } finally {
+            dbc.clear();
+        }
+    }
+
+    /**
+     * Creates a new user by import.<p>
+     *
      * @param context the current request context
      * @param id the id of the user
      * @param name the new name for the user
@@ -3053,7 +3205,7 @@ public final class CmsSecurityManager {
      * @param flags the flags for a user (for example <code>{@link I_CmsPrincipal#FLAG_ENABLED}</code>)
      * @param dateCreated the creation date
      * @param additionalInfos the additional user infos
-     * 
+     *
      * @return the imported user
      *
      * @throws CmsException if something goes wrong
@@ -3113,13 +3265,13 @@ public final class CmsSecurityManager {
 
     /**
      * Increments a counter and returns its old value.<p>
-     * 
-     * @param context the request context 
-     * @param name the name of the counter 
-     *  
-     * @return the value of the counter before incrementing 
-     *    
-     * @throws CmsException if something goes wrong 
+     *
+     * @param context the request context
+     * @param name the name of the counter
+     *
+     * @return the value of the counter before incrementing
+     *
+     * @throws CmsException if something goes wrong
      */
     public int incrementCounter(CmsRequestContext context, String name) throws CmsException {
 
@@ -3128,7 +3280,7 @@ public final class CmsSecurityManager {
             return m_driverManager.incrementCounter(dbc, name);
         } catch (Exception e) {
             dbc.report(null, Messages.get().container(Messages.ERR_INCREMENT_COUNTER_1, name), e);
-            return -1; // will never be reached  
+            return -1; // will never be reached
         } finally {
             dbc.clear();
         }
@@ -3136,11 +3288,11 @@ public final class CmsSecurityManager {
 
     /**
      * Initializes this security manager with a given runtime info factory.<p>
-     * 
+     *
      * @param configurationManager the configurationManager
      * @param dbContextFactory the initialized OpenCms runtime info factory
      * @param publishEngine the publish engine
-     * 
+     *
      * @throws CmsInitException if the initialization fails
      */
     public void init(
@@ -3202,14 +3354,14 @@ public final class CmsSecurityManager {
 
     /**
      * Checks if the specified resource is inside the current project.<p>
-     * 
-     * The project "view" is determined by a set of path prefixes. 
-     * If the resource starts with any one of this prefixes, it is considered to 
+     *
+     * The project "view" is determined by a set of path prefixes.
+     * If the resource starts with any one of this prefixes, it is considered to
      * be "inside" the project.<p>
-     * 
+     *
      * @param context the current request context
      * @param resourcename the specified resource name (full path)
-     * 
+     *
      * @return <code>true</code>, if the specified resource is inside the current project
      */
     public boolean isInsideCurrentProject(CmsRequestContext context, String resourcename) {
@@ -3249,8 +3401,8 @@ public final class CmsSecurityManager {
 
     /**
      * Checks whether the subscription driver is available.<p>
-     * 
-     * @return true if the subscription driver is available 
+     *
+     * @return true if the subscription driver is available
      */
     public boolean isSubscriptionDriverAvailable() {
 
@@ -3267,13 +3419,13 @@ public final class CmsSecurityManager {
      * <li><code>{@link org.opencms.lock.CmsLockType#TEMPORARY}</code></li>
      * <li><code>{@link org.opencms.lock.CmsLockType#PUBLISH}</code></li>
      * </ul><p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to lock
      * @param type type of the lock
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see CmsObject#lockResource(String)
      * @see CmsObject#lockResourceTemporary(String)
      * @see org.opencms.file.types.I_CmsResourceType#lockResource(CmsObject, CmsSecurityManager, CmsResource, CmsLockType)
@@ -3286,10 +3438,23 @@ public final class CmsSecurityManager {
             checkPermissions(dbc, resource, CmsPermissionSet.ACCESS_WRITE, false, CmsResourceFilter.ALL);
             m_driverManager.lockResource(dbc, resource, type);
         } catch (Exception e) {
+<<<<<<< HEAD
             dbc.report(
                 null,
                 Messages.get().container(Messages.ERR_LOCK_RESOURCE_2, context.getSitePath(resource), type.toString()),
                 e);
+=======
+            CmsMessageContainer messageContainer;
+            if (e instanceof CmsLockException) {
+                messageContainer = ((CmsLockException)e).getMessageContainer();
+            } else {
+                messageContainer = Messages.get().container(
+                    Messages.ERR_LOCK_RESOURCE_2,
+                    context.getSitePath(resource),
+                    type.toString());
+            }
+            dbc.report(null, messageContainer, e);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         } finally {
             dbc.clear();
         }
@@ -3297,12 +3462,12 @@ public final class CmsSecurityManager {
 
     /**
      * Attempts to authenticate a user into OpenCms with the given password.<p>
-     * 
+     *
      * @param context the current request context
      * @param username the name of the user to be logged in
      * @param password the password of the user
      * @param remoteAddress the ip address of the request
-     * 
+     *
      * @return the logged in user
      *
      * @throws CmsException if the login was not successful
@@ -3326,10 +3491,10 @@ public final class CmsSecurityManager {
 
     /**
      * Lookup and read the user or group with the given UUID.<p>
-     * 
+     *
      * @param context the current request context
      * @param principalId the UUID of the principal to lookup
-     * 
+     *
      * @return the principal (group or user) if found, otherwise <code>null</code>
      */
     public I_CmsPrincipal lookupPrincipal(CmsRequestContext context, CmsUUID principalId) {
@@ -3346,10 +3511,10 @@ public final class CmsSecurityManager {
 
     /**
      * Lookup and read the user or group with the given name.<p>
-     * 
+     *
      * @param context the current request context
      * @param principalName the name of the principal to lookup
-     * 
+     *
      * @return the principal (group or user) if found, otherwise <code>null</code>
      */
     public I_CmsPrincipal lookupPrincipal(CmsRequestContext context, String principalName) {
@@ -3366,12 +3531,12 @@ public final class CmsSecurityManager {
 
     /**
      * Mark the given resource as visited by the user.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param resource the resource to mark as visited
      * @param user the user that visited the resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void markResourceAsVisitedBy(CmsRequestContext context, String poolName, CmsResource resource, CmsUser user)
@@ -3395,15 +3560,15 @@ public final class CmsSecurityManager {
 
     /**
      * Returns a new publish list that contains all resources of both given publish lists.<p>
-     * 
+     *
      * @param context the current request context
      * @param pubList1 the first publish list
      * @param pubList2 the second publish list
-     * 
+     *
      * @return a new publish list that contains all resources of both given publish lists
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see org.opencms.publish.CmsPublishManager#mergePublishLists(CmsObject, CmsPublishList, CmsPublishList)
      */
     public CmsPublishList mergePublishLists(CmsRequestContext context, CmsPublishList pubList1, CmsPublishList pubList2)
@@ -3423,6 +3588,9 @@ public final class CmsSecurityManager {
                 pubList1.isPublishSiblings(),
                 pubList1.isPublishSubResources());
             ret.addAll(publishResources, false); // ignore files that should not be published
+            if (pubList1.isUserPublishList()) {
+                ret.setUserPublishList(true);
+            }
             ret.initialize(); // ensure sort order
 
             checkPublishPermissions(dbc, ret);
@@ -3436,23 +3604,23 @@ public final class CmsSecurityManager {
 
     /**
      * Moves a resource.<p>
-     * 
+     *
      * You must ensure that the destination path is an absolute, valid and
      * existing VFS path. Relative paths from the source are currently not supported.<p>
-     * 
+     *
      * The moved resource will always be locked to the current user
      * after the move operation.<p>
-     * 
-     * In case the target resource already exists, it is overwritten with the 
+     *
+     * In case the target resource already exists, it is overwritten with the
      * source resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param source the resource to copy
      * @param destination the name of the copy destination with complete path
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * @throws CmsSecurityException if resource could not be copied 
-     * 
+     * @throws CmsSecurityException if resource could not be copied
+     *
      * @see CmsObject#moveResource(String, String)
      * @see org.opencms.file.types.I_CmsResourceType#moveResource(CmsObject, CmsSecurityManager, CmsResource, String)
      */
@@ -3504,25 +3672,25 @@ public final class CmsSecurityManager {
 
     /**
      * Moves a resource to the "lost and found" folder.<p>
-     * 
+     *
      * The method can also be used to check get the name of a resource
      * in the "lost and found" folder only without actually moving the
      * the resource. To do this, the <code>returnNameOnly</code> flag
      * must be set to <code>true</code>.<p>
-     * 
+     *
      * In general, it is the same name as the given resource has, the only exception is
-     * if a resource in the "lost and found" folder with the same name already exists. 
+     * if a resource in the "lost and found" folder with the same name already exists.
      * In such case, a counter is added to the resource name.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to apply this operation to
-     * @param returnNameOnly if <code>true</code>, only the name of the resource in the "lost and found" 
+     * @param returnNameOnly if <code>true</code>, only the name of the resource in the "lost and found"
      *        folder is returned, the move operation is not really performed
-     * 
+     *
      * @return the name of the resource inside the "lost and found" folder
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see CmsObject#moveToLostAndFound(String)
      * @see CmsObject#getLostAndFoundName(String)
      */
@@ -3557,11 +3725,11 @@ public final class CmsSecurityManager {
      * @param cms the current request context
      * @param publishList a publish list
      * @param report an instance of <code>{@link I_CmsReport}</code> to print messages
-     * 
+     *
      * @return the publish history id of the published project
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see #fillPublishList(CmsRequestContext, CmsPublishList)
      */
     public CmsUUID publishProject(CmsObject cms, CmsPublishList publishList, I_CmsReport report) throws CmsException {
@@ -3579,15 +3747,67 @@ public final class CmsSecurityManager {
     }
 
     /**
+     * Reads the alias with a given path in a given site.<p>
+     *
+     * @param context the current request context
+     * @param siteRoot the site root
+     * @param path the site relative alias path
+     * @return the alias for the path, or null if no such alias exists
+     *
+     * @throws CmsException if something goes wrong
+     */
+    public CmsAlias readAliasByPath(CmsRequestContext context, String siteRoot, String path) throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(context);
+        try {
+            CmsAlias alias = m_driverManager.readAliasByPath(dbc, context.getCurrentProject(), siteRoot, path);
+            return alias;
+        } catch (Exception e) {
+            dbc.report(null, Messages.get().container(Messages.ERR_DB_OPERATION_0), e);
+            return null; // will never be executed
+        } finally {
+            dbc.clear();
+        }
+    }
+
+    /**
+     * Reads the aliases for a resource with a given structure id.<p>
+     *
+     * @param context the current request context
+     * @param structureId the structure id for which the aliases should be read
+     *
+     * @return the aliases for the structure id
+     *
+     * @throws CmsException if something goes wrong
+     */
+    public List<CmsAlias> readAliasesById(CmsRequestContext context, CmsUUID structureId) throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(context);
+        try {
+            List<CmsAlias> aliases = m_driverManager.readAliasesByStructureId(
+                dbc,
+                context.getCurrentProject(),
+                structureId);
+            return aliases;
+        } catch (Exception e) {
+            dbc.report(null, Messages.get().container(Messages.ERR_DB_OPERATION_0), e);
+            return null; // will never be executed
+        } finally {
+            dbc.clear();
+        }
+
+    }
+
+    /**
      * Reads all historical versions of a resource.<p>
-     * 
+     *
      * The reading excludes the file content, if the resource is a file.<p>
      *
      * @param context the current request context
      * @param resource the resource to be read
-     * 
+     *
      * @return a list of historical versions, as <code>{@link I_CmsHistoryResource}</code> objects
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<I_CmsHistoryResource> readAllAvailableVersions(CmsRequestContext context, CmsResource resource)
@@ -3612,9 +3832,9 @@ public final class CmsSecurityManager {
      * Reads all property definitions for the given mapping type.<p>
      *
      * @param context the current request context
-     * 
+     *
      * @return a list with the <code>{@link CmsPropertyDefinition}</code> objects (may be empty)
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsPropertyDefinition> readAllPropertyDefinitions(CmsRequestContext context) throws CmsException {
@@ -3633,13 +3853,13 @@ public final class CmsSecurityManager {
 
     /**
      * Returns all resources subscribed by the given user or group.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param principal the principal to read the subscribed resources
-     * 
+     *
      * @return all resources subscribed by the given user or group
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsResource> readAllSubscribedResources(
@@ -3671,12 +3891,12 @@ public final class CmsSecurityManager {
 
     /**
      * Reads all URL name mapping entries for a given structure id.<p>
-     * 
-     * @param context the request context 
+     *
+     * @param context the request context
      * @param id the structure id
-     * 
-     * @return the list of URL names for the given structure id 
-     * @throws CmsException if something goes wrong 
+     *
+     * @return the list of URL names for the given structure id
+     * @throws CmsException if something goes wrong
      */
     public List<String> readAllUrlNameMappingEntries(CmsRequestContext context, CmsUUID id) throws CmsException {
 
@@ -3705,15 +3925,15 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the first ancestor folder matching the filter criteria.<p>
-     * 
+     *
      * If no folder matching the filter criteria is found, null is returned.<p>
-     * 
+     *
      * @param context the context of the current request
      * @param resource the resource to start
      * @param filter the resource filter to match while reading the ancestors
-     * 
+     *
      * @return the first ancestor folder matching the filter criteria or <code>null</code> if no folder was found
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsFolder readAncestor(CmsRequestContext context, CmsResource resource, CmsResourceFilter filter)
@@ -3740,17 +3960,17 @@ public final class CmsSecurityManager {
 
     /**
      * Reads the newest URL name which is mapped to the given structure id.<p>
-     * 
+     *
      * If the structure id is not mapped to any name, null will be returned.<p>
      *
-     * @param context the request context 
+     * @param context the request context
      * @param id the structure id for which the newest mapped name should be returned
-     * @param locale the locale for the mapping 
-     * @param defaultLocales the default locales to use if there is no URL name mapping for the requested locale 
-     * 
+     * @param locale the locale for the mapping
+     * @param defaultLocales the default locales to use if there is no URL name mapping for the requested locale
+     *
      * @return an URL name or null
-     *  
-     * @throws CmsException if something goes wrong 
+     *
+     * @throws CmsException if something goes wrong
      */
     public String readBestUrlName(CmsRequestContext context, CmsUUID id, Locale locale, List<Locale> defaultLocales)
     throws CmsException {
@@ -3763,7 +3983,7 @@ public final class CmsSecurityManager {
                 Messages.ERR_READ_NEWEST_URLNAME_FOR_ID_1,
                 id.toString());
             dbc.report(null, message, e);
-            return null; // will never be reached 
+            return null; // will never be reached
         } finally {
             dbc.clear();
         }
@@ -3772,24 +3992,24 @@ public final class CmsSecurityManager {
     /**
      * Returns the child resources of a resource, that is the resources
      * contained in a folder.<p>
-     * 
+     *
      * With the parameters <code>getFolders</code> and <code>getFiles</code>
      * you can control what type of resources you want in the result list:
      * files, folders, or both.<p>
-     * 
-     * This method is mainly used by the workplace explorer.<p> 
-     * 
+     *
+     * This method is mainly used by the workplace explorer.<p>
+     *
      * @param context the current request context
      * @param resource the resource to return the child resources for
      * @param filter the resource filter to use
      * @param getFolders if true the child folders are included in the result
      * @param getFiles if true the child files are included in the result
-     * 
+     *
      * @return a list of all child resources
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (read is required)
-     * 
+     *
      */
     public List<CmsResource> readChildResources(
         CmsRequestContext context,
@@ -3817,26 +4037,26 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the default file for the given folder.<p>
-     * 
+     *
      * If the given resource is a file, then this file is returned.<p>
-     * 
-     * Otherwise, in case of a folder:<br> 
+     *
+     * Otherwise, in case of a folder:<br>
      * <ol>
      *   <li>the {@link CmsPropertyDefinition#PROPERTY_DEFAULT_FILE} is checked, and
-     *   <li>if still no file could be found, the configured default files in the 
-     *       <code>opencms-vfs.xml</code> configuration are iterated until a match is 
+     *   <li>if still no file could be found, the configured default files in the
+     *       <code>opencms-vfs.xml</code> configuration are iterated until a match is
      *       found, and
      *   <li>if still no file could be found, <code>null</code> is returned
      * </ol><p>
-     * 
+     *
      * @param context the request context
      * @param resource the folder to get the default file for
      * @param resourceFilter the resource filter
      *
      * @return the default file for the given folder
-     * 
+     *
      * @throws CmsSecurityException if the user has no permissions to read the resulting file
-     * 
+     *
      * @see CmsObject#readDefaultFile(String)
      */
     public CmsResource readDefaultFile(CmsRequestContext context, CmsResource resource, CmsResourceFilter resourceFilter)
@@ -3863,17 +4083,17 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Reads all deleted (historical) resources below the given path, 
+     * Reads all deleted (historical) resources below the given path,
      * including the full tree below the path, if required.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the parent resource to read the resources from
      * @param readTree <code>true</code> to read all subresources
-     * 
+     *
      * @return a list of <code>{@link I_CmsHistoryResource}</code> objects
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see CmsObject#readResource(CmsUUID, int)
      * @see CmsObject#readResources(String, CmsResourceFilter, boolean)
      * @see CmsObject#readDeletedResources(String, boolean)
@@ -3903,15 +4123,15 @@ public final class CmsSecurityManager {
 
     /**
      * Reads a file resource (including it's binary content) from the VFS.<p>
-     * 
-     * In case you do not need the file content, 
+     *
+     * In case you do not need the file content,
      * use <code>{@link #readResource(CmsRequestContext, String, CmsResourceFilter)}</code> instead.<p>
      *
      * @param context the current request context
      * @param resource the resource to be read
-     * 
+     *
      * @return the file read from the VFS
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsFile readFile(CmsRequestContext context, CmsResource resource) throws CmsException {
@@ -3942,12 +4162,12 @@ public final class CmsSecurityManager {
      * Reads a folder resource from the VFS,
      * using the specified resource filter.<p>
      *
-     * The specified filter controls what kind of resources should be "found" 
-     * during the read operation. This will depend on the application. For example, 
+     * The specified filter controls what kind of resources should be "found"
+     * during the read operation. This will depend on the application. For example,
      * using <code>{@link CmsResourceFilter#DEFAULT}</code> will only return currently
      * "valid" resources, while using <code>{@link CmsResourceFilter#IGNORE_EXPIRATION}</code>
      * will ignore the date release / date expired information of the resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resourcename the name of the folder to read (full path)
      * @param filter the resource filter to use while reading
@@ -3976,7 +4196,7 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param project the project to read from
-     * 
+     *
      * @return the group of a resource
      */
     public CmsGroup readGroup(CmsRequestContext context, CmsProject project) {
@@ -3998,7 +4218,7 @@ public final class CmsSecurityManager {
      * @param groupId the id of the group that is to be read
      *
      * @return the requested group
-     * 
+     *
      * @throws CmsException if operation was not successful
      */
     public CmsGroup readGroup(CmsRequestContext context, CmsUUID groupId) throws CmsException {
@@ -4017,12 +4237,12 @@ public final class CmsSecurityManager {
 
     /**
      * Reads a group based on its name.<p>
-     * 
+     *
      * @param context the current request context
      * @param groupname the name of the group that is to be read
      *
      * @return the requested group
-     * 
+     *
      * @throws CmsException if operation was not successful
      */
     public CmsGroup readGroup(CmsRequestContext context, String groupname) throws CmsException {
@@ -4041,14 +4261,14 @@ public final class CmsSecurityManager {
 
     /**
      * Reads a principal (an user or group) from the historical archive based on its ID.<p>
-     * 
+     *
      * @param context the current request context
      * @param principalId the id of the principal to read
-     * 
+     *
      * @return the historical principal entry with the given id
-     * 
+     *
      * @throws CmsException if something goes wrong, ie. {@link CmsDbEntryNotFoundException}
-     * 
+     *
      * @see CmsObject#readUser(CmsUUID)
      * @see CmsObject#readGroup(CmsUUID)
      * @see CmsObject#readHistoryPrincipal(CmsUUID)
@@ -4073,9 +4293,9 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param projectId the project id
-     * 
+     *
      * @return the requested historical project entry
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsHistoryProject readHistoryProject(CmsRequestContext context, CmsUUID projectId) throws CmsException {
@@ -4100,9 +4320,9 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param publishTag the publish tag of the project
-     * 
+     *
      * @return the requested historical project entry
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsHistoryProject readHistoryProject(CmsRequestContext context, int publishTag) throws CmsException {
@@ -4127,12 +4347,12 @@ public final class CmsSecurityManager {
 
     /**
      * Reads the list of all <code>{@link CmsProperty}</code> objects that belong to the given historical resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the historical resource entry to read the properties for
-     * 
+     *
      * @return the list of <code>{@link CmsProperty}</code> objects
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsProperty> readHistoryPropertyObjects(CmsRequestContext context, I_CmsHistoryResource resource)
@@ -4156,15 +4376,15 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Reads the structure id which is mapped to the given URL name, or null if the name is not 
+     * Reads the structure id which is mapped to the given URL name, or null if the name is not
      * mapped to any structure IDs.<p>
-     * 
+     *
      * @param context the request context
-     * @param name an URL name 
-     * 
+     * @param name an URL name
+     *
      * @return the structure ID which is mapped to the given name
-     *  
-     * @throws CmsException if something goes wrong 
+     *
+     * @throws CmsException if something goes wrong
      */
     public CmsUUID readIdForUrlName(CmsRequestContext context, String name) throws CmsException {
 
@@ -4174,7 +4394,7 @@ public final class CmsSecurityManager {
         } catch (Exception e) {
             CmsMessageContainer message = Messages.get().container(Messages.ERR_READ_ID_FOR_URLNAME_1, name);
             dbc.report(null, message, e);
-            return null; // will never be reached 
+            return null; // will never be reached
         } finally {
             dbc.clear();
         }
@@ -4183,7 +4403,7 @@ public final class CmsSecurityManager {
 
     /**
      * Reads the locks that were saved to the database in the previous run of OpenCms.<p>
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void readLocks() throws CmsException {
@@ -4221,9 +4441,9 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param ouFqn the fully qualified name of the organizational Unit to be read
-     * 
+     *
      * @return the organizational Unit that with the provided fully qualified name
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsOrganizationalUnit readOrganizationalUnit(CmsRequestContext context, String ouFqn) throws CmsException {
@@ -4245,9 +4465,9 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param project the project to get the owner from
-     * 
+     *
      * @return the owner of a resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsUser readOwner(CmsRequestContext context, CmsProject project) throws CmsException {
@@ -4269,12 +4489,12 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the parent folder to the given structure id.<p>
-     * 
+     *
      * @param context the current request context
      * @param structureId the child structure id
-     * 
+     *
      * @return the parent folder <code>{@link CmsResource}</code>
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsResource readParentFolder(CmsRequestContext context, CmsUUID structureId) throws CmsException {
@@ -4296,13 +4516,13 @@ public final class CmsSecurityManager {
 
     /**
      * Builds a list of resources for a given path.<p>
-     * 
+     *
      * @param context the current request context
      * @param path the requested path
      * @param filter a filter object (only "includeDeleted" information is used!)
-     * 
+     *
      * @return list of <code>{@link CmsResource}</code>s
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsResource> readPath(CmsRequestContext context, String path, CmsResourceFilter filter)
@@ -4327,9 +4547,9 @@ public final class CmsSecurityManager {
      * Reads a project given the projects id.<p>
      *
      * @param id the id of the project
-     * 
+     *
      * @return the project read
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsProject readProject(CmsUUID id) throws CmsException {
@@ -4349,15 +4569,15 @@ public final class CmsSecurityManager {
     /**
      * Reads a project.<p>
      *
-     * Important: Since a project name can be used multiple times, this is NOT the most efficient 
+     * Important: Since a project name can be used multiple times, this is NOT the most efficient
      * way to read the project. This is only a convenience for front end developing.
-     * Reading a project by name will return the first project with that name. 
+     * Reading a project by name will return the first project with that name.
      * All core classes must use the id version {@link #readProject(CmsUUID)} to ensure the right project is read.<p>
-     * 
+     *
      * @param name the name of the project
-     * 
+     *
      * @return the project read
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsProject readProject(String name) throws CmsException {
@@ -4379,10 +4599,10 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param project the project to get the project resources for
-     * 
-     * @return the list of all resources, as <code>{@link String}</code> objects 
+     *
+     * @return the list of all resources, as <code>{@link String}</code> objects
      *              that define the "view" of the given project
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<String> readProjectResources(CmsRequestContext context, CmsProject project) throws CmsException {
@@ -4404,7 +4624,7 @@ public final class CmsSecurityManager {
 
     /**
      * Reads all resources of a project that match a given state from the VFS.<p>
-     * 
+     *
      * Possible values for the <code>state</code> parameter are:<br>
      * <ul>
      * <li><code>{@link CmsResource#STATE_CHANGED}</code>: Read all "changed" resources in the project</li>
@@ -4412,15 +4632,15 @@ public final class CmsSecurityManager {
      * <li><code>{@link CmsResource#STATE_DELETED}</code>: Read all "deleted" resources in the project</li>
      * <li><code>{@link CmsResource#STATE_KEEP}</code>: Read all resources either "changed", "new" or "deleted" in the project</li>
      * </ul><p>
-     * 
+     *
      * @param context the current request context
      * @param projectId the id of the project to read the file resources for
-     * @param state the resource state to match 
+     * @param state the resource state to match
      *
      * @return a list of <code>{@link CmsResource}</code> objects matching the filter criteria
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see CmsObject#readProjectView(CmsUUID, CmsResourceState)
      */
     public List<CmsResource> readProjectView(CmsRequestContext context, CmsUUID projectId, CmsResourceState state)
@@ -4441,14 +4661,14 @@ public final class CmsSecurityManager {
     /**
      * Reads a property definition.<p>
      *
-     * If no property definition with the given name is found, 
+     * If no property definition with the given name is found,
      * <code>null</code> is returned.<p>
-     * 
+     *
      * @param context the current request context
      * @param name the name of the property definition to read
-     * 
+     *
      * @return the property definition that was read
-     * 
+     *
      * @throws CmsException a CmsDbEntryNotFoundException is thrown if the property definition does not exist
      */
     public CmsPropertyDefinition readPropertyDefinition(CmsRequestContext context, String name) throws CmsException {
@@ -4467,17 +4687,17 @@ public final class CmsSecurityManager {
 
     /**
      * Reads a property object from a resource specified by a property name.<p>
-     * 
+     *
      * Returns <code>{@link CmsProperty#getNullProperty()}</code> if the property is not found.<p>
-     * 
+     *
      * @param context the context of the current request
      * @param resource the resource where the property is mapped to
      * @param key the property key name
-     * @param search if <code>true</code>, the property is searched on all parent folders of the resource. 
+     * @param search if <code>true</code>, the property is searched on all parent folders of the resource.
      *      if it's not found attached directly to the resource.
-     * 
+     *
      * @return the required property, or <code>{@link CmsProperty#getNullProperty()}</code> if the property was not found
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsProperty readPropertyObject(CmsRequestContext context, CmsResource resource, String key, boolean search)
@@ -4500,23 +4720,23 @@ public final class CmsSecurityManager {
 
     /**
      * Reads all property objects from a resource.<p>
-     * 
+     *
      * Returns an empty list if no properties are found.<p>
-     * 
-     * If the <code>search</code> parameter is <code>true</code>, the properties of all 
-     * parent folders of the resource are also read. The results are merged with the 
+     *
+     * If the <code>search</code> parameter is <code>true</code>, the properties of all
+     * parent folders of the resource are also read. The results are merged with the
      * properties directly attached to the resource. While merging, a property
      * on a parent folder that has already been found will be ignored.
-     * So e.g. if a resource has a property "Title" attached, and it's parent folder 
+     * So e.g. if a resource has a property "Title" attached, and it's parent folder
      * has the same property attached but with a different value, the result list will
      * contain only the property with the value from the resource, not form the parent folder(s).<p>
-     * 
+     *
      * @param context the context of the current request
      * @param resource the resource where the property is mapped to
      * @param search <code>true</code>, if the properties should be searched on all parent folders  if not found on the resource
-     * 
+     *
      * @return a list of <code>{@link CmsProperty}</code> objects
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsProperty> readPropertyObjects(CmsRequestContext context, CmsResource resource, boolean search)
@@ -4539,12 +4759,12 @@ public final class CmsSecurityManager {
 
     /**
      * Reads the resources that were published in a publish task for a given publish history ID.<p>
-     * 
+     *
      * @param context the current request context
      * @param publishHistoryId unique ID to identify each publish task in the publish history
-     * 
+     *
      * @return a list of <code>{@link org.opencms.db.CmsPublishedResource}</code> objects
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsPublishedResource> readPublishedResources(CmsRequestContext context, CmsUUID publishHistoryId)
@@ -4575,7 +4795,7 @@ public final class CmsSecurityManager {
      * @return the resource that was read
      *
      * @throws CmsException if the resource could not be read for any reason
-     * 
+     *
      * @see CmsObject#readFile(CmsResource)
      * @see CmsObject#restoreResourceVersion(CmsUUID, int)
      * @see CmsObject#readResource(CmsUUID, int)
@@ -4605,20 +4825,20 @@ public final class CmsSecurityManager {
      * Reads a resource from the VFS,
      * using the specified resource filter.<p>
      *
-     * A resource may be of type <code>{@link CmsFile}</code> or 
+     * A resource may be of type <code>{@link CmsFile}</code> or
      * <code>{@link CmsFolder}</code>. In case of
-     * a file, the resource will not contain the binary file content. Since reading 
-     * the binary content is a cost-expensive database operation, it's recommended 
+     * a file, the resource will not contain the binary file content. Since reading
+     * the binary content is a cost-expensive database operation, it's recommended
      * to work with resources if possible, and only read the file content when absolutely
-     * required. To "upgrade" a resource to a file, 
-     * use <code>{@link CmsObject#readFile(CmsResource)}</code>.<p> 
+     * required. To "upgrade" a resource to a file,
+     * use <code>{@link CmsObject#readFile(CmsResource)}</code>.<p>
      *
-     * The specified filter controls what kind of resources should be "found" 
-     * during the read operation. This will depend on the application. For example, 
+     * The specified filter controls what kind of resources should be "found"
+     * during the read operation. This will depend on the application. For example,
      * using <code>{@link CmsResourceFilter#DEFAULT}</code> will only return currently
      * "valid" resources, while using <code>{@link CmsResourceFilter#IGNORE_EXPIRATION}</code>
      * will ignore the date release / date expired information of the resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param structureID the ID of the structure which will be used)
      * @param filter the resource filter to use while reading
@@ -4626,7 +4846,7 @@ public final class CmsSecurityManager {
      * @return the resource that was read
      *
      * @throws CmsException if the resource could not be read for any reason
-     * 
+     *
      * @see CmsObject#readResource(CmsUUID, CmsResourceFilter)
      * @see CmsObject#readResource(CmsUUID)
      * @see CmsObject#readFile(CmsResource)
@@ -4650,20 +4870,20 @@ public final class CmsSecurityManager {
      * Reads a resource from the VFS,
      * using the specified resource filter.<p>
      *
-     * A resource may be of type <code>{@link CmsFile}</code> or 
+     * A resource may be of type <code>{@link CmsFile}</code> or
      * <code>{@link CmsFolder}</code>. In case of
-     * a file, the resource will not contain the binary file content. Since reading 
-     * the binary content is a cost-expensive database operation, it's recommended 
+     * a file, the resource will not contain the binary file content. Since reading
+     * the binary content is a cost-expensive database operation, it's recommended
      * to work with resources if possible, and only read the file content when absolutely
-     * required. To "upgrade" a resource to a file, 
-     * use <code>{@link CmsObject#readFile(CmsResource)}</code>.<p> 
+     * required. To "upgrade" a resource to a file,
+     * use <code>{@link CmsObject#readFile(CmsResource)}</code>.<p>
      *
-     * The specified filter controls what kind of resources should be "found" 
-     * during the read operation. This will depend on the application. For example, 
+     * The specified filter controls what kind of resources should be "found"
+     * during the read operation. This will depend on the application. For example,
      * using <code>{@link CmsResourceFilter#DEFAULT}</code> will only return currently
      * "valid" resources, while using <code>{@link CmsResourceFilter#IGNORE_EXPIRATION}</code>
      * will ignore the date release / date expired information of the resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resourcePath the name of the resource to read (full path)
      * @param filter the resource filter to use while reading
@@ -4671,7 +4891,7 @@ public final class CmsSecurityManager {
      * @return the resource that was read
      *
      * @throws CmsException if the resource could not be read for any reason
-     * 
+     *
      * @see CmsObject#readResource(String, CmsResourceFilter)
      * @see CmsObject#readResource(String)
      * @see CmsObject#readFile(CmsResource)
@@ -4696,19 +4916,19 @@ public final class CmsSecurityManager {
 
     /**
      * Reads all resources below the given path matching the filter criteria,
-     * including the full tree below the path only in case the <code>readTree</code> 
+     * including the full tree below the path only in case the <code>readTree</code>
      * parameter is <code>true</code>.<p>
-     * 
+     *
      * @param context the current request context
      * @param parent the parent path to read the resources from
      * @param filter the filter
      * @param readTree <code>true</code> to read all subresources
-     * 
+     *
      * @return a list of <code>{@link CmsResource}</code> objects matching the filter criteria
-     *  
+     *
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (read is required)
      * @throws CmsException if something goes wrong
-     * 
+     *
      */
     public List<CmsResource> readResources(
         CmsRequestContext context,
@@ -4735,13 +4955,13 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the resources that were visited by a user set in the filter.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param filter the filter that is used to get the visited resources
-     * 
+     *
      * @return the resources that were visited by a user set in the filter
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsResource> readResourcesVisitedBy(
@@ -4762,12 +4982,12 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Reads all resources that have a value (containing the specified value) set 
+     * Reads all resources that have a value (containing the specified value) set
      * for the specified property (definition) in the given path.<p>
-     * 
+     *
      * If the <code>value</code> parameter is <code>null</code>, all resources having the
      * given property set are returned.<p>
-     * 
+     *
      * Both individual and shared properties of a resource are checked.<p>
      *
      * @param context the current request context
@@ -4775,10 +4995,10 @@ public final class CmsSecurityManager {
      * @param propertyDefinition the name of the property (definition) to check for
      * @param value the string to search in the value of the property
      * @param filter the resource filter to apply to the result set
-     * 
-     * @return a list of all <code>{@link CmsResource}</code> objects 
+     *
+     * @return a list of all <code>{@link CmsResource}</code> objects
      *          that have a value set for the specified property.
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsResource> readResourcesWithProperty(
@@ -4809,12 +5029,12 @@ public final class CmsSecurityManager {
 
     /**
      * Returns a set of users that are responsible for a specific resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to get the responsible users from
-     * 
+     *
      * @return the set of users that are responsible for a specific resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public Set<I_CmsPrincipal> readResponsiblePrincipals(CmsRequestContext context, CmsResource resource)
@@ -4834,12 +5054,12 @@ public final class CmsSecurityManager {
 
     /**
      * Returns a set of users that are responsible for a specific resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to get the responsible users from
-     * 
+     *
      * @return the set of users that are responsible for a specific resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public Set<CmsUser> readResponsibleUsers(CmsRequestContext context, CmsResource resource) throws CmsException {
@@ -4859,15 +5079,15 @@ public final class CmsSecurityManager {
     /**
      * Returns a List of all siblings of the specified resource,
      * the specified resource being always part of the result set.<p>
-     * 
+     *
      * @param context the request context
      * @param resource the specified resource
      * @param filter a filter object
-     * 
-     * @return a list of <code>{@link CmsResource}</code>s that 
-     *          are siblings to the specified resource, 
+     *
+     * @return a list of <code>{@link CmsResource}</code>s that
+     *          are siblings to the specified resource,
      *          including the specified resource itself
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsResource> readSiblings(CmsRequestContext context, CmsResource resource, CmsResourceFilter filter)
@@ -4890,9 +5110,9 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param rfsName the rfs name of the resource
-     * 
+     *
      * @return the parameter string of the requested resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public String readStaticExportPublishedResourceParameters(CmsRequestContext context, String rfsName)
@@ -4915,13 +5135,13 @@ public final class CmsSecurityManager {
 
     /**
      * Returns a list of all template resources which must be processed during a static export.<p>
-     * 
+     *
      * @param context the current request context
      * @param parameterResources flag for reading resources with parameters (1) or without (0)
      * @param timestamp for reading the data from the db
-     * 
+     *
      * @return a list of template resources as <code>{@link String}</code> objects
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<String> readStaticExportResources(CmsRequestContext context, int parameterResources, long timestamp)
@@ -4941,17 +5161,17 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the subscribed history resources that were deleted.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param user the user that subscribed to the resource
      * @param groups the groups to check subscribed resources for
      * @param parent the parent resource (folder) of the deleted resources, if <code>null</code> all deleted resources will be returned
      * @param includeSubFolders indicates if the sub folders of the specified folder path should be considered, too
-     * @param deletedFrom the time stamp from which the resources should have been deleted 
-     * 
+     * @param deletedFrom the time stamp from which the resources should have been deleted
+     *
      * @return the subscribed history resources that were deleted
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<I_CmsHistoryResource> readSubscribedDeletedResources(
@@ -4987,13 +5207,13 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the resources that were subscribed by a user or group set in the filter.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param filter the filter that is used to get the subscribed resources
-     * 
+     *
      * @return the resources that were subscribed by a user or group set in the filter
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public List<CmsResource> readSubscribedResources(
@@ -5014,13 +5234,38 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Reads the newest URL names of a structure id for all locales.<p>
+     * Reads the URL name mappings matching a given filter.<p>
      * 
-     * @param context the current context 
-     * @param id a structure id 
+     * @param context the current request context 
+     * @param filter the filter to match 
      * 
-     * @return the list of URL names for all
+     * @return the matching URL name mappings
+     * 
      * @throws CmsException if something goes wrong 
+     */
+    public List<CmsUrlNameMappingEntry> readUrlNameMappings(CmsRequestContext context, CmsUrlNameMappingFilter filter)
+    throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(context);
+        try {
+            return m_driverManager.readUrlNameMappings(dbc, filter);
+        } catch (Exception e) {
+            CmsMessageContainer message = Messages.get().container(Messages.ERR_DB_OPERATION_1, e.getLocalizedMessage());
+            dbc.report(null, message, e);
+            return null; // will never be reached
+        } finally {
+            dbc.clear();
+        }
+    }
+
+    /**
+     * Reads the newest URL names of a structure id for all locales.<p>
+     *
+     * @param context the current context
+     * @param id a structure id
+     *
+     * @return the list of URL names for all
+     * @throws CmsException if something goes wrong
      */
     public List<String> readUrlNamesForAllLocales(CmsRequestContext context, CmsUUID id) throws CmsException {
 
@@ -5032,7 +5277,7 @@ public final class CmsSecurityManager {
                 Messages.ERR_READ_NEWEST_URLNAME_FOR_ID_1,
                 id.toString());
             dbc.report(null, message, e);
-            return null; // will never be reached 
+            return null; // will never be reached
         } finally {
             dbc.clear();
         }
@@ -5045,7 +5290,7 @@ public final class CmsSecurityManager {
      * @param id the id of the user to read
      *
      * @return the user read
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public CmsUser readUser(CmsRequestContext context, CmsUUID id) throws CmsException {
@@ -5069,7 +5314,7 @@ public final class CmsSecurityManager {
      * @param username the name of the user that is to be read
      *
      * @return user read form the cms
-     * 
+     *
      * @throws CmsException if operation was not successful
      */
     public CmsUser readUser(CmsRequestContext context, String username) throws CmsException {
@@ -5094,9 +5339,9 @@ public final class CmsSecurityManager {
      * @param context the current request context
      * @param username the user name of the user that is to be read
      * @param password the password of the user that is to be read
-     * 
+     *
      * @return user read
-     * 
+     *
      * @throws CmsException if operation was not successful
      */
     public CmsUser readUser(CmsRequestContext context, String username, String password) throws CmsException {
@@ -5115,14 +5360,14 @@ public final class CmsSecurityManager {
 
     /**
      * Removes an access control entry for a given resource and principal.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource
      * @param principal the id of the principal to remove the the access control entry for
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (control of access control is required).
-     * 
+     *
      */
     public void removeAccessControlEntry(CmsRequestContext context, CmsResource resource, CmsUUID principal)
     throws CmsException, CmsSecurityException {
@@ -5147,13 +5392,13 @@ public final class CmsSecurityManager {
 
     /**
      * Removes a resource from the given organizational unit.<p>
-     * 
+     *
      * @param context the current request context
      * @param orgUnit the organizational unit to remove the resource from
      * @param resource the resource that is to be removed from the organizational unit
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see org.opencms.security.CmsOrgUnitManager#addResourceToOrgUnit(CmsObject, String, String)
      * @see org.opencms.security.CmsOrgUnitManager#addResourceToOrgUnit(CmsObject, String, String)
      */
@@ -5180,13 +5425,13 @@ public final class CmsSecurityManager {
 
     /**
      * Removes a resource from the current project of the user.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to apply this operation to
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsRoleViolationException if the current user does not have management access to the project
-     * 
+     *
      * @see org.opencms.file.types.I_CmsResourceType#copyResourceToProject(CmsObject, CmsSecurityManager, CmsResource)
      */
     public void removeResourceFromProject(CmsRequestContext context, CmsResource resource)
@@ -5213,10 +5458,10 @@ public final class CmsSecurityManager {
 
     /**
      * Removes the given resource to the given user's publish list.<p>
-     * 
+     *
      * @param context the request context
      * @param structureIds the collection of structure IDs to remove
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void removeResourceFromUsersPubList(CmsRequestContext context, Collection<CmsUUID> structureIds)
@@ -5246,10 +5491,10 @@ public final class CmsSecurityManager {
      * @param username the name of the user that is to be removed from the group
      * @param groupname the name of the group
      * @param readRoles if to read roles or groups
-     * 
+     *
      * @throws CmsException if operation was not successful
      * @throws CmsRoleViolationException if the current user does not own the rule {@link CmsRole#ACCOUNT_MANAGER}
-     * 
+     *
      */
     public void removeUserFromGroup(CmsRequestContext context, String username, String groupname, boolean readRoles)
     throws CmsException, CmsRoleViolationException {
@@ -5272,16 +5517,16 @@ public final class CmsSecurityManager {
 
     /**
      * Replaces the content, type and properties of a resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the name of the resource to apply this operation to
      * @param type the new type of the resource
      * @param content the new content of the resource
      * @param properties the new properties of the resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (write access permission is required)
-     * 
+     *
      * @see CmsObject#replaceResource(String, int, byte[], List)
      * @see org.opencms.file.types.I_CmsResourceType#replaceResource(CmsObject, CmsSecurityManager, CmsResource, int, byte[], List)
      */
@@ -5318,7 +5563,7 @@ public final class CmsSecurityManager {
      * @param username the name of the user
      * @param oldPassword the old password
      * @param newPassword the new password
-     * 
+     *
      * @throws CmsException if the user data could not be read from the database
      * @throws CmsSecurityException if the specified user name and old password could not be verified
      */
@@ -5341,16 +5586,16 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the original path of given resource, that is the online path for the resource.<p>
-     *  
+     *
      * If it differs from the offline path, the resource has been moved.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to get the path for
-     * 
+     *
      * @return the online path
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see org.opencms.workplace.commons.CmsUndoChanges#resourceOriginalPath(CmsObject, String)
      */
     public String resourceOriginalPath(CmsRequestContext context, CmsResource resource) throws CmsException {
@@ -5377,12 +5622,12 @@ public final class CmsSecurityManager {
 
     /**
      * Restores a deleted resource identified by its structure id from the historical archive.<p>
-     * 
+     *
      * @param context the current request context
      * @param structureId the structure id of the resource to restore
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see CmsObject#restoreDeletedResource(CmsUUID)
      */
     public void restoreDeletedResource(CmsRequestContext context, CmsUUID structureId) throws CmsException {
@@ -5401,14 +5646,14 @@ public final class CmsSecurityManager {
 
     /**
      * Restores a resource in the current project with the given version from the historical archive.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to restore from the archive
      * @param version the version number to restore
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (write access permission is required)
-     * 
+     *
      * @see CmsObject#restoreResourceVersion(CmsUUID, int)
      * @see org.opencms.file.types.I_CmsResourceType#restoreResource(CmsObject, CmsSecurityManager, CmsResource, int)
      */
@@ -5434,13 +5679,69 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Searches users by search criteria.<p>
+     * Saves the aliases for a given resource.<p>
+     *
+     * This method completely replaces any existing aliases for the same structure id.
+     *
+     * @param context the request context
+     * @param resource the resource for which the aliases should be written
+     * @param aliases the list of aliases to write, where all aliases must have the same structure id as the resource
+     *
+     * @throws CmsException if something goes wrong
+     */
+    public void saveAliases(CmsRequestContext context, CmsResource resource, List<CmsAlias> aliases)
+    throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(context);
+        try {
+            if ((aliases.size() > 0) && !(resource.getStructureId().equals(aliases.get(0).getStructureId()))) {
+                throw new IllegalArgumentException("Resource does not match aliases!");
+            }
+            checkPermissions(context, resource, CmsPermissionSet.ACCESS_WRITE, false, CmsResourceFilter.ALL);
+            m_driverManager.saveAliases(dbc, context.getCurrentProject(), resource.getStructureId(), aliases);
+            Map<String, Object> eventData = new HashMap<String, Object>();
+            eventData.put(I_CmsEventListener.KEY_RESOURCE, resource);
+            eventData.put(I_CmsEventListener.KEY_CHANGE, new Integer(CmsDriverManager.CHANGED_RESOURCE));
+            OpenCms.fireCmsEvent(new CmsEvent(I_CmsEventListener.EVENT_RESOURCE_MODIFIED, eventData));
+        } catch (Exception e) {
+            dbc.report(null, Messages.get().container(Messages.ERR_DB_OPERATION_0), e);
+        } finally {
+            dbc.clear();
+        }
+    }
+
+    /**
+     * Replaces the rewrite aliases for a given site root.<p>
      * 
-     * @param requestContext the request context 
-     * @param searchParams the search criteria object 
+     * @param requestContext the current request context 
+     * @param siteRoot the site root for which the rewrite aliases should be replaced 
+     * @param newAliases the new list of aliases for the given site root 
      * 
-     * @return a list of users 
      * @throws CmsException if something goes wrong 
+     */
+    public void saveRewriteAliases(CmsRequestContext requestContext, String siteRoot, List<CmsRewriteAlias> newAliases)
+    throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(requestContext);
+        try {
+            //            checkOfflineProject(dbc);
+            //            checkPermissions(dbc, resource, CmsPermissionSet.ACCESS_WRITE, true, CmsResourceFilter.ALL);
+            m_driverManager.saveRewriteAliases(dbc, siteRoot, newAliases);
+        } catch (Exception e) {
+            dbc.report(null, Messages.get().container(Messages.ERR_DB_OPERATION_0), e);
+        } finally {
+            dbc.clear();
+        }
+    }
+
+    /**
+     * Searches users by search criteria.<p>
+     *
+     * @param requestContext the request context
+     * @param searchParams the search criteria object
+     *
+     * @return a list of users
+     * @throws CmsException if something goes wrong
      */
     public List<CmsUser> searchUsers(CmsRequestContext requestContext, CmsUserSearchParameters searchParams)
     throws CmsException {
@@ -5458,14 +5759,14 @@ public final class CmsSecurityManager {
 
     /**
      * Changes the "expire" date of a resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to touch
      * @param dateExpired the new expire date of the changed resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (write access permission is required)
-     * 
+     *
      * @see CmsObject#setDateExpired(String, long, boolean)
      * @see org.opencms.file.types.I_CmsResourceType#setDateExpired(CmsObject, CmsSecurityManager, CmsResource, long, boolean)
      */
@@ -5491,14 +5792,14 @@ public final class CmsSecurityManager {
 
     /**
      * Changes the "last modified" time stamp of a resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to touch
      * @param dateLastModified the new time stamp of the changed resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (write access permission is required)
-     * 
+     *
      * @see CmsObject#setDateLastModified(String, long, boolean)
      * @see org.opencms.file.types.I_CmsResourceType#setDateLastModified(CmsObject, CmsSecurityManager, CmsResource, long, boolean)
      */
@@ -5524,14 +5825,14 @@ public final class CmsSecurityManager {
 
     /**
      * Changes the "release" date of a resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to touch
      * @param dateReleased the new release date of the changed resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (write access permission is required)
-     * 
+     *
      * @see CmsObject#setDateReleased(String, long, boolean)
      * @see org.opencms.file.types.I_CmsResourceType#setDateReleased(CmsObject, CmsSecurityManager, CmsResource, long, boolean)
      */
@@ -5560,13 +5861,13 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param groupName the name of the group that should be written
-     * @param parentGroupName the name of the parent group to set, 
+     * @param parentGroupName the name of the parent group to set,
      *                      or <code>null</code> if the parent
      *                      group should be deleted.
-     * 
+     *
      * @throws CmsException if operation was not successful
      * @throws CmsRoleViolationException if the current user does not own the rule {@link CmsRole#ACCOUNT_MANAGER}
-     * 
+     *
      */
     public void setParentGroup(CmsRequestContext context, String groupName, String parentGroupName)
     throws CmsException, CmsRoleViolationException {
@@ -5592,7 +5893,7 @@ public final class CmsSecurityManager {
      * @param context the current request context
      * @param username the name of the user
      * @param newPassword the new password
-     * 
+     *
      * @throws CmsException if operation was not successful
      * @throws CmsRoleViolationException if the current user does not own the rule {@link CmsRole#ACCOUNT_MANAGER}
      */
@@ -5613,11 +5914,11 @@ public final class CmsSecurityManager {
 
     /**
      * Marks a subscribed resource as deleted.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param resource the subscribed resource to mark as deleted
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void setSubscribedResourceAsDeleted(CmsRequestContext context, String poolName, CmsResource resource)
@@ -5642,13 +5943,13 @@ public final class CmsSecurityManager {
 
     /**
      * Moves an user to the given organizational unit.<p>
-     * 
+     *
      * @param context the current request context
      * @param orgUnit the organizational unit to add the principal to
      * @param user the user that is to be move to the organizational unit
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see org.opencms.security.CmsOrgUnitManager#setUsersOrganizationalUnit(CmsObject, String, String)
      */
     public void setUsersOrganizationalUnit(CmsRequestContext context, CmsOrganizationalUnit orgUnit, CmsUser user)
@@ -5671,12 +5972,12 @@ public final class CmsSecurityManager {
 
     /**
      * Subscribes the user or group to the resource.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param principal the principal that subscribes to the resource
      * @param resource the resource to subscribe to
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void subscribeResourceFor(
@@ -5713,12 +6014,12 @@ public final class CmsSecurityManager {
 
     /**
      * Undelete the resource by resetting it's state.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the name of the resource to apply this operation to
-     * 
+     *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see CmsObject#undeleteResource(String, boolean)
      * @see org.opencms.file.types.I_CmsResourceType#undelete(CmsObject, CmsSecurityManager, CmsResource, boolean)
      */
@@ -5742,16 +6043,16 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Undos all changes in the resource by restoring the version from the 
+     * Undos all changes in the resource by restoring the version from the
      * online project to the current offline project.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the name of the resource to apply this operation to
      * @param mode the undo mode, one of the <code>{@link CmsResource}#UNDO_XXX</code> constants
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (write access permission is required)
-     * 
+     *
      * @see CmsObject#undoChanges(String, CmsResource.CmsResourceUndoMode)
      * @see org.opencms.file.types.I_CmsResourceType#undoChanges(CmsObject, CmsSecurityManager, CmsResource, CmsResource.CmsResourceUndoMode)
      */
@@ -5780,7 +6081,7 @@ public final class CmsSecurityManager {
      *
      * @param context the current request context
      * @param projectId the id of the project to be published
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsRoleViolationException if the current user does not own the required permissions
      */
@@ -5805,13 +6106,13 @@ public final class CmsSecurityManager {
 
     /**
      * Unlocks a resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to unlock
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource (write access permission is required)
-     * 
+     *
      * @see CmsObject#unlockResource(String)
      * @see org.opencms.file.types.I_CmsResourceType#unlockResource(CmsObject, CmsSecurityManager, CmsResource)
      */
@@ -5839,11 +6140,11 @@ public final class CmsSecurityManager {
 
     /**
      * Unsubscribes all deleted resources that were deleted before the specified time stamp.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param deletedTo the time stamp to which the resources have been deleted
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void unsubscribeAllDeletedResources(CmsRequestContext context, String poolName, long deletedTo)
@@ -5863,11 +6164,11 @@ public final class CmsSecurityManager {
 
     /**
      * Unsubscribes the user or group from all resources.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param principal the principal that unsubscribes from all resources
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void unsubscribeAllResourcesFor(CmsRequestContext context, String poolName, CmsPrincipal principal)
@@ -5895,12 +6196,12 @@ public final class CmsSecurityManager {
 
     /**
      * Unsubscribes the principal from the resource.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param principal the principal that unsubscribes from the resource
      * @param resource the resource to unsubscribe from
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void unsubscribeResourceFor(
@@ -5927,11 +6228,11 @@ public final class CmsSecurityManager {
 
     /**
      * Unsubscribes all groups and users from the resource.<p>
-     * 
+     *
      * @param context the request context
      * @param poolName the name of the database pool to use
      * @param resource the resource to unsubscribe all groups and users from
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void unsubscribeResourceForAll(CmsRequestContext context, String poolName, CmsResource resource)
@@ -5952,8 +6253,8 @@ public final class CmsSecurityManager {
 
     /**
      * Logs everything that has not been written to DB jet.<p>
-     * 
-     * @throws CmsException if something goes wrong 
+     *
+     * @throws CmsException if something goes wrong
      */
     public void updateLog() throws CmsException {
 
@@ -5971,13 +6272,13 @@ public final class CmsSecurityManager {
 
     /**
      * Updates/Creates the relations for the given resource.<p>
-     * 
+     *
      * @param context the current user context
      * @param resource the resource to update the relations for
      * @param relations the relations to update
-     * 
-     * @throws CmsException if something goes wrong 
-     * 
+     *
+     * @throws CmsException if something goes wrong
+     *
      * @see CmsDriverManager#updateRelationsForResource(CmsDbContext, CmsResource, List)
      */
     public void updateRelationsForResource(CmsRequestContext context, CmsResource resource, List<CmsLink> relations)
@@ -6002,7 +6303,7 @@ public final class CmsSecurityManager {
      * @param context the current request context
      * @param username the name of the user to check
      * @param groupname the name of the group to check
-     * 
+     *
      * @return <code>true</code>, if the user is in the group; or <code>false</code> otherwise
      *
      * @throws CmsException if operation was not successful
@@ -6027,14 +6328,14 @@ public final class CmsSecurityManager {
 
     /**
      * Checks if a new password follows the rules for
-     * new passwords, which are defined by a Class implementing the 
-     * <code>{@link org.opencms.security.I_CmsPasswordHandler}</code> 
+     * new passwords, which are defined by a Class implementing the
+     * <code>{@link org.opencms.security.I_CmsPasswordHandler}</code>
      * interface and configured in the opencms.properties file.<p>
-     * 
+     *
      * If this method throws no exception the password is valid.<p>
      *
      * @param password the new password that has to be checked
-     * 
+     *
      * @throws CmsSecurityException if the password is not valid
      */
     public void validatePassword(String password) throws CmsSecurityException {
@@ -6044,15 +6345,15 @@ public final class CmsSecurityManager {
 
     /**
      * Validates the relations for the given resources.<p>
-     * 
+     *
      * @param context the current request context
-     * @param publishList the resources to validate during publishing 
+     * @param publishList the resources to validate during publishing
      * @param report a report to write the messages to
-     * 
-     * @return a map with lists of invalid links 
-     *          (<code>{@link org.opencms.relations.CmsRelation}}</code> objects) 
+     *
+     * @return a map with lists of invalid links
+     *          (<code>{@link org.opencms.relations.CmsRelation}}</code> objects)
      *          keyed by root paths
-     * 
+     *
      * @throws Exception if something goes wrong
      */
     public Map<String, List<CmsRelation>> validateRelations(
@@ -6074,11 +6375,11 @@ public final class CmsSecurityManager {
 
     /**
      * Writes an access control entries to a given resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource
      * @param ace the entry to write
-     * 
+     *
      * @throws CmsSecurityException if the user has insufficient permission for the given resource ({@link CmsPermissionSet#ACCESS_CONTROL} required)
      * @throws CmsException if something goes wrong
      */
@@ -6103,22 +6404,22 @@ public final class CmsSecurityManager {
 
     /**
      * Writes a resource to the OpenCms VFS, including it's content.<p>
-     * 
+     *
      * Applies only to resources of type <code>{@link CmsFile}</code>
      * i.e. resources that have a binary content attached.<p>
-     * 
-     * Certain resource types might apply content validation or transformation rules 
+     *
+     * Certain resource types might apply content validation or transformation rules
      * before the resource is actually written to the VFS. The returned result
      * might therefore be a modified version from the provided original.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to apply this operation to
-     * 
+     *
      * @return the written resource (may have been modified)
      *
      * @throws CmsSecurityException if the user has insufficient permission for the given resource ({@link CmsPermissionSet#ACCESS_WRITE} required)
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see CmsObject#writeFile(CmsFile)
      * @see org.opencms.file.types.I_CmsResourceType#writeFile(CmsObject, CmsSecurityManager, CmsFile)
      */
@@ -6142,7 +6443,7 @@ public final class CmsSecurityManager {
      * Writes an already existing group.<p>
      *
      * The group id has to be a valid OpenCms group id.<br>
-     * 
+     *
      * The group with the given id will be completely overridden
      * by the given data.<p>
      *
@@ -6167,7 +6468,7 @@ public final class CmsSecurityManager {
 
     /**
      * Creates a historical entry of the current project.<p>
-     * 
+     *
      * @param context the current request context
      * @param publishTag the correlative publish tag
      * @param publishDate the date of publishing
@@ -6196,12 +6497,12 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Writes the locks that are currently stored in-memory to the database to allow restoring them in 
-     * later startups.<p> 
-     * 
+     * Writes the locks that are currently stored in-memory to the database to allow restoring them in
+     * later startups.<p>
+     *
      * This overwrites the locks previously stored in the underlying database table.<p>
-     * 
-     * @throws CmsException if something goes wrong 
+     *
+     * @throws CmsException if something goes wrong
      */
     public void writeLocks() throws CmsException {
 
@@ -6221,15 +6522,15 @@ public final class CmsSecurityManager {
      * Writes an already existing organizational unit.<p>
      *
      * The organizational unit id has to be a valid OpenCms organizational unit id.<p>
-     * 
+     *
      * The organizational unit with the given id will be completely overridden
      * by the given data.<p>
      *
      * @param context the current request context
      * @param organizationalUnit the organizational unit that should be written
-     * 
+     *
      * @throws CmsException if operation was not successful
-     * 
+     *
      * @see org.opencms.security.CmsOrgUnitManager#writeOrganizationalUnit(CmsObject, CmsOrganizationalUnit)
      */
     public void writeOrganizationalUnit(CmsRequestContext context, CmsOrganizationalUnit organizationalUnit)
@@ -6251,13 +6552,13 @@ public final class CmsSecurityManager {
      * Writes an already existing project.<p>
      *
      * The project id has to be a valid OpenCms project id.<br>
-     * 
+     *
      * The project with the given id will be completely overridden
      * by the given data.<p>
      *
      * @param project the project that should be written
      * @param context the current request context
-     * 
+     *
      * @throws CmsRoleViolationException if the current user does not own the required permissions
      * @throws CmsException if operation was not successful
      */
@@ -6277,14 +6578,14 @@ public final class CmsSecurityManager {
 
     /**
      * Writes a property for a specified resource.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to write the property for
      * @param property the property to write
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource ({@link CmsPermissionSet#ACCESS_WRITE} required)
-     * 
+     *
      * @see CmsObject#writePropertyObject(String, CmsProperty)
      * @see org.opencms.file.types.I_CmsResourceType#writePropertyObject(CmsObject, CmsSecurityManager, CmsResource, CmsProperty)
      */
@@ -6308,18 +6609,18 @@ public final class CmsSecurityManager {
 
     /**
      * Writes a list of properties for a specified resource.<p>
-     * 
-     * Code calling this method has to ensure that the no properties 
-     * <code>a, b</code> are contained in the specified list so that <code>a.equals(b)</code>, 
+     *
+     * Code calling this method has to ensure that the no properties
+     * <code>a, b</code> are contained in the specified list so that <code>a.equals(b)</code>,
      * otherwise an exception is thrown.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to write the properties for
      * @param properties the list of properties to write
-     * 
+     *
      * @throws CmsException if something goes wrong
      * @throws CmsSecurityException if the user has insufficient permission for the given resource ({@link CmsPermissionSet#ACCESS_WRITE} required)
-     * 
+     *
      * @see CmsObject#writePropertyObjects(String, List)
      * @see org.opencms.file.types.I_CmsResourceType#writePropertyObjects(CmsObject, CmsSecurityManager, CmsResource, List)
      */
@@ -6341,7 +6642,7 @@ public final class CmsSecurityManager {
 
     /**
      * Writes a resource to the OpenCms VFS.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource to write
      *
@@ -6364,16 +6665,40 @@ public final class CmsSecurityManager {
     }
 
     /**
+     * Writes the 'projectlastmodified' field of a resource record.<p>
+     *
+     * @param context the current database context
+     * @param resource the resource which should be modified
+     * @param project the project whose project id should be written into the resource record
+     *
+     * @throws CmsException if something goes wrong
+     */
+    public void writeResourceProjectLastModified(CmsRequestContext context, CmsResource resource, CmsProject project)
+    throws CmsException {
+
+        CmsDbContext dbc = m_dbContextFactory.getDbContext(context);
+        try {
+            checkOfflineProject(dbc);
+            checkPermissions(dbc, resource, CmsPermissionSet.ACCESS_WRITE, true, CmsResourceFilter.ALL);
+            m_driverManager.writeProjectLastModified(dbc, resource, project.getUuid());
+        } catch (Exception e) {
+            dbc.report(null, Messages.get().container(Messages.ERR_WRITE_RESOURCE_1, context.getSitePath(resource)), e);
+        } finally {
+            dbc.clear();
+        }
+    }
+
+    /**
      * Inserts an entry in the published resource table.<p>
-     * 
+     *
      * This is done during static export.<p>
-     * 
+     *
      * @param context the current request context
      * @param resourceName The name of the resource to be added to the static export
      * @param linkType the type of resource exported (0= non-parameter, 1=parameter)
      * @param linkParameter the parameters added to the resource
      * @param timestamp a time stamp for writing the data into the db
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     public void writeStaticExportPublishedResource(
@@ -6402,18 +6727,18 @@ public final class CmsSecurityManager {
 
     /**
      * Writes a new URL name mapping for a given resource.<p>
-     * 
-     * The first name from the given sequence which is not already mapped to another resource will be used for 
+     *
+     * The first name from the given sequence which is not already mapped to another resource will be used for
      * the URL name mapping.<p>
-     * 
-     * @param context the request context 
-     * @param nameSeq the sequence of URL name candidates  
+     *
+     * @param context the request context
+     * @param nameSeq the sequence of URL name candidates
      * @param structureId the structure id which should be mapped to the name
-     * @param locale the locale for the mapping 
-     *  
+     * @param locale the locale for the mapping
+     *
      * @return the name which was actually mapped to the structure id
-     *  
-     * @throws CmsException if something goes wrong 
+     *
+     * @throws CmsException if something goes wrong
      */
     public String writeUrlNameMapping(
         CmsRequestContext context,
@@ -6438,9 +6763,9 @@ public final class CmsSecurityManager {
 
     /**
      * Updates the user information. <p>
-     * 
+     *
      * The user id has to be a valid OpenCms user id.<br>
-     * 
+     *
      * The user with the given id will be completely overridden
      * by the given data.<p>
      *
@@ -6469,16 +6794,16 @@ public final class CmsSecurityManager {
      *
      * If the required permissions are not satisfied by the permissions the user has on the resource,
      * an exception is thrown.<p>
-     * 
+     *
      * @param dbc the current database context
      * @param resource the resource on which permissions are required
      * @param requiredPermissions the set of permissions required to access the resource
-     * @param checkLock if true, the lock status of the resource is also checked 
+     * @param checkLock if true, the lock status of the resource is also checked
      * @param filter the filter for the resource
-     * 
+     *
      * @throws CmsException in case of any i/o error
      * @throws CmsSecurityException if the required permissions are not satisfied
-     * 
+     *
      * @see #hasPermissions(CmsRequestContext, CmsResource, CmsPermissionSet, boolean, CmsResourceFilter)
      */
     protected void checkPermissions(
@@ -6501,14 +6826,14 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Applies the permission check result of a previous call 
+     * Applies the permission check result of a previous call
      * to {@link #hasPermissions(CmsRequestContext, CmsResource, CmsPermissionSet, boolean, CmsResourceFilter)}.<p>
-     * 
+     *
      * @param context the current request context
      * @param resource the resource on which permissions are required
      * @param requiredPermissions the set of permissions required to access the resource
      * @param permissions the permissions to check
-     * 
+     *
      * @throws CmsSecurityException if the required permissions are not satisfied
      * @throws CmsLockException if the lock status is not as required
      * @throws CmsVfsResourceNotFoundException if the required resource has been filtered
@@ -6541,41 +6866,42 @@ public final class CmsSecurityManager {
 
     /**
      * Checks that the current user has enough permissions to modify the given user.<p>
-     * 
+     *
      * @param dbc the database context
      * @param username the name of the user to modify
      * @param role the needed role
-     * 
-     * @throws CmsDataAccessException if something goes wrong
+     *
+     * @throws CmsDataAccessException if something goes wrong accessing the database
      * @throws CmsRoleViolationException if the user has not the needed permissions
      */
     protected void checkRoleForUserModification(CmsDbContext dbc, String username, CmsRole role)
     throws CmsDataAccessException, CmsRoleViolationException {
 
-        CmsUser user = m_driverManager.readUser(dbc, CmsOrganizationalUnit.removeLeadingSeparator(username));
-        // a user is allowed to write his own data
-        if (!dbc.currentUser().equals(user)) {
-            // check if the user to be modified is root admin
-            if (hasRole(dbc, user, CmsRole.ROOT_ADMIN)) {
-                // check the user that is going to do the modification is root admin
-                checkRole(dbc, CmsRole.ROOT_ADMIN);
-                // check if the user to be modified is administrator
-            } else if (hasRole(dbc, user, CmsRole.ADMINISTRATOR)) {
-                // check the user that is going to do the modification is administrator
-                checkRole(dbc, CmsRole.ADMINISTRATOR);
-            } else {
-                // check the user that is going to do the modification has the given role
-                checkRole(dbc, role);
-            }
+        CmsUser userToModify = m_driverManager.readUser(dbc, CmsOrganizationalUnit.removeLeadingSeparator(username));
+        if (dbc.currentUser().equals(userToModify)) {
+            // a user is allowed to write his own data
+            return;
         }
+        if (hasRole(dbc, dbc.currentUser(), CmsRole.ROOT_ADMIN)) {
+            // a user with the ROOT_ADMIN role may change any other user
+            return;
+        }
+        if (hasRole(dbc, userToModify, CmsRole.ADMINISTRATOR)) {
+            // check the user that is going to do the modification is administrator
+            checkRole(dbc, CmsRole.ADMINISTRATOR);
+        } else {
+            // check the user that is going to do the modification has the given role
+            checkRole(dbc, role);
+        }
+
     }
 
     /**
      * Checks if the given resource contains a resource that has a system lock.<p>
-     * 
+     *
      * @param dbc the current database context
      * @param resource the resource to check
-     * 
+     *
      * @throws CmsException in case there is a system lock contained in the given resource
      */
     protected void checkSystemLocks(CmsDbContext dbc, CmsResource resource) throws CmsException {
@@ -6589,11 +6915,11 @@ public final class CmsSecurityManager {
 
     /**
      * Internal recursive method for deleting a resource.<p>
-     * 
+     *
      * @param dbc the db context
      * @param resource the name of the resource to delete (full path)
      * @param siblingMode indicates how to handle siblings of the deleted resource
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     protected void deleteResource(CmsDbContext dbc, CmsResource resource, CmsResource.CmsResourceDeleteMode siblingMode)
@@ -6641,9 +6967,9 @@ public final class CmsSecurityManager {
      * @param context the current request context
      * @param user the user to be deleted
      * @param replacement the user to be transfered, can be <code>null</code>
-     * 
+     *
      * @throws CmsRoleViolationException if the current user does not own the rule {@link CmsRole#ACCOUNT_MANAGER}
-     * @throws CmsSecurityException in case the user is a default user 
+     * @throws CmsSecurityException in case the user is a default user
      * @throws CmsException if something goes wrong
      */
     protected void deleteUser(CmsRequestContext context, CmsUser user, CmsUser replacement)
@@ -6661,10 +6987,10 @@ public final class CmsSecurityManager {
         try {
             CmsRole role = CmsRole.ACCOUNT_MANAGER.forOrgUnit(getParentOrganizationalUnit(user.getName()));
             checkRoleForUserModification(dbc, user.getName(), role);
-            // this is needed because 
+            // this is needed because
             // I_CmsUserDriver#removeAccessControlEntriesForPrincipal(CmsDbContext, CmsProject, CmsProject, CmsUUID)
             // expects an offline project, if not data will become inconsistent
-            checkOfflineProject(dbc);
+            checkProjectForDeletePrincipal(dbc);
             if (replacement == null) {
                 m_driverManager.deleteUser(dbc, context.getCurrentProject(), user.getName(), null);
             } else {
@@ -6678,14 +7004,14 @@ public final class CmsSecurityManager {
     }
 
     /**
-     * Returns all resources of organizational units for which the current user has 
+     * Returns all resources of organizational units for which the current user has
      * the given role role.<p>
-     * 
+     *
      * @param dbc the current database context
      * @param role the role to check
-     *  
+     *
      * @return a list of {@link org.opencms.file.CmsResource} objects
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     protected List<CmsResource> getManageableResources(CmsDbContext dbc, CmsRole role) throws CmsException {
@@ -6705,9 +7031,9 @@ public final class CmsSecurityManager {
 
     /**
      * Returns the organizational unit for the parent of the given fully qualified name.<p>
-     * 
+     *
      * @param fqn the fully qualified name to get the parent organizational unit for
-     * 
+     *
      * @return the parent organizational unit for the fully qualified name
      */
     protected String getParentOrganizationalUnit(String fqn) {
@@ -6721,25 +7047,25 @@ public final class CmsSecurityManager {
 
     /**
      * Performs a non-blocking permission check on a resource.<p>
-     * 
+     *
      * This test will not throw an exception in case the required permissions are not
-     * available for the requested operation. Instead, it will return one of the 
+     * available for the requested operation. Instead, it will return one of the
      * following values:<ul>
      * <li><code>{@link I_CmsPermissionHandler#PERM_ALLOWED}</code></li>
      * <li><code>{@link I_CmsPermissionHandler#PERM_FILTERED}</code></li>
      * <li><code>{@link I_CmsPermissionHandler#PERM_DENIED}</code></li></ul><p>
-     * 
+     *
      * @param dbc the current database context
      * @param resource the resource on which permissions are required
      * @param requiredPermissions the set of permissions required for the operation
-     * @param checkLock if true, a lock for the current user is required for 
+     * @param checkLock if true, a lock for the current user is required for
      *      all write operations, if false it's ok to write as long as the resource
      *      is not locked by another user
      * @param filter the resource filter to use
-     * 
+     *
      * @return <code>{@link I_CmsPermissionHandler#PERM_ALLOWED}</code> if the user has sufficient permissions on the resource
      *      for the requested operation
-     * 
+     *
      * @throws CmsException in case of i/o errors (NOT because of insufficient permissions)
      */
     protected I_CmsPermissionHandler.CmsPermissionCheckResult hasPermissions(
@@ -6755,16 +7081,16 @@ public final class CmsSecurityManager {
     /**
      * Returns <code>true</code> if at least one of the given group names is equal to a group name
      * of the given role in the given organizational unit.<p>
-     * 
-     * This checks the given list against the group of the given role as well as against the role group 
+     *
+     * This checks the given list against the group of the given role as well as against the role group
      * of all parent roles.<p>
-     * 
+     *
      * If the organizational unit is <code>null</code>, this method will check if the
      * given user has the given role for at least one organizational unit.<p>
-     *  
+     *
      * @param role the role to check
      * @param roles the groups to match the role groups against
-     * 
+     *
      * @return <code>true</code> if at last one of the given group names is equal to a group name
      *      of this role
      */
@@ -6779,7 +7105,7 @@ public final class CmsSecurityManager {
             while (itDistinctGroupNames.hasNext()) {
                 String distictGroupName = itDistinctGroupNames.next();
                 if (distictGroupName.startsWith(CmsOrganizationalUnit.SEPARATOR)) {
-                    // this is a ou independent role 
+                    // this is a ou independent role
                     // we need an exact match, and we ignore the ou parameter
                     if (groupName.equals(distictGroupName.substring(1))) {
                         return true;
@@ -6809,11 +7135,11 @@ public final class CmsSecurityManager {
 
     /**
      * Internal recursive method to move a resource.<p>
-     * 
+     *
      * @param dbc the db context
      * @param source the source resource
      * @param destination the destination path
-     * 
+     *
      * @throws CmsException if something goes wrong
      */
     protected void moveResource(CmsDbContext dbc, CmsResource source, String destination) throws CmsException {
@@ -6857,7 +7183,7 @@ public final class CmsSecurityManager {
 
     /**
      * Reads a folder from the VFS, using the specified resource filter.<p>
-     * 
+     *
      * @param dbc the current database context
      * @param resourcename the name of the folder to read (full path)
      * @param filter the resource filter to use while reading
@@ -6874,7 +7200,7 @@ public final class CmsSecurityManager {
 
     /**
      * Reads a resource from the OpenCms VFS, using the specified resource filter.<p>
-     * 
+     *
      * @param dbc the current database context
      * @param structureID the ID of the structure to read
      * @param filter the resource filter to use while reading
@@ -6882,7 +7208,7 @@ public final class CmsSecurityManager {
      * @return the resource that was read
      *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see CmsObject#readResource(CmsUUID, CmsResourceFilter)
      * @see CmsObject#readResource(CmsUUID)
      * @see CmsObject#readFile(CmsResource)
@@ -6902,7 +7228,7 @@ public final class CmsSecurityManager {
 
     /**
      * Reads a resource from the OpenCms VFS, using the specified resource filter.<p>
-     * 
+     *
      * @param dbc the current database context
      * @param resourcePath the name of the resource to read (full path)
      * @param filter the resource filter to use while reading
@@ -6910,7 +7236,7 @@ public final class CmsSecurityManager {
      * @return the resource that was read
      *
      * @throws CmsException if something goes wrong
-     * 
+     *
      * @see CmsObject#readResource(String, CmsResourceFilter)
      * @see CmsObject#readResource(String)
      * @see CmsObject#readFile(CmsResource)
@@ -6928,4 +7254,44 @@ public final class CmsSecurityManager {
         return resource;
     }
 
+<<<<<<< HEAD
 }
+=======
+    /**
+     * Checks if the current project allows deletion of a principal.<p>
+     *
+     * @param dbc the database context
+     *
+     * @throws CmsDataAccessException if the current project can not be used to delete a principal
+     */
+    private void checkProjectForDeletePrincipal(CmsDbContext dbc) throws CmsDataAccessException {
+
+        CmsProject currentProject = dbc.currentProject();
+        // principal modifications are allowed if the current project is not the online project
+        if (currentProject.isOnlineProject()) {
+            try {
+                // if the current project is the online project, check if there is a valid offline project at all
+                List<CmsProject> projects = m_driverManager.getProjectDriver(dbc).readProjects(dbc, "");
+                for (CmsProject project : projects) {
+                    if (!project.isOnlineProject()) {
+                        CmsResource root = null;
+                        try {
+                            dbc.setProjectId(project.getUuid());
+                            root = m_driverManager.readResource(dbc, "/", CmsResourceFilter.ALL);
+                        } catch (Exception e) {
+                            // ignore
+                        }
+                        if (root != null) {
+                            throw new CmsVfsException(org.opencms.file.Messages.get().container(
+                                org.opencms.file.Messages.ERR_NOT_ALLOWED_IN_ONLINE_PROJECT_0));
+                        }
+                    }
+                }
+            } finally {
+                dbc.setProjectId(currentProject.getUuid());
+            }
+        }
+    }
+
+}
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485

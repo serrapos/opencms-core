@@ -29,16 +29,20 @@ package org.opencms.widgets;
 
 import org.opencms.file.CmsGroup;
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsResource;
+import org.opencms.i18n.CmsMessages;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
 import org.opencms.security.CmsOrganizationalUnit;
 import org.opencms.util.CmsMacroResolver;
 import org.opencms.util.CmsStringUtil;
+import org.opencms.xml.types.A_CmsXmlContentValue;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -114,6 +118,59 @@ public class CmsSelectGroupWidget extends CmsSelectWidget {
     }
 
     /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getConfiguration(org.opencms.file.CmsObject, org.opencms.xml.types.A_CmsXmlContentValue, org.opencms.i18n.CmsMessages, org.opencms.file.CmsResource, java.util.Locale)
+     */
+    @Override
+    public String getConfiguration(
+        CmsObject cms,
+        A_CmsXmlContentValue schemaType,
+        CmsMessages messages,
+        CmsResource resource,
+        Locale contentLocale) {
+
+        parseSelectOptions(cms, messages, schemaType);
+        String results = getConfiguration();
+
+        return results;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getCssResourceLinks(org.opencms.file.CmsObject)
+     */
+    @Override
+    public List<String> getCssResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getInitCall()
+     */
+    @Override
+    public String getInitCall() {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getJavaScriptResourceLinks(org.opencms.file.CmsObject)
+     */
+    @Override
+    public List<String> getJavaScriptResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#isInternal()
+     */
+    @Override
+    public boolean isInternal() {
+
+        return true;
+    }
+
+    /**
      * @see org.opencms.widgets.I_CmsWidget#newInstance()
      */
     @Override
@@ -123,20 +180,28 @@ public class CmsSelectGroupWidget extends CmsSelectWidget {
     }
 
     /**
-     * Returns the select options for the widget, generated from the configured input fields of the XML content.<p>
+     * Returns the list of configured select options, parsing the configuration String if required.<p>
      * 
-     * @see org.opencms.widgets.A_CmsSelectWidget#parseSelectOptions(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog, org.opencms.widgets.I_CmsWidgetParameter)
+     * The list elements are of type <code>{@link CmsSelectWidgetOption}</code>.
+     * The configuration String is parsed only once and then stored internally.<p>
+     * 
+     * @param cms the current users OpenCms context
+     * @param messages the messages of this dialog
+     * @param param the widget parameter of this dialog
+     * 
+     * @return the list of select options
+     * 
+     * @see CmsSelectWidgetOption
      */
-    @Override
     protected List<CmsSelectWidgetOption> parseSelectOptions(
         CmsObject cms,
-        I_CmsWidgetDialog widgetDialog,
+        CmsMessages messages,
         I_CmsWidgetParameter param) {
 
         // only create options if not already done
         if (getSelectOptions() == null) {
             // parse widget configuration
-            parseConfiguration(cms, widgetDialog);
+            parseConfiguration(cms, messages);
             List<CmsSelectWidgetOption> result = new ArrayList<CmsSelectWidgetOption>();
 
             if (isUseGroupNames()) {
@@ -173,6 +238,18 @@ public class CmsSelectGroupWidget extends CmsSelectWidget {
             setSelectOptions(result);
         }
         return getSelectOptions();
+    }
+
+    /**
+     * @see org.opencms.widgets.A_CmsSelectWidget#parseSelectOptions(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog, org.opencms.widgets.I_CmsWidgetParameter)
+     */
+    @Override
+    protected List<CmsSelectWidgetOption> parseSelectOptions(
+        CmsObject cms,
+        I_CmsWidgetDialog widgetDialog,
+        I_CmsWidgetParameter param) {
+
+        return parseSelectOptions(cms, widgetDialog.getMessages(), param);
     }
 
     /**
@@ -241,33 +318,36 @@ public class CmsSelectGroupWidget extends CmsSelectWidget {
      * @param cms the current users OpenCms context
      * @param widgetDialog the dialog of this widget
      */
-    private void parseConfiguration(CmsObject cms, I_CmsWidgetDialog widgetDialog) {
+    private void parseConfiguration(CmsObject cms, CmsMessages widgetDialog) {
 
-        String configString = CmsMacroResolver.resolveMacros(getConfiguration(), cms, widgetDialog.getMessages());
-        Map<String, String> config = CmsStringUtil.splitAsMap(configString, "|", "=");
-        // get the list of group names to show
-        String groups = config.get(CONFIGURATION_GROUPS);
-        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(groups)) {
-            m_groupNames = CmsStringUtil.splitAsList(groups, ',', true);
-        }
-        // get the regular expression to filter the groups
-        String filter = config.get(CONFIGURATION_GROUPFILTER);
-        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(filter)) {
-            try {
-                m_groupFilter = Pattern.compile(filter);
-            } catch (PatternSyntaxException e) {
-                // log pattern syntax errors
-                LOG.error(Messages.get().getBundle().key(Messages.LOG_ERR_WIDGET_SELECTGROUP_PATTERN_1, filter));
+        String configString = "";
+        if (widgetDialog != null) {
+            configString = CmsMacroResolver.resolveMacros(getConfiguration(), cms, widgetDialog);
+            Map<String, String> config = CmsStringUtil.splitAsMap(configString, "|", "=");
+            // get the list of group names to show
+            String groups = config.get(CONFIGURATION_GROUPS);
+            if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(groups)) {
+                m_groupNames = CmsStringUtil.splitAsList(groups, ',', true);
             }
+            // get the regular expression to filter the groups
+            String filter = config.get(CONFIGURATION_GROUPFILTER);
+            if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(filter)) {
+                try {
+                    m_groupFilter = Pattern.compile(filter);
+                } catch (PatternSyntaxException e) {
+                    // log pattern syntax errors
+                    LOG.error(Messages.get().getBundle().key(Messages.LOG_ERR_WIDGET_SELECTGROUP_PATTERN_1, filter));
+                }
+            }
+            // get the OU to read the groups from
+            m_ouFqn = config.get(CONFIGURATION_OUFQN);
+            if (CmsStringUtil.isEmptyOrWhitespaceOnly(m_ouFqn)) {
+                m_ouFqn = "";
+            } else if (!m_ouFqn.endsWith(CmsOrganizationalUnit.SEPARATOR)) {
+                m_ouFqn += CmsOrganizationalUnit.SEPARATOR;
+            }
+            // set the flag to include sub OUs
+            m_includeSubOus = Boolean.valueOf(config.get(CONFIGURATION_INCLUDESUBOUS)).booleanValue();
         }
-        // get the OU to read the groups from
-        m_ouFqn = config.get(CONFIGURATION_OUFQN);
-        if (CmsStringUtil.isEmptyOrWhitespaceOnly(m_ouFqn)) {
-            m_ouFqn = "";
-        } else if (!m_ouFqn.endsWith(CmsOrganizationalUnit.SEPARATOR)) {
-            m_ouFqn += CmsOrganizationalUnit.SEPARATOR;
-        }
-        // set the flag to include sub OUs
-        m_includeSubOus = Boolean.valueOf(config.get(CONFIGURATION_INCLUDESUBOUS)).booleanValue();
     }
 }

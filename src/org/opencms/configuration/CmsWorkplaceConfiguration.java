@@ -31,6 +31,7 @@ import org.opencms.db.CmsExportPoint;
 import org.opencms.i18n.CmsEncoder;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
+import org.opencms.relations.CmsCategoryService;
 import org.opencms.util.CmsRfsFileViewer;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.workplace.CmsWorkplaceCustomFoot;
@@ -138,6 +139,9 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
     /** The name of the default XML file for this configuration. */
     public static final String DEFAULT_XML_FILE_NAME = "opencms-workplace.xml";
 
+    /** Name of the acacia-unlock node. */
+    public static final String N_ACACIA_UNLOCK = "acacia-unlock";
+
     /** The name of the access control node. */
     public static final String N_ACCESSCONTROL = "accesscontrol";
 
@@ -155,6 +159,9 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
 
     /** The node name of the buttonstyle node. */
     public static final String N_BUTTONSTYLE = "buttonstyle";
+
+    /** The name of the category folder node. */
+    public static final String N_CATEGORYFOLDER = "categoryfolder";
 
     /** The name of the color node. */
     public static final String N_COLOR = "color";
@@ -264,6 +271,9 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
     /** The node name of the file entryoptions node. */
     public static final String N_ENTRYOPTIONS = "entryoptions";
 
+    /** The name of the exclude-pattern node. */
+    public static final String N_EXCLUDEPATTERN = "exclude-pattern";
+
     /** The name of the expand inherited permissions node. */
     public static final String N_EXPANDPERMISSIONSINHERITED = "expand-permissionsinherited";
 
@@ -306,6 +316,9 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
     /** The node name of the gallery preferences node. */
     public static final String N_GALLERIESPREFERENCES = "galleries-preferences";
 
+    /** Node name. */
+    public static final String N_GALLERY_DEFAULT_SCOPE = "gallery-default-scope";
+
     /** The node name of the group-translation node. */
     public static final String N_GROUP_TRANSLATION = "group-translation";
 
@@ -323,6 +336,9 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
 
     /** The subname of the rfsfilesettings/isLogfile node. */
     public static final String N_ISLOGFILE = "isLogfile";
+
+    /** Name of the "keep alive" setting node. */
+    public static final String N_KEEP_ALIVE = "keep-alive";
 
     /** The node name of the key node. */
     public static final String N_KEY = "key";
@@ -390,6 +406,9 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
     /** The node name of the report type node. */
     public static final String N_REPORTTYPE = "reporttype";
 
+    /** The node name of the gallery upload folder handler node. */
+    public static final String N_REPOSITORY_FOLDER = "repositoryfolder";
+
     /** The node name of the restrict explorer view node. */
     public static final String N_RESTRICTEXPLORERVIEW = "restrictexplorerview";
 
@@ -440,6 +459,12 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
 
     /** The node name of the state column node. */
     public static final String N_STATE = "show-state";
+
+    /** The node name for the subsitemap creation mode setting. */
+    public static final String N_SUBSITEMAP_CREATION_MODE = "subsitemap-creation-mode";
+
+    /** The name of the synchronization node. */
+    public static final String N_SYNCHRONIZATION = "synchronization";
 
     /** The name of the text node. */
     public static final String N_TEXT = "text";
@@ -831,6 +856,17 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
         // import/export manager finished
         digester.addSetNext("*/" + N_WORKPLACE, "setWorkplaceManager");
 
+        String path = "*/" + N_WORKPLACE + "/" + N_KEEP_ALIVE;
+        digester.addCallMethod(path, "setKeepAlive", 0);
+
+        // add exclude patterns
+        digester.addCallMethod(
+            "*/" + N_WORKPLACE + "/" + N_SYNCHRONIZATION + "/" + N_EXCLUDEPATTERN,
+            "addSynchronizeExcludePattern",
+            0);
+
+        digester.addCallMethod("*/" + N_WORKPLACE + "/" + N_GALLERY_DEFAULT_SCOPE, "setGalleryDefaultScope", 0);
+
         digester.addCallMethod("*/" + N_WORKPLACE + "/" + N_USER_LISTS, "setUserListMode", 1);
         digester.addCallParam("*/" + N_WORKPLACE + "/" + N_USER_LISTS, 0, A_MODE);
 
@@ -848,6 +884,9 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
             "*/" + N_WORKPLACE + "/" + N_ENABLEADVANCEDPROPERTYTABS,
             "setEnableAdvancedPropertyTabs",
             0);
+
+        // add category folder rule
+        digester.addCallMethod("*/" + N_WORKPLACE + "/" + N_CATEGORYFOLDER, "setCategoryFolder", 0);
 
         digester.addCallMethod("*/" + N_WORKPLACE + "/" + N_GROUP_TRANSLATION, "setGroupTranslationClass", 1);
         digester.addCallParam("*/" + N_WORKPLACE + "/" + N_GROUP_TRANSLATION, 0, A_CLASS);
@@ -914,6 +953,9 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
         // add autolock rule
         digester.addCallMethod("*/" + N_WORKPLACE + "/" + N_AUTOLOCK, "setAutoLock", 0);
 
+        // acacia-unlock
+        digester.addCallMethod("*/" + N_WORKPLACE + "/" + N_ACACIA_UNLOCK, "setAcaciaUnlock", 0);
+
         // add XML content auto correction rule
         digester.addCallMethod("*/" + N_WORKPLACE + "/" + N_XMLCONTENTAUTOCORRECTION, "setXmlContentAutoCorrect", 0);
 
@@ -926,6 +968,13 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
         // add labeled folders rule
         digester.addCallMethod("*/" + N_WORKPLACE + "/" + N_LABELEDFOLDERS + "/" + N_RESOURCE, "addLabeledFolder", 1);
         digester.addCallParam("*/" + N_WORKPLACE + "/" + N_LABELEDFOLDERS + "/" + N_RESOURCE, 0, A_URI);
+
+        // set the gallery upload folder handler
+        digester.addObjectCreate(
+            "*/" + N_WORKPLACE + "/" + N_REPOSITORY_FOLDER,
+            A_CLASS,
+            CmsConfigurationException.class);
+        digester.addSetNext("*/" + N_WORKPLACE + "/" + N_REPOSITORY_FOLDER, "setRepositoryFolderHandler");
 
         // add localized folders rule
         digester.addCallMethod(
@@ -1062,6 +1111,11 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
 
         // add miscellaneous configuration nodes
         workplaceElement.addElement(N_AUTOLOCK).setText(String.valueOf(m_workplaceManager.autoLockResources()));
+        String acaciaUnlock = m_workplaceManager.getAcaciaUnlock();
+        if (acaciaUnlock != null) {
+            workplaceElement.addElement(N_ACACIA_UNLOCK).setText(acaciaUnlock);
+        }
+
         workplaceElement.addElement(N_XMLCONTENTAUTOCORRECTION).setText(
             String.valueOf(m_workplaceManager.isXmlContentAutoCorrect()));
         workplaceElement.addElement(N_ENABLEUSERMGMT).setText(String.valueOf(m_workplaceManager.showUserGroupIcon()));
@@ -1069,6 +1123,13 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
             String.valueOf(m_workplaceManager.isDefaultPropertiesOnStructure()));
         workplaceElement.addElement(N_ENABLEADVANCEDPROPERTYTABS).setText(
             String.valueOf(m_workplaceManager.isEnableAdvancedPropertyTabs()));
+
+        // add <categoryfolder> node
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(m_workplaceManager.getCategoryFolder())
+            && !CmsCategoryService.REPOSITORY_BASE_FOLDER.equals(m_workplaceManager.getCategoryFolder())) {
+            workplaceElement.addElement(N_CATEGORYFOLDER).setText(
+                String.valueOf(m_workplaceManager.getCategoryFolder()));
+        }
 
         String groupTranslationClass = m_workplaceManager.getGroupTranslationClass();
         if (groupTranslationClass != null) {
@@ -1084,6 +1145,10 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
         while (sitesFolders.hasNext()) {
             labeledElement.addElement(N_RESOURCE).addAttribute(A_URI, sitesFolders.next());
         }
+        // add the <galleryupload> node
+        workplaceElement.addElement(N_REPOSITORY_FOLDER).addAttribute(
+            A_CLASS,
+            m_workplaceManager.getRepositoryFolderHandler().getClass().getName());
 
         // add <rfsfileviewsettings> node
         CmsRfsFileViewer viewSettings = m_workplaceManager.getFileViewSettings();
@@ -1240,6 +1305,12 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
         // <show-uploadtypedialog>
         workplaceGeneraloptions.addElement(N_SHOWUPLOADTYPEDIALOG).setText(
             m_workplaceManager.getDefaultUserSettings().getShowUploadTypeDialog().toString());
+
+        CmsDefaultUserSettings.SubsitemapCreationMode subsitemapCreationMode = m_workplaceManager.getDefaultUserSettings().getSubsitemapCreationMode(
+            null);
+        if (subsitemapCreationMode != null) {
+            workplaceGeneraloptions.addElement(N_SUBSITEMAP_CREATION_MODE).setText(subsitemapCreationMode.toString());
+        }
 
         // add the <workplace-startupsettings> node
         Element workplaceStartupsettings = workplacePreferences.addElement(N_WORKPLACESTARTUPSETTINGS);
@@ -1428,6 +1499,17 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
             Element userListsElem = workplaceElement.addElement(N_USER_LISTS);
             userListsElem.addAttribute(A_MODE, userListsMode);
         }
+
+        Boolean keepAlive = m_workplaceManager.isKeepAlive(false);
+        if (keepAlive != null) {
+            workplaceElement.addElement(N_KEEP_ALIVE).setText(keepAlive.toString());
+        }
+
+        String defaultScope = m_workplaceManager.getGalleryDefaultScopeString();
+        if (defaultScope != null) {
+            workplaceElement.addElement(N_GALLERY_DEFAULT_SCOPE).setText(defaultScope);
+        }
+
         // return the configured node
         return workplaceElement;
     }
@@ -1615,6 +1697,7 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
         digester.addCallMethod(xPathPrefix + "/" + N_NEWFOLDEREDITPROPERTIES, "setNewFolderEditProperties", 0);
         digester.addCallMethod(xPathPrefix + "/" + N_NEWFOLDERCREATEINDEXPAGE, "setNewFolderCreateIndexPage", 0);
         digester.addCallMethod(xPathPrefix + "/" + N_SHOWUPLOADTYPEDIALOG, "setShowUploadTypeDialog", 0);
+        digester.addCallMethod(xPathPrefix + "/" + N_SUBSITEMAP_CREATION_MODE, "setSubsitemapCreationMode", 0);
 
         // add workplace preferences startup settings rules
         xPathPrefix = "*/"
@@ -1818,4 +1901,5 @@ public class CmsWorkplaceConfiguration extends A_CmsXmlConfiguration {
             CmsLog.INIT.info(Messages.get().getBundle().key(Messages.INIT_WORKPLACE_INIT_0));
         }
     }
+
 }

@@ -27,6 +27,7 @@
 
 package org.opencms.ade.containerpage.shared;
 
+import org.opencms.gwt.shared.CmsTemplateContextInfo;
 import org.opencms.util.CmsUUID;
 
 import java.util.Map;
@@ -43,17 +44,59 @@ public final class CmsCntPageData implements IsSerializable {
     /** Name of the used dictionary. */
     public static final String DICT_NAME = "org_opencms_ade_containerpage";
 
+    /** Key 'isDetailOnly' used within the JSON representation of a container object. */
+    public static final String JSONKEY_DETAILONLY = "isDetailOnly";
+
+    /** Key 'isDetailView' used within the JSON representation of a container object. */
+    public static final String JSONKEY_DETAILVIEW = "isDetailView";
+
+    /** Key 'elements' used within the JSON representation of a container object. */
+    public static final String JSONKEY_ELEMENTS = "elements";
+
+    /** Key 'maxElements' used within the JSON representation of a container object. */
+    public static final String JSONKEY_MAXELEMENTS = "maxElements";
+
+    /** Key 'name' used within the JSON representation of a container object. */
+    public static final String JSONKEY_NAME = "name";
+
+    /** Key 'type' used within the JSON representation of a container object. */
+    public static final String JSONKEY_TYPE = "type";
+
+    /** Key 'width' used within the JSON representation of a container object. */
+    public static final String JSONKEY_WIDTH = "width";
+
+    /** Key 'elementId' for the element id. */
+    public static final String JSONKEY_ELEMENT_ID = "elementId";
+
+    /** Key 'detailElementId' for the detail content id. */
+    public static final String JSONKEY_DETAIL_ELEMENT_ID = "detailElementId";
+
+    /** Key for container data. This has to be identical with {@link org.opencms.jsp.CmsJspTagContainer#KEY_CONTAINER_DATA}. */
+    public static final String KEY_CONTAINER_DATA = "org_opencms_ade_containerpage_containers";
+
     /** The editor back-link URI. */
     private static final String BACKLINK_URI = "/system/modules/org.opencms.ade.containerpage/editor-backlink.html";
 
     /** The xml-content editor URI. */
     private static final String EDITOR_URI = "/system/workplace/editors/editor.jsp";
 
-    /** The current container page URI. */
-    private String m_cntPageUri;
+    /** The detail view container resource path. */
+    private String m_detailContainerPage;
+
+    /** The detail structure id, if available. */
+    private CmsUUID m_detailId;
+
+    /** Flag which determines whether small elements should be editable initially. */
+    private boolean m_editSmallElementsInitially;
+
+    /** The date at which the container page was last modified. */
+    private long m_lastModified;
 
     /** The content locale. */
     private String m_locale;
+
+    /** The lock information, if the page is locked by another user. */
+    private String m_lockInfo;
 
     /** The map of available types and their new resource id's. */
     private Map<String, String> m_newTypes;
@@ -67,48 +110,54 @@ public final class CmsCntPageData implements IsSerializable {
     /** The current sitemap URI. */
     private String m_sitemapUri;
 
-    /** The current site path. */
-    private String m_sitePath;
+    /** The template context information. */
+    private CmsTemplateContextInfo m_templateContextInfo;
 
-    /** The detail structure id, if available. */
-    private CmsUUID m_detailId;
-
-    /** The date at which the container page was last modified. */
-    private long m_lastModified;
+    /** Flag indicating to use the classic XmlContent editor. */
+    private boolean m_useClassicEditor;
 
     /**
      * Constructor.<p>
      * 
-     * @param cntPageUri the current container page URI
      * @param noEditReason the reason why the current user is not allowed to edit the current container page
      * @param requestParams the original request parameters
      * @param sitemapUri the current sitemap URI
-     * @param sitePath a sitemap path (null if this container page isn't reachable through the sitemap)
      * @param detailId the detail resource id, if available
+     * @param detailContainerPage the detail view container resource path
      * @param newTypes the map of available types and their new resource id's
      * @param lastModified the last modification date of the page 
+     * @param lockInfo lock information, if the page is locked by another user
      * @param locale the content locale
+     * @param useClassicEditor <code>true</code> to use the classic XmlContent editor
+     * @param contextInfo the template context information 
+     * @param showSmallElementsInitially flag which controls whether small elements should be shown initially 
      */
     public CmsCntPageData(
-        String cntPageUri,
         String noEditReason,
         String requestParams,
         String sitemapUri,
-        String sitePath,
         CmsUUID detailId,
+        String detailContainerPage,
         Map<String, String> newTypes,
         long lastModified,
-        String locale) {
+        String lockInfo,
+        String locale,
+        boolean useClassicEditor,
+        CmsTemplateContextInfo contextInfo,
+        boolean showSmallElementsInitially) {
 
-        m_cntPageUri = cntPageUri;
         m_noEditReason = noEditReason;
         m_requestParams = requestParams;
         m_sitemapUri = sitemapUri;
-        m_sitePath = sitePath;
         m_newTypes = newTypes;
         m_lastModified = lastModified;
+        m_lockInfo = lockInfo;
         m_locale = locale;
         m_detailId = detailId;
+        m_detailContainerPage = detailContainerPage;
+        m_useClassicEditor = useClassicEditor;
+        m_templateContextInfo = contextInfo;
+        m_editSmallElementsInitially = showSmallElementsInitially;
     }
 
     /**
@@ -130,16 +179,6 @@ public final class CmsCntPageData implements IsSerializable {
     }
 
     /**
-     * Returns the container-page URI.<p>
-     * 
-     * @return the container-page URI
-     */
-    public String getContainerpageUri() {
-
-        return m_cntPageUri;
-    }
-
-    /**
      * Gets the date at which the page was last modified.<p>
      * 
      * @return the date at which the page was last modified 
@@ -147,6 +186,16 @@ public final class CmsCntPageData implements IsSerializable {
     public long getDateLastModified() {
 
         return m_lastModified;
+    }
+
+    /**
+     * Returns the detail view container resource path.<p>
+     *
+     * @return the detail view container resource path
+     */
+    public String getDetailContainerPage() {
+
+        return m_detailContainerPage;
     }
 
     /**
@@ -177,6 +226,16 @@ public final class CmsCntPageData implements IsSerializable {
     public String getLocale() {
 
         return m_locale;
+    }
+
+    /**
+     * Returns the lock information, if the page is locked by another user.<p>
+     *
+     * @return the lock infomation
+     */
+    public String getLockInfo() {
+
+        return m_lockInfo;
     }
 
     /**
@@ -220,13 +279,33 @@ public final class CmsCntPageData implements IsSerializable {
     }
 
     /**
-     * Returns the sitemap path of the current container page, or null if the page is not reachable via the sitemap.<p>
+     * Gets the template context information.<p>
      * 
-     * @return the sitemap path 
+     * @return the template context information 
      */
-    public String getSitePath() {
+    public CmsTemplateContextInfo getTemplateContextInfo() {
 
-        return m_sitePath;
+        return m_templateContextInfo;
+    }
+
+    /** 
+     * Returns true if small elements should be editable initially.<p>
+     * 
+     * @return true if small elements should be editable initially
+     */
+    public boolean isEditSmallElementsInitially() {
+
+        return m_editSmallElementsInitially;
+    }
+
+    /**
+     * Returns if the classic XmlContent editor should be used.<p>
+     *
+     * @return <code>true</code> if the classic XmlContent editor should be used
+     */
+    public boolean isUseClassicEditor() {
+
+        return m_useClassicEditor;
     }
 
 }

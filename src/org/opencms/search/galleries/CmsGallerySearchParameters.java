@@ -29,9 +29,11 @@ package org.opencms.search.galleries;
 
 import org.opencms.ade.galleries.shared.CmsGallerySearchScope;
 import org.opencms.i18n.CmsLocaleManager;
+import org.opencms.main.OpenCms;
 import org.opencms.search.CmsSearchIndex;
 import org.opencms.search.CmsSearchParameters;
 import org.opencms.search.fields.CmsSearchField;
+import org.opencms.search.fields.CmsSearchFieldConfiguration;
 
 import java.util.Arrays;
 import java.util.List;
@@ -45,6 +47,62 @@ import org.apache.lucene.search.SortField;
  * @since 8.0.0 
  */
 public class CmsGallerySearchParameters {
+
+    /**
+     * Helper class to store a time range.<p>
+     */
+    public class CmsGallerySearchTimeRange {
+
+        /** The end time of the time range. */
+        private long m_endTime;
+
+        /** The start time of the time range. */
+        private long m_startTime;
+
+        /**
+         * Default constructor.<p>
+         * 
+         * This will create an object where the start date is equal to 
+         * {@link Long#MIN_VALUE} and the end date is equal to {@link Long#MAX_VALUE}.<p>
+         */
+        public CmsGallerySearchTimeRange() {
+
+            m_startTime = Long.MIN_VALUE;
+            m_endTime = Long.MAX_VALUE;
+        }
+
+        /**
+         * Constructor with start and end time.<p>
+         * 
+         * @param startTime the start time of the time range
+         * @param endTime the end time of the time range
+         */
+        public CmsGallerySearchTimeRange(long startTime, long endTime) {
+
+            m_startTime = startTime;
+            m_endTime = endTime;
+        }
+
+        /**
+         * Returns the end time of the time range.<p>
+         * 
+         * @return the end time of the time range
+         */
+        public long getEndTime() {
+
+            return m_endTime;
+        }
+
+        /**
+         * Returns the start time of the time range.<p>
+         * 
+         * @return the start time of the time range
+         */
+        public long getStartTime() {
+
+            return m_startTime;
+        }
+    }
 
     /** Sort parameter constants. */
     public enum CmsGallerySortParam {
@@ -122,178 +180,128 @@ public class CmsGallerySearchParameters {
         public static final CmsGallerySortParam DEFAULT = title_asc;
     }
 
-    /**
-     * Helper class to store a time range.<p>
-     */
-    public class CmsGallerySearchTimeRange {
-
-        /** The end time of the time range. */
-        private long m_endTime;
-
-        /** The start time of the time range. */
-        private long m_startTime;
-
-        /**
-         * Default constructor.<p>
-         * 
-         * This will create an object where the start date is equal to 
-         * {@link Long#MIN_VALUE} and the end date is equal to {@link Long#MAX_VALUE}.<p>
-         */
-        public CmsGallerySearchTimeRange() {
-
-            m_startTime = Long.MIN_VALUE;
-            m_endTime = Long.MAX_VALUE;
-        }
-
-        /**
-         * Constructor with start and end time.<p>
-         * 
-         * @param startTime the start time of the time range
-         * @param endTime the end time of the time range
-         */
-        public CmsGallerySearchTimeRange(long startTime, long endTime) {
-
-            m_startTime = startTime;
-            m_endTime = endTime;
-        }
-
-        /**
-         * Returns the end time of the time range.<p>
-         * 
-         * @return the end time of the time range
-         */
-        public long getEndTime() {
-
-            return m_endTime;
-        }
-
-        /**
-         * Returns the start time of the time range.<p>
-         * 
-         * @return the start time of the time range
-         */
-        public long getStartTime() {
-
-            return m_startTime;
-        }
-    }
-
     /** Sort result documents by date of creation ascending. */
     public static final Sort SORT_DATE_CREATED_ASC = new Sort(new SortField(
         CmsSearchField.FIELD_DATE_CREATED,
-        SortField.STRING,
+        SortField.Type.STRING,
         false));
 
     /** Sort result documents by date of creation descending. */
     public static final Sort SORT_DATE_CREATED_DESC = new Sort(new SortField(
         CmsSearchField.FIELD_DATE_CREATED,
-        SortField.STRING,
+        SortField.Type.STRING,
         true));
 
     /** Sort result documents by date of expiration ascending. */
     public static final Sort SORT_DATE_EXPIRED_ASC = new Sort(new SortField(
         CmsGallerySearchFieldMapping.FIELD_RESOURCE_DATE_EXPIRED,
-        SortField.STRING,
+        SortField.Type.STRING,
         false));
 
     /** Sort result documents by date of expiration descending. */
     public static final Sort SORT_DATE_EXPIRED_DESC = new Sort(new SortField(
         CmsGallerySearchFieldMapping.FIELD_RESOURCE_DATE_EXPIRED,
-        SortField.STRING,
+        SortField.Type.STRING,
         true));
 
     /** Sort result documents by date of last modification ascending. */
     public static final Sort SORT_DATE_LASTMODIFIED_ASC = new Sort(new SortField(
         CmsSearchField.FIELD_DATE_LASTMODIFIED,
-        SortField.STRING,
+        SortField.Type.STRING,
         false));
 
     /** Sort result documents by date of last modification descending. */
     public static final Sort SORT_DATE_LASTMODIFIED_DESC = new Sort(new SortField(
         CmsSearchField.FIELD_DATE_LASTMODIFIED,
-        SortField.STRING,
+        SortField.Type.STRING,
         true));
 
     /** Sort result documents by date of release ascending. */
     public static final Sort SORT_DATE_RELEASED_ASC = new Sort(new SortField(
         CmsGallerySearchFieldMapping.FIELD_RESOURCE_DATE_RELEASED,
-        SortField.STRING,
+        SortField.Type.STRING,
         false));
 
     /** Sort result documents by date of release descending. */
     public static final Sort SORT_DATE_RELEASED_DESC = new Sort(new SortField(
         CmsGallerySearchFieldMapping.FIELD_RESOURCE_DATE_RELEASED,
-        SortField.STRING,
+        SortField.Type.STRING,
         true));
 
     /** Sort result documents by resource length ascending, then score. */
     public static final Sort SORT_LENGTH_ASC = new Sort(new SortField[] {
-        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_LENGTH, SortField.INT, false),
+        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_LENGTH, SortField.Type.INT, false),
         SortField.FIELD_SCORE});
 
     /** Sort result documents by resource length descending, then score. */
     public static final Sort SORT_LENGTH_DESC = new Sort(new SortField[] {
-        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_LENGTH, SortField.INT, true),
+        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_LENGTH, SortField.Type.INT, true),
         SortField.FIELD_SCORE});
 
     /** Sort result documents by VFS path ascending. */
-    public static final Sort SORT_PATH_ASC = new Sort(new SortField(CmsSearchField.FIELD_PATH, SortField.STRING, false));
+    public static final Sort SORT_PATH_ASC = new Sort(new SortField(
+        CmsSearchField.FIELD_PATH,
+        SortField.Type.STRING,
+        false));
 
     /** Sort result documents by VFS path descending. */
-    public static final Sort SORT_PATH_DESC = new Sort(new SortField(CmsSearchField.FIELD_PATH, SortField.STRING, true));
+    public static final Sort SORT_PATH_DESC = new Sort(new SortField(
+        CmsSearchField.FIELD_PATH,
+        SortField.Type.STRING,
+        true));
 
     /** Sort result documents by score. */
     public static final Sort SORT_SCORE = Sort.RELEVANCE;
 
     /** Sort result documents by resource state ascending, then score. */
     public static final Sort SORT_STATE_ASC = new Sort(new SortField[] {
-        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_STATE, SortField.INT, false),
+        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_STATE, SortField.Type.INT, false),
         SortField.FIELD_SCORE});
 
     /** Sort result documents by resource state descending, then score. */
     public static final Sort SORT_STATE_DESC = new Sort(new SortField[] {
-        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_STATE, SortField.INT, true),
+        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_STATE, SortField.Type.INT, true),
         SortField.FIELD_SCORE});
 
     /** Sort result documents by title ascending, then score. */
     public static final Sort SORT_TITLE_ASC = new Sort(new SortField[] {
-        new SortField(CmsSearchField.FIELD_TITLE, SortField.STRING, false),
+        new SortField(CmsSearchField.FIELD_TITLE, SortField.Type.STRING, false),
         SortField.FIELD_SCORE});
 
     /** Sort result documents by title descending, then score. */
     public static final Sort SORT_TITLE_DESC = new Sort(new SortField[] {
-        new SortField(CmsSearchField.FIELD_TITLE, SortField.STRING, true),
+        new SortField(CmsSearchField.FIELD_TITLE, SortField.Type.STRING, true),
         SortField.FIELD_SCORE});
 
     /** Sort result documents by resource type ascending, then score. */
     public static final Sort SORT_TYPE_ASC = new Sort(new SortField[] {
-        new SortField(CmsSearchField.FIELD_TYPE, SortField.STRING, false),
+        new SortField(CmsSearchField.FIELD_TYPE, SortField.Type.STRING, false),
         SortField.FIELD_SCORE});
 
     /** Sort result documents by resource type descending, then score. */
     public static final Sort SORT_TYPE_DESC = new Sort(new SortField[] {
-        new SortField(CmsSearchField.FIELD_TYPE, SortField.STRING, true),
+        new SortField(CmsSearchField.FIELD_TYPE, SortField.Type.STRING, true),
         SortField.FIELD_SCORE});
 
     /** Sort result documents by date user who created ascending, then date of creation. */
     public static final Sort SORT_USER_CREATED_ASC = new Sort(new SortField[] {
-        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_USER_CREATED, SortField.STRING, false),
-        new SortField(CmsSearchField.FIELD_DATE_CREATED, SortField.STRING, true)});
+        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_USER_CREATED, SortField.Type.STRING, false),
+        new SortField(CmsSearchField.FIELD_DATE_CREATED, SortField.Type.STRING, true)});
 
     /** Sort result documents by date user who created descending, then date of creation. */
     public static final Sort SORT_USER_CREATED_DESC = new Sort(new SortField[] {
-        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_USER_CREATED, SortField.STRING, true),
-        new SortField(CmsSearchField.FIELD_DATE_CREATED, SortField.STRING, true)});
+        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_USER_CREATED, SortField.Type.STRING, true),
+        new SortField(CmsSearchField.FIELD_DATE_CREATED, SortField.Type.STRING, true)});
 
     /** Sort result documents by date user who did the last modification ascending, then date of last modification. */
     public static final Sort SORT_USER_LASTMODIFIED_ASC = new Sort(new SortField[] {
-        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_USER_LASTMODIFIED, SortField.STRING, false),
-        new SortField(CmsSearchField.FIELD_DATE_LASTMODIFIED, SortField.STRING, true)});
+        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_USER_LASTMODIFIED, SortField.Type.STRING, false),
+        new SortField(CmsSearchField.FIELD_DATE_LASTMODIFIED, SortField.Type.STRING, true)});
 
     /** Sort result documents by date user who did the last modification descending, then date of last modification. */
     public static final Sort SORT_USER_LASTMODIFIED_DESC = new Sort(new SortField[] {
-        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_USER_LASTMODIFIED, SortField.STRING, true),
-        new SortField(CmsSearchField.FIELD_DATE_LASTMODIFIED, SortField.STRING, true)});
+        new SortField(CmsGallerySearchFieldMapping.FIELD_RESOURCE_USER_LASTMODIFIED, SortField.Type.STRING, true),
+        new SortField(CmsSearchField.FIELD_DATE_LASTMODIFIED, SortField.Type.STRING, true)});
 
     /** The categories to search in. */
     private List<String> m_categories;
@@ -316,11 +324,17 @@ public class CmsGallerySearchParameters {
     /** The galleries to search in. */
     private List<String> m_galleries;
 
+    /** Indicates the search exclude property should be ignored. */
+    private boolean m_ignoreSearchExclude;
+
     /** The locale for the search. */
     private String m_locale;
 
     /** The number of search results per page. */
     private int m_matchesPerPage;
+
+    /** The sitemap reference path. */
+    private String m_referencePath;
 
     /** The resource types to search for. */
     private List<String> m_resourceTypes;
@@ -328,17 +342,14 @@ public class CmsGallerySearchParameters {
     /** The requested page of the result. */
     private int m_resultPage;
 
+    /** The gallery search scope. */
+    private CmsGallerySearchScope m_scope;
+
     /** The sort order for the search result. */
     private CmsGallerySortParam m_sortOrder;
 
     /** Search words to search for. */
     private String m_words;
-
-    /** The gallery search scope. */
-    private CmsGallerySearchScope m_scope;
-
-    /** The sitemap reference path. */
-    private String m_referencePath;
 
     /**
      * Default constructor.<p>
@@ -513,7 +524,7 @@ public class CmsGallerySearchParameters {
     public CmsGallerySearchScope getScope() {
 
         if (m_scope == null) {
-            return CmsGallerySearchScope.siteShared;
+            return OpenCms.getWorkplaceManager().getGalleryDefaultScope();
         }
         return m_scope;
     }
@@ -618,8 +629,20 @@ public class CmsGallerySearchParameters {
      */
     public Sort getTitleSort(String locale, boolean desc) {
 
-        String titleName = CmsGallerySearchFieldConfiguration.getLocaleExtendedName(CmsSearchField.FIELD_TITLE, locale);
-        return new Sort(new SortField[] {new SortField(titleName, SortField.STRING, desc), SortField.FIELD_SCORE});
+        // for saving performance and sorting case-insensitive
+        // the un-stored title field should be used
+        String titleName = CmsSearchFieldConfiguration.getLocaleExtendedName(CmsSearchField.FIELD_SORT_TITLE, locale);
+        return new Sort(new SortField[] {new SortField(titleName, SortField.Type.STRING, desc), SortField.FIELD_SCORE});
+    }
+
+    /**
+     * Returns the search exclude property ignore flag.<p>
+     *
+     * @return the search exclude property ignore flag
+     */
+    public boolean isIgnoreSearchExclude() {
+
+        return m_ignoreSearchExclude;
     }
 
     /**
@@ -704,6 +727,16 @@ public class CmsGallerySearchParameters {
     public void setGalleries(List<String> galleries) {
 
         m_galleries = galleries;
+    }
+
+    /**
+     * Sets the search exclude property ignore flag.<p>
+     *
+     * @param excludeForPageEditor the search exclude property ignore flag
+     */
+    public void setIgnoreSearchExclude(boolean excludeForPageEditor) {
+
+        m_ignoreSearchExclude = excludeForPageEditor;
     }
 
     /**

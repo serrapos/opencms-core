@@ -46,6 +46,8 @@ import org.opencms.util.CmsStringUtil;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.FormElement;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.Command;
@@ -94,6 +96,44 @@ public final class CmsContentEditorDialog {
     private CmsContentEditorDialog() {
 
         exportClosingMethod();
+    }
+
+    /**
+     * Generates the form to post to the editor frame.<p>
+     * 
+     * @param editableData the data about the resource which should be edited 
+     * @param isNew true if the resource to be edited doesn'T already exist 
+     * @param target the target of the form to be created 
+     * 
+     * @return the form element which, when submitted, opens the editor 
+     */
+    public static FormElement generateForm(I_CmsEditableData editableData, boolean isNew, String target) {
+
+        // create a form to submit a post request to the editor JSP
+        Map<String, String> formValues = new HashMap<String, String>();
+        if (editableData.getSitePath() != null) {
+            formValues.put("resource", editableData.getSitePath());
+        }
+        if (editableData.getElementLanguage() != null) {
+            formValues.put("elementlanguage", editableData.getElementLanguage());
+        }
+        if (editableData.getElementName() != null) {
+            formValues.put("elementname", editableData.getElementName());
+        }
+        formValues.put("backlink", CmsCoreProvider.get().getContentEditorBacklinkUrl());
+        formValues.put("redirect", "true");
+        formValues.put("directedit", "true");
+        formValues.put("editcontext", CmsCoreProvider.get().getUri());
+        if (isNew) {
+            formValues.put("newlink", editableData.getNewLink());
+            formValues.put("editortitle", editableData.getNewTitle());
+        }
+        FormElement formElement = CmsDomUtil.generateHiddenForm(
+            CmsCoreProvider.get().link(CmsCoreProvider.get().getContentEditorUrl()),
+            Method.post,
+            target,
+            formValues);
+        return formElement;
     }
 
     /**
@@ -236,7 +276,7 @@ public final class CmsContentEditorDialog {
 
         m_dialog.setGlassEnabled(true);
         m_dialog.setUseAnimation(false);
-        CmsIFrame editorFrame = new CmsIFrame(EDITOR_IFRAME_NAME, "");
+        final CmsIFrame editorFrame = new CmsIFrame(EDITOR_IFRAME_NAME, "");
         m_dialog.addDialogClose(new Command() {
 
             /**
@@ -255,7 +295,15 @@ public final class CmsContentEditorDialog {
 
                     public void onOk() {
 
-                        CmsContentEditorDialog.this.close();
+                        // make sure the onunload event is triggered within the editor frames for ALL browsers
+                        editorFrame.setUrl("about:blank");
+                        Scheduler.get().scheduleDeferred(new ScheduledCommand() {
+
+                            public void execute() {
+
+                                CmsContentEditorDialog.this.close();
+                            }
+                        });
                     }
                 });
                 confirmDlg.center();
@@ -265,8 +313,9 @@ public final class CmsContentEditorDialog {
         });
 
         m_dialog.add(editorFrame);
+        m_dialog.setPositionFixed();
         m_dialog.center();
-        m_form = generateForm();
+        m_form = generateForm(m_editableData, m_isNew, EDITOR_IFRAME_NAME);
         RootPanel.getBodyElement().appendChild(m_form);
         m_form.submit();
 
@@ -284,69 +333,38 @@ public final class CmsContentEditorDialog {
      * Exports the close method to the window object, so it can be accessed from within the content editor iFrame.<p>
      */
     private native void exportClosingMethod() /*-{
-        $wnd[@org.opencms.gwt.client.ui.contenteditor.CmsContentEditorDialog::CLOSING_METHOD_NAME] = function() {
-            @org.opencms.gwt.client.ui.contenteditor.CmsContentEditorDialog::closeEditDialog()();
-        };
+      $wnd[@org.opencms.gwt.client.ui.contenteditor.CmsContentEditorDialog::CLOSING_METHOD_NAME] = function() {
+         @org.opencms.gwt.client.ui.contenteditor.CmsContentEditorDialog::closeEditDialog()();
+      };
     }-*/;
-
-    /**
-     * Generates the form to post to the editor frame.<p>
-     * 
-     * @return the form element
-     */
-    private FormElement generateForm() {
-
-        // create a form to submit a post request to the editor JSP
-        Map<String, String> formValues = new HashMap<String, String>();
-        if (m_editableData.getSitePath() != null) {
-            formValues.put("resource", m_editableData.getSitePath());
-        }
-        if (m_editableData.getElementLanguage() != null) {
-            formValues.put("elementlanguage", m_editableData.getElementLanguage());
-        }
-        if (m_editableData.getElementName() != null) {
-            formValues.put("elementname", m_editableData.getElementName());
-        }
-        formValues.put("backlink", CmsCoreProvider.get().getContentEditorBacklinkUrl());
-        formValues.put("redirect", "true");
-        formValues.put("directedit", "true");
-        if (m_isNew) {
-            formValues.put("newlink", m_editableData.getNewLink());
-            formValues.put("editortitle", m_editableData.getNewTitle());
-        }
-        FormElement formElement = CmsDomUtil.generateHiddenForm(CmsCoreProvider.get().link(
-            CmsCoreProvider.get().getContentEditorUrl()), Method.post, EDITOR_IFRAME_NAME, formValues);
-        return formElement;
-    }
 
     /**
      * Saves the current editor content synchronously.<p>
      */
     private native void saveEditorContent() /*-{
-        var iFrame = $wnd.frames[@org.opencms.gwt.client.ui.contenteditor.CmsContentEditorDialog::EDITOR_IFRAME_NAME];
-        if (iFrame != null) {
-            var editFrame = iFrame["edit"];
-            if (editFrame != null) {
-                var editorFrame = editFrame.frames["editform"];
-                if (editorFrame != null) {
-                    var editForm = editorFrame.$("#EDITOR");
-                    editForm.find("input[name='action']").attr("value",
-                            "saveexit");
-                    if (editForm != null) {
-                        var data = editForm.serializeArray(editForm);
-                        editorFrame.$.ajax({
-                            type : 'POST',
-                            async : false,
-                            url : editForm.attr("action"),
-                            data : data,
-                            success : function(result) {
-                                // nothing to do
-                            },
-                            dataType : "html"
-                        });
-                    }
-                }
+      var iFrame = $wnd.frames[@org.opencms.gwt.client.ui.contenteditor.CmsContentEditorDialog::EDITOR_IFRAME_NAME];
+      if (iFrame != null) {
+         var editFrame = iFrame["edit"];
+         if (editFrame != null) {
+            var editorFrame = editFrame.frames["editform"];
+            if (editorFrame != null) {
+               var editForm = editorFrame.$("#EDITOR");
+               editForm.find("input[name='action']").attr("value", "saveexit");
+               if (editForm != null) {
+                  var data = editForm.serializeArray(editForm);
+                  editorFrame.$.ajax({
+                     type : 'POST',
+                     async : false,
+                     url : editForm.attr("action"),
+                     data : data,
+                     success : function(result) {
+                        // nothing to do
+                     },
+                     dataType : "html"
+                  });
+               }
             }
-        }
+         }
+      }
     }-*/;
 }

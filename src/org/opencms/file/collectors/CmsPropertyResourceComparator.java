@@ -210,7 +210,7 @@ public class CmsPropertyResourceComparator implements Serializable, Comparator<C
     /**
      * Check if a string contains a numeric value.<p> 
      * 
-     * @param string to check if is a numeric value
+     * @param value string to check if is a numeric value
      *
      * @return true for a numeric value in the string
      */

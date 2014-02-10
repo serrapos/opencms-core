@@ -29,6 +29,7 @@ package org.opencms.ade.editprovider.client;
 
 import org.opencms.gwt.client.A_CmsEntryPoint;
 import org.opencms.gwt.client.CmsCoreProvider;
+import org.opencms.gwt.client.CmsPingTimer;
 import org.opencms.gwt.client.rpc.CmsRpcAction;
 import org.opencms.gwt.client.ui.CmsPushButton;
 import org.opencms.gwt.client.ui.CmsToolbar;
@@ -40,8 +41,10 @@ import org.opencms.gwt.client.ui.css.I_CmsImageBundle;
 import org.opencms.gwt.client.ui.css.I_CmsLayoutBundle;
 import org.opencms.gwt.client.ui.css.I_CmsToolbarButtonLayoutBundle;
 import org.opencms.gwt.client.util.CmsDomUtil;
+import org.opencms.gwt.client.util.CmsDomUtil.Tag;
 import org.opencms.gwt.client.util.CmsPositionBean;
 import org.opencms.gwt.client.util.CmsStyleVariable;
+import org.opencms.gwt.shared.CmsCoreData.AdeContext;
 
 import java.util.HashMap;
 import java.util.List;
@@ -92,7 +95,7 @@ public class CmsDirectEditEntryPoint extends A_CmsEntryPoint {
      */
     public void initializeButtons() {
 
-        List<Element> editableElements = CmsDomUtil.getElementsByClass(CLASS_NAME);
+        List<Element> editableElements = CmsDomUtil.getElementsByClass(CLASS_NAME, Tag.div);
         List<CmsDirectEditButtons> editables = Lists.newArrayList();
 
         for (Element elem : editableElements) {
@@ -123,13 +126,15 @@ public class CmsDirectEditEntryPoint extends A_CmsEntryPoint {
     @Override
     public void onModuleLoad() {
 
+<<<<<<< HEAD
         if (!checkBuildId("org.opencms.ade.editprovider")) {
             return;
         }
+=======
+        super.onModuleLoad();
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         org.opencms.gwt.client.ui.css.I_CmsLayoutBundle.INSTANCE.directEditCss().ensureInjected();
         RootPanel.get().addStyleName(I_CmsToolbarButtonLayoutBundle.INSTANCE.toolbarButtonCss().toolbarSelection());
-        RootPanel.get().addStyleName(
-            org.opencms.gwt.client.ui.css.I_CmsLayoutBundle.INSTANCE.directEditCss().classicDirectEdit());
         installToolbar();
         Scheduler.get().scheduleDeferred(new ScheduledCommand() {
 
@@ -139,7 +144,7 @@ public class CmsDirectEditEntryPoint extends A_CmsEntryPoint {
 
             }
         });
-
+        CmsPingTimer.start();
     }
 
     /**
@@ -186,11 +191,14 @@ public class CmsDirectEditEntryPoint extends A_CmsEntryPoint {
 
                 I_CmsToolbarButton source = (I_CmsToolbarButton)event.getSource();
                 source.onToolbarClick();
+                if (source instanceof CmsPushButton) {
+                    ((CmsPushButton)source).clearHoverState();
+                }
             }
         };
         m_toolbar = new CmsToolbar();
         RootPanel root = RootPanel.get();
-        m_toolbarVisibility = new CmsStyleVariable(root);
+        m_toolbarVisibility = new CmsStyleVariable(m_toolbar);
         root.add(m_toolbar);
         CmsPushButton toggleToolbarButton = new CmsPushButton();
         boolean initiallyVisible = CmsCoreProvider.get().isToolbarVisible();
@@ -229,11 +237,11 @@ public class CmsDirectEditEntryPoint extends A_CmsEntryPoint {
         selection.addClickHandler(clickHandler);
         m_toolbar.addLeft(selection);
         m_selection = selection;
-
-        CmsToolbarContextButton context = new CmsToolbarContextButton(handler);
-        context.addClickHandler(clickHandler);
-        m_toolbar.addRight(context);
-        handler.setContextMenuButton(context);
+        CmsToolbarContextButton contextMenuButton = new CmsToolbarContextButton(handler);
+        contextMenuButton.setMenuContext(AdeContext.editprovider);
+        contextMenuButton.addClickHandler(clickHandler);
+        m_toolbar.addRight(contextMenuButton);
+        handler.setContextMenuButton(contextMenuButton);
 
     }
 
@@ -260,10 +268,7 @@ public class CmsDirectEditEntryPoint extends A_CmsEntryPoint {
         RootPanel root = RootPanel.get();
         CmsDirectEditButtons result = new CmsDirectEditButtons(elem, null);
         root.add(result);
-        result.setPosition(
-            m_positions.get(elem.getId()),
-            m_buttonPositions.get(elem.getId()),
-            (com.google.gwt.user.client.Element)elem.getParentElement());
+        result.setPosition(m_positions.get(elem.getId()), m_buttonPositions.get(elem.getId()), elem.getParentElement());
         return result;
     }
 
@@ -285,7 +290,7 @@ public class CmsDirectEditEntryPoint extends A_CmsEntryPoint {
             buttons.setPosition(
                 m_positions.get(id),
                 m_buttonPositions.get(id),
-                (com.google.gwt.user.client.Element)buttons.getMarkerTag().getParentElement());
+                buttons.getMarkerTag().getParentElement());
         }
 
     }

@@ -27,30 +27,36 @@
 
 package org.opencms.ade.galleries.client.ui;
 
+import org.opencms.ade.galleries.client.CmsResultContextMenuHandler;
 import org.opencms.ade.galleries.client.CmsResultsTabHandler;
+import org.opencms.ade.galleries.client.I_CmsGalleryHandler;
 import org.opencms.ade.galleries.client.Messages;
 import org.opencms.ade.galleries.client.ui.css.I_CmsLayoutBundle;
 import org.opencms.ade.galleries.shared.CmsGallerySearchBean;
 import org.opencms.ade.galleries.shared.CmsResultItemBean;
 import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants.GalleryTabId;
 import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants.SortParams;
-import org.opencms.ade.upload.client.ui.CmsUploadButton;
+import org.opencms.ade.upload.client.ui.CmsDialogUploadButtonHandler;
 import org.opencms.gwt.client.dnd.CmsDNDHandler;
 import org.opencms.gwt.client.ui.CmsList;
 import org.opencms.gwt.client.ui.I_CmsListItem;
+import org.opencms.gwt.client.ui.contextmenu.CmsContextMenuButton;
+import org.opencms.gwt.client.ui.contextmenu.CmsContextMenuHandler;
+import org.opencms.gwt.client.ui.input.upload.CmsUploadButton;
+import org.opencms.gwt.client.ui.input.upload.I_CmsUploadButtonHandler;
 import org.opencms.gwt.client.util.CmsDebugLog;
 import org.opencms.gwt.client.util.CmsDomUtil;
-import org.opencms.util.CmsPair;
+import org.opencms.util.CmsUUID;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
-import com.google.gwt.dom.client.Style.Display;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -113,7 +119,7 @@ public class CmsResultsTab extends A_CmsListTab {
          * If the lower edge of the content being scrolled is at most this many pixels below the lower
          * edge of the scrolling viewport, the action is triggered.
          */
-        public static final int DEFAULT_SCROLL_THRESHOLD = 20;
+        public static final int DEFAULT_SCROLL_THRESHOLD = 200;
 
         /**
          * Constructs a new scroll handler with a custom scroll threshold.
@@ -193,6 +199,9 @@ public class CmsResultsTab extends A_CmsListTab {
         /** The resource type of the selected item. */
         private String m_resourceType;
 
+        /** The structure id. */
+        private CmsUUID m_structureId;
+
         /** The resource title. */
         private String m_title;
 
@@ -200,12 +209,14 @@ public class CmsResultsTab extends A_CmsListTab {
          * Constructor.<p>
          * 
          * @param resourcePath the item resource path 
+         * @param structureId the structure id
          * @param title the resource title
          * @param resourceType the item resource type
          */
-        public SelectHandler(String resourcePath, String title, String resourceType) {
+        public SelectHandler(String resourcePath, CmsUUID structureId, String title, String resourceType) {
 
             m_resourcePath = resourcePath;
+            m_structureId = structureId;
             m_resourceType = resourceType;
             m_title = title;
         }
@@ -215,7 +226,7 @@ public class CmsResultsTab extends A_CmsListTab {
          */
         public void onClick(ClickEvent event) {
 
-            getTabHandler().selectResource(m_resourcePath, m_title, m_resourceType);
+            getTabHandler().selectResource(m_resourcePath, m_structureId, m_title, m_resourceType);
         }
 
         /**
@@ -223,7 +234,7 @@ public class CmsResultsTab extends A_CmsListTab {
          */
         public void onDoubleClick(DoubleClickEvent event) {
 
-            getTabHandler().selectResource(m_resourcePath, m_title, m_resourceType);
+            getTabHandler().selectResource(m_resourcePath, m_structureId, m_title, m_resourceType);
         }
     }
 
@@ -238,6 +249,12 @@ public class CmsResultsTab extends A_CmsListTab {
 
     /** The result list item which corresponds to a preset value in the editor. */
     protected CmsResultListItem m_preset;
+
+    /** The gallery handler. */
+    I_CmsGalleryHandler m_galleryHandler;
+
+    /** The context menu handler. */
+    private CmsContextMenuHandler m_contextMenuHandler;
 
     /** The optional dnd manager. */
     private CmsDNDHandler m_dndHandler;
@@ -262,10 +279,13 @@ public class CmsResultsTab extends A_CmsListTab {
      * 
      * @param tabHandler the tab handler 
      * @param dndHandler the dnd manager
-     */
-    public CmsResultsTab(CmsResultsTabHandler tabHandler, CmsDNDHandler dndHandler) {
+     * @param galleryHandler the gallery handler   
+     **/
+    public CmsResultsTab(CmsResultsTabHandler tabHandler, CmsDNDHandler dndHandler, I_CmsGalleryHandler galleryHandler) {
 
         super(GalleryTabId.cms_tab_results);
+        m_galleryHandler = galleryHandler;
+        m_contextMenuHandler = new CmsResultContextMenuHandler(tabHandler);
         m_types = new HashSet<String>();
         m_hasMoreResults = false;
         m_dndHandler = dndHandler;
@@ -276,6 +296,7 @@ public class CmsResultsTab extends A_CmsListTab {
         m_tab.insert(m_params, 0);
         getList().addScrollHandler(new CmsAsynchronousScrollToBottomHandler());
         getList().addScrollHandler(m_backwardScrollHandler);
+        init();
     }
 
     /**
@@ -296,12 +317,23 @@ public class CmsResultsTab extends A_CmsListTab {
     public void fillContent(final CmsGallerySearchBean searchObj, List<CmsSearchParamPanel> paramPanels) {
 
         removeNoParamMessage();
+
+        // in case there is a single type selected and the current sort order is not by type, 
+        // hide the type ascending and type descending sort order options
+        SortParams currentSorting = SortParams.valueOf(searchObj.getSortOrder());
+        if ((searchObj.getTypes().size() == 1)
+            && !((currentSorting == SortParams.type_asc) || (currentSorting == SortParams.type_desc))) {
+            m_sortSelectBox.setItems(getSortList(false));
+        } else {
+            m_sortSelectBox.setItems(getSortList(true));
+        }
+        m_sortSelectBox.selectValue(searchObj.getSortOrder());
         displayResultCount(getResultsDisplayed(searchObj), searchObj.getResultCount());
         m_hasMoreResults = searchObj.hasMore();
         if (searchObj.getPage() == 1) {
             m_preset = null;
             getList().scrollToTop();
-            getList().getElement().getStyle().setDisplay(Display.NONE);
+            //      getList().getElement().getStyle().setDisplay(Display.NONE);
             clearList();
             showParams(paramPanels);
             m_backwardScrollHandler.updateSearchBean(searchObj);
@@ -325,13 +357,13 @@ public class CmsResultsTab extends A_CmsListTab {
     }
 
     /**
-     * @see org.opencms.ade.galleries.client.ui.A_CmsTab#getParamPanel(org.opencms.ade.galleries.shared.CmsGallerySearchBean)
+     * @see org.opencms.ade.galleries.client.ui.A_CmsTab#getParamPanels(org.opencms.ade.galleries.shared.CmsGallerySearchBean)
      */
     @Override
-    public CmsSearchParamPanel getParamPanel(CmsGallerySearchBean searchObj) {
+    public List<CmsSearchParamPanel> getParamPanels(CmsGallerySearchBean searchObj) {
 
         // not available for this tab
-        return null;
+        return Collections.emptyList();
     }
 
     /**
@@ -361,6 +393,7 @@ public class CmsResultsTab extends A_CmsListTab {
      */
     public void showNoParamsMessage() {
 
+        m_scrollList.clear();
         if (m_noParamsMessage == null) {
             StringBuffer buf = new StringBuffer();
             buf.append("<div class=\"");
@@ -370,7 +403,7 @@ public class CmsResultsTab extends A_CmsListTab {
             buf.append("\">");
             buf.append("<table cellpadding=\"0\" cellspacing=\"0\">");
             buf.append("<tr><td></td><td>");
-            buf.append("Please select at least one search parameter!");
+            buf.append(Messages.get().key(Messages.GUI_RESULT_NO_PARAMS_0));
             buf.append("</td></tr>");
             buf.append("</table>");
             buf.append("</div>");
@@ -426,17 +459,10 @@ public class CmsResultsTab extends A_CmsListTab {
         for (CmsResultItemBean resultItem : list) {
             addSingleResult(resultItem, front);
         }
-        String selectValue = m_sortSelectBox.getFormValueAsString();
         if (m_types.size() == 1) {
             getList().addStyleName(I_CmsLayoutBundle.INSTANCE.galleryResultItemCss().tilingList());
-            if (SortParams.valueOf(selectValue) == SortParams.title_asc) {
-                m_sortSelectBox.setItems(getSortList(false));
-            }
         } else {
             getList().removeStyleName(I_CmsLayoutBundle.INSTANCE.galleryResultItemCss().tilingList());
-            if (SortParams.valueOf(selectValue) == SortParams.title_asc) {
-                m_sortSelectBox.setItems(getSortList(true));
-            }
         }
     }
 
@@ -449,15 +475,24 @@ public class CmsResultsTab extends A_CmsListTab {
     protected void addSingleResult(CmsResultItemBean resultItem, boolean front) {
 
         m_types.add(resultItem.getType());
-        CmsResultListItem listItem = new CmsResultListItem(resultItem, m_dndHandler);
+        boolean hasPreview = m_tabHandler.hasPreview(resultItem.getType());
+        CmsDNDHandler dndHandler = m_dndHandler;
+        if (!m_galleryHandler.filterDnd(resultItem)) {
+            dndHandler = null;
+        }
+        CmsResultListItem listItem = new CmsResultListItem(resultItem, hasPreview, dndHandler);
         if (resultItem.isPreset()) {
             m_preset = listItem;
         }
-        listItem.addPreviewClickHandler(new PreviewHandler(resultItem.getPath(), resultItem.getType()));
-        listItem.addDeleteClickHandler(new DeleteHandler(resultItem.getPath()));
+        if (hasPreview) {
+            listItem.addPreviewClickHandler(new PreviewHandler(resultItem.getPath(), resultItem.getType()));
+        }
+        CmsUUID structureId = new CmsUUID(resultItem.getClientId());
+        listItem.getListItemWidget().addButton(new CmsContextMenuButton(structureId, m_contextMenuHandler));
         if (m_tabHandler.hasSelectResource()) {
             SelectHandler selectHandler = new SelectHandler(
                 resultItem.getPath(),
+                structureId,
                 resultItem.getTitle(),
                 resultItem.getType());
             listItem.addSelectClickHandler(selectHandler);
@@ -465,6 +500,7 @@ public class CmsResultsTab extends A_CmsListTab {
             // this affects both tiled and non-tiled result lists. 
             listItem.addDoubleClickHandler(selectHandler);
         }
+        m_galleryHandler.processResultItem(listItem);
         if (front) {
             addWidgetToFrontOfList(listItem);
         } else {
@@ -486,7 +522,7 @@ public class CmsResultsTab extends A_CmsListTab {
      * @see org.opencms.ade.galleries.client.ui.A_CmsListTab#getSortList()
      */
     @Override
-    protected ArrayList<CmsPair<String, String>> getSortList() {
+    protected LinkedHashMap<String, String> getSortList() {
 
         return getSortList(true);
     }
@@ -604,26 +640,22 @@ public class CmsResultsTab extends A_CmsListTab {
      * 
      * @return the sort list
      */
-    private ArrayList<CmsPair<String, String>> getSortList(boolean includeType) {
+    private LinkedHashMap<String, String> getSortList(boolean includeType) {
 
-        ArrayList<CmsPair<String, String>> list = new ArrayList<CmsPair<String, String>>();
-        list.add(new CmsPair<String, String>(SortParams.title_asc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_TITLE_ASC_0)));
-        list.add(new CmsPair<String, String>(SortParams.title_desc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_TITLE_DECS_0)));
-        list.add(new CmsPair<String, String>(SortParams.dateLastModified_asc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_DATELASTMODIFIED_ASC_0)));
-        list.add(new CmsPair<String, String>(SortParams.dateLastModified_desc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_DATELASTMODIFIED_DESC_0)));
-        list.add(new CmsPair<String, String>(SortParams.path_asc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_PATH_ASC_0)));
-        list.add(new CmsPair<String, String>(SortParams.path_desc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_PATH_DESC_0)));
+        LinkedHashMap<String, String> list = new LinkedHashMap<String, String>();
+        list.put(SortParams.title_asc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_TITLE_ASC_0));
+        list.put(SortParams.title_desc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_TITLE_DECS_0));
+        list.put(
+            SortParams.dateLastModified_asc.name(),
+            Messages.get().key(Messages.GUI_SORT_LABEL_DATELASTMODIFIED_ASC_0));
+        list.put(
+            SortParams.dateLastModified_desc.name(),
+            Messages.get().key(Messages.GUI_SORT_LABEL_DATELASTMODIFIED_DESC_0));
+        list.put(SortParams.path_asc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_PATH_ASC_0));
+        list.put(SortParams.path_desc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_PATH_DESC_0));
         if (includeType) {
-            list.add(new CmsPair<String, String>(SortParams.type_asc.name(), Messages.get().key(
-                Messages.GUI_SORT_LABEL_TYPE_ASC_0)));
-            list.add(new CmsPair<String, String>(SortParams.type_desc.name(), Messages.get().key(
-                Messages.GUI_SORT_LABEL_TYPE_DESC_0)));
+            list.put(SortParams.type_asc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_TYPE_ASC_0));
+            list.put(SortParams.type_desc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_TYPE_DESC_0));
         }
         return list;
     }
@@ -665,14 +697,17 @@ public class CmsResultsTab extends A_CmsListTab {
             targets.addAll(searchObj.getFolders());
         }
         if (m_uploadButton == null) {
-            m_uploadButton = createUploadButtonForTarget("");
+            m_uploadButton = createUploadButtonForTarget("", false);
             m_uploadButton.addStyleName(I_CmsLayoutBundle.INSTANCE.galleryDialogCss().resultTabUpload());
             m_tab.insert(m_uploadButton, 0);
         }
         String uploadTarget = null;
         if (targets.size() == 1) {
             uploadTarget = targets.iterator().next();
-            m_uploadButton.setTargetFolder(uploadTarget);
+            I_CmsUploadButtonHandler handler = m_uploadButton.getButtonHandler();
+            if (handler instanceof CmsDialogUploadButtonHandler) {
+                ((CmsDialogUploadButtonHandler)handler).setTargetFolder(uploadTarget);
+            }
             m_uploadButton.enable();
             m_uploadButton.setTitle(Messages.get().key(Messages.GUI_GALLERY_UPLOAD_TITLE_1, uploadTarget));
         } else {

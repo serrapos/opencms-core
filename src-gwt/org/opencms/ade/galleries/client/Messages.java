@@ -124,6 +124,18 @@ public final class Messages {
     public static final String GUI_IMAGE_HSPACE_0 = "GUI_IMAGE_HSPACE_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_IMAGE_INFO_DATE_LAST_CHANGED_0 = "GUI_IMAGE_INFO_DATE_LAST_CHANGED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_IMAGE_INFO_DESCRIPTION_0 = "GUI_IMAGE_INFO_DESCRIPTION_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_IMAGE_INFO_DIMENSION_0 = "GUI_IMAGE_INFO_DIMENSION_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_IMAGE_INFO_LAST_CHANGED_BY_0 = "GUI_IMAGE_INFO_LAST_CHANGED_BY_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_IMAGE_INSERT_COPYRIGHT_0 = "GUI_IMAGE_INSERT_COPYRIGHT_0";
 
     /** Message constant for key in the resource bundle. */
@@ -179,6 +191,9 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_PARAMS_LABEL_INCLUDING_EXPIRED_0 = "GUI_PARAMS_LABEL_INCLUDING_EXPIRED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_PARAMS_LABEL_SCOPE_0 = "GUI_PARAMS_LABEL_SCOPE_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_PARAMS_LABEL_SEARCH_0 = "GUI_PARAMS_LABEL_SEARCH_0";
@@ -263,6 +278,12 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_RESULT_BUTTON_DELETE_0 = "GUI_RESULT_BUTTON_DELETE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESULT_NO_PARAMS_0 = "GUI_RESULT_NO_PARAMS_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SCOPE_EVERYTHING_0 = "GUI_SCOPE_EVERYTHING_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_SCOPE_SHARED_0 = "GUI_SCOPE_SHARED_0";
@@ -352,6 +373,9 @@ public final class Messages {
     public static final String GUI_TAB_SEARCH_LANGUAGE_NOT_SEL_0 = "GUI_TAB_SEARCH_LANGUAGE_NOT_SEL_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_TAB_SEARCH_SEARCH_EXISTING_0 = "GUI_TAB_SEARCH_SEARCH_EXISTING_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_TAB_TITLE_CATEGORIES_0 = "GUI_TAB_TITLE_CATEGORIES_0";
 
     /** Message constant for key in the resource bundle. */
@@ -371,6 +395,9 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_TAB_TITLE_VFS_0 = "GUI_TAB_TITLE_VFS_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_TAB_TYPES_CREATE_NEW_0 = "GUI_TAB_TYPES_CREATE_NEW_0";
 
     /** Name of the used resource bundle. */
     private static final String BUNDLE_NAME = "org.opencms.ade.galleries.clientmessages";

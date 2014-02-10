@@ -45,8 +45,17 @@ public class CmsResultItemBean extends CmsListInfoBean implements I_CmsHasTitle,
     /** The structured id of the resource. */
     private String m_clientId;
 
+    /** The formatted date of the last modification. */
+    private String m_dateLastModified;
+
     /** The result item description. */
     private String m_description;
+
+    /** The image dimensions. */
+    private String m_dimension;
+
+    /** Flag which indicates whether the resource for this result is a copy model. */
+    private boolean m_isCopyModel;
 
     /** A flag which indicates whether this result item corresponds to a preset value in the editor.<p> */
     private boolean m_isPreset;
@@ -60,8 +69,19 @@ public class CmsResultItemBean extends CmsListInfoBean implements I_CmsHasTitle,
     /** Flag indicating if the result item resource is currently released and not expired. */
     private boolean m_releasedAndNotExpired;
 
-    /** The resource type name. */
-    private String m_type;
+    /** The name of the user who last modified the resource. */
+    private String m_userLastModified;
+
+    /** The link for displaying the resource. */
+    private String m_viewLink;
+
+    /**
+     * Default constructor.<p>
+     */
+    public CmsResultItemBean() {
+
+        // empty default constructor
+    }
 
     /**
      * Returns the structured id.<p>
@@ -74,6 +94,16 @@ public class CmsResultItemBean extends CmsListInfoBean implements I_CmsHasTitle,
     }
 
     /**
+     * Returns the formatted last modification date.<p>
+     * 
+     * @return the formatted last modification date 
+     */
+    public String getDateLastModified() {
+
+        return m_dateLastModified;
+    }
+
+    /**
      * Returns the description.<p>
      *
      * @return the description
@@ -81,6 +111,16 @@ public class CmsResultItemBean extends CmsListInfoBean implements I_CmsHasTitle,
     public String getDescription() {
 
         return m_description;
+    }
+
+    /**
+     * Returns the dimension.<p>
+     *
+     * @return the dimension
+     */
+    public String getDimension() {
+
+        return m_dimension;
     }
 
     /**
@@ -104,13 +144,56 @@ public class CmsResultItemBean extends CmsListInfoBean implements I_CmsHasTitle,
     }
 
     /**
+     * @see org.opencms.gwt.shared.CmsListInfoBean#getSubTitle()
+     */
+    @Override
+    public String getSubTitle() {
+
+        String fieldSubTitle = super.getSubTitle();
+        if (fieldSubTitle != null) {
+            return fieldSubTitle;
+        }
+        return m_userLastModified + " / " + m_dateLastModified;
+    }
+
+    /**
      * Returns the resource type name.<p>
      *
      * @return the resource type name
      */
     public String getType() {
 
-        return m_type;
+        return getResourceType();
+    }
+
+    /** 
+     * Gets the name of the user who last modified the resource.<p>
+     * 
+     * @return the name of the user who last modified the resource  
+     */
+    public String getUserLastModified() {
+
+        return m_userLastModified;
+    }
+
+    /**
+     * Gets the link for displaying the resource.<p>
+     * 
+     * @return the link for displaying the resource 
+     */
+    public String getViewLink() {
+
+        return m_viewLink;
+    }
+
+    /** 
+     * Returns true if the result resource is a copy model.<p>
+     * 
+     * @return true if the resource is a copy model 
+     */
+    public boolean isCopyModel() {
+
+        return m_isCopyModel;
     }
 
     /**
@@ -154,6 +237,16 @@ public class CmsResultItemBean extends CmsListInfoBean implements I_CmsHasTitle,
     }
 
     /**
+     * Sets the formatted last modification date.<p>
+     * 
+     * @param formattedDate the formatted last modification date 
+     */
+    public void setDateLastModified(String formattedDate) {
+
+        m_dateLastModified = formattedDate;
+    }
+
+    /**
      * Sets the description.<p>
      * 
      * Also used as sub-title.<p>
@@ -162,8 +255,27 @@ public class CmsResultItemBean extends CmsListInfoBean implements I_CmsHasTitle,
      */
     public void setDescription(String description) {
 
-        super.setSubTitle(description);
         m_description = description;
+    }
+
+    /**
+     * Sets the dimension.<p>
+     *
+     * @param dimension the dimension to set
+     */
+    public void setDimension(String dimension) {
+
+        m_dimension = dimension;
+    }
+
+    /** 
+     * Sets the "copy model" status of this result bean.<p>
+     * 
+     * @param isCopyModel true if this result should be marked as a copy model 
+     */
+    public void setIsCopyModel(boolean isCopyModel) {
+
+        m_isCopyModel = isCopyModel;
     }
 
     /**
@@ -207,21 +319,33 @@ public class CmsResultItemBean extends CmsListInfoBean implements I_CmsHasTitle,
     }
 
     /**
-     * @see org.opencms.gwt.shared.CmsListInfoBean#setSubTitle(java.lang.String)
-     */
-    @Override
-    public void setSubTitle(String subTitle) {
-
-        setDescription(subTitle);
-    }
-
-    /**
      * Sets the resource type name.<p>
      * 
      * @param type the resource type name to set
      */
     public void setType(String type) {
 
-        m_type = type;
+        setResourceType(type);
     }
+
+    /**
+     * Sets the name of the user who last modified the resource.<p>
+     * 
+     * @param userLastModified a user name 
+     */
+    public void setUserLastModified(String userLastModified) {
+
+        m_userLastModified = userLastModified;
+    }
+
+    /**
+     * Sets the link for displaying the resource.<p>
+     * 
+     * @param viewLink the link for displaying the 
+     */
+    public void setViewLink(String viewLink) {
+
+        m_viewLink = viewLink;
+    }
+
 }

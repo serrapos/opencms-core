@@ -46,6 +46,43 @@ public final class Messages {
     public static final String ERR_PUBLISH_CANT_PUBLISH_NEW_RESOURCE_2 = "ERR_PUBLISH_CANT_PUBLISH_NEW_RESOURCE_2";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_CHANGED_BY_USER_1 = "GUI_CHANGED_BY_USER_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CHECKBOX_ADD_CONTENT_0 = "GUI_CHECKBOX_ADD_CONTENT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CHECKBOX_ALL_0 = "GUI_CHECKBOX_ALL_0";
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CHECKBOX_DESELECT_ALL_0 = "GUI_CHECKBOX_DESELECT_ALL_0";
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CHECKBOX_NONE_0 = "GUI_CHECKBOX_NONE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CHECKBOX_SELECT_ALL_0 = "GUI_CHECKBOX_SELECT_ALL_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CHECKBOX_SOME_2 = "GUI_CHECKBOX_SOME_2";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CONFIRMATION_CAPTION_0 = "GUI_CONFIRMATION_CAPTION_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CONFIRMATION_PUBLISH_0 = "GUI_CONFIRMATION_PUBLISH_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CONFIRMATION_WORKFLOW_1 = "GUI_CONFIRMATION_WORKFLOW_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CONFIRMATION_WORKPLACE_BUTTON_0 = "GUI_CONFIRMATION_WORKPLACE_BUTTON_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_LABEL_DATE_LAST_MODIFIED_0 = "GUI_LABEL_DATE_LAST_MODIFIED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_LABEL_USER_LAST_MODIFIED_0 = "GUI_LABEL_USER_LAST_MODIFIED_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_NO_TITLE_0 = "GUI_NO_TITLE_0";
 
     /** Message constant for key in the resource bundle. */
@@ -79,10 +116,13 @@ public final class Messages {
     public static final String GUI_PUBLISH_DIALOG_PROBLEM_1 = "GUI_PUBLISH_DIALOG_PROBLEM_1";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_PUBLISH_DIALOG_PROBLEMS_2 = "GUI_PUBLISH_DIALOG_PROBLEMS_2";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_PUBLISH_DIALOG_PUBLISH_0 = "GUI_PUBLISH_DIALOG_PUBLISH_0";
 
     /** Message constant for key in the resource bundle. */
-    public static final String GUI_PUBLISH_DIALOG_TITLE_0 = "GUI_PUBLISH_DIALOG_TITLE_0";
+    public static final String GUI_PUBLISH_DIALOG_TITLE_3 = "GUI_PUBLISH_DIALOG_TITLE_3";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_PUBLISH_REMOVE_BUTTON_0 = "GUI_PUBLISH_REMOVE_BUTTON_0";
@@ -101,6 +141,9 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_PUBLISH_UNREMOVE_BUTTON_0 = "GUI_PUBLISH_UNREMOVE_BUTTON_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_PUBLISH_WORKFLOW_SELECT_0 = "GUI_PUBLISH_WORKFLOW_SELECT_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_PUBLISHING_0 = "GUI_PUBLISHING_0";

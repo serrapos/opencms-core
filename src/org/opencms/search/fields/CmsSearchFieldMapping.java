@@ -38,10 +38,12 @@ import org.opencms.main.CmsRuntimeException;
 import org.opencms.search.Messages;
 import org.opencms.search.extractors.I_CmsExtractionResult;
 import org.opencms.util.CmsStringUtil;
+import org.opencms.xml.CmsXmlUtils;
 
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.document.DateTools;
 
@@ -50,10 +52,16 @@ import org.apache.lucene.document.DateTools;
  * 
  * @since 7.0.0 
  */
-public class CmsSearchFieldMapping {
+public class CmsSearchFieldMapping implements I_CmsSearchFieldMapping {
 
     /** Default for expiration date since Long.MAX_VALUE is to big. */
-    protected static final String DATE_EXPIRED_DEFAULT_STR = "21000101";
+    private static final String DATE_EXPIRED_DEFAULT_STR = "21000101";
+
+    /** The default expiration date. */
+    private static Date m_defaultDateExpired;
+
+    /** Serial version UID. */
+    private static final long serialVersionUID = 3016384419639743033L;
 
     /** The default expiration date. */
     private static Date m_defaultDateExpired;
@@ -101,7 +109,11 @@ public class CmsSearchFieldMapping {
     public static Date getDefaultDateExpired() throws ParseException {
 
         if (m_defaultDateExpired == null) {
+<<<<<<< HEAD
             m_defaultDateExpired = DateTools.stringToDate(DATE_EXPIRED_DEFAULT_STR);
+=======
+            m_defaultDateExpired = DateTools.stringToDate("21000101");
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         }
         return m_defaultDateExpired;
     }
@@ -117,17 +129,16 @@ public class CmsSearchFieldMapping {
         if (obj == this) {
             return true;
         }
-        if (obj instanceof CmsSearchFieldMapping) {
-            CmsSearchFieldMapping other = (CmsSearchFieldMapping)obj;
-            return CmsStringUtil.isEqual(m_type, other.m_type) && CmsStringUtil.isEqual(m_param, other.m_param);
+        if ((obj instanceof I_CmsSearchFieldMapping)) {
+            I_CmsSearchFieldMapping other = (I_CmsSearchFieldMapping)obj;
+            return (CmsStringUtil.isEqual(m_type, other.getType()))
+                && (CmsStringUtil.isEqual(m_param, other.getParam()));
         }
         return false;
     }
 
     /**
-     * Returns the default value used for this field mapping in case no content is available.<p>
-     * 
-     * @return the default value used for this field mapping in case no content is available
+     * @see org.opencms.search.fields.I_CmsSearchFieldMapping#getDefaultValue()
      */
     public String getDefaultValue() {
 
@@ -135,12 +146,7 @@ public class CmsSearchFieldMapping {
     }
 
     /**
-     * Returns the mapping parameter.<p>
-     *
-     * The parameter is used depending on the implementation of the rules of 
-     * the selected {@link CmsSearchFieldMappingType}.<p>
-     *
-     * @return the mapping parameter
+     * @see org.opencms.search.fields.I_CmsSearchFieldMapping#getParam()
      */
     public String getParam() {
 
@@ -148,15 +154,7 @@ public class CmsSearchFieldMapping {
     }
 
     /**
-     * Returns the String value extracted form the provided data according to the rules of this mapping type.<p> 
-     * 
-     * @param cms the OpenCms context used for building the search index
-     * @param res the resource that is indexed
-     * @param extractionResult the plain text extraction result from the resource
-     * @param properties the list of all properties directly attached to the resource (not searched)
-     * @param propertiesSearched the list of all searched properties of the resource  
-     * 
-     * @return the String value extracted form the provided data according to the rules of this mapping type
+     * @see org.opencms.search.fields.I_CmsSearchFieldMapping#getStringValue(org.opencms.file.CmsObject, org.opencms.file.CmsResource, org.opencms.search.extractors.I_CmsExtractionResult, java.util.List, java.util.List)
      */
     public String getStringValue(
         CmsObject cms,
@@ -173,19 +171,18 @@ public class CmsSearchFieldMapping {
                 }
                 break;
             case 1: // property
-            case 2: // property-search
                 if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(getParam())) {
-                    boolean search = (getType() == CmsSearchFieldMappingType.PROPERTY_SEARCH);
-                    if (search) {
-                        content = CmsProperty.get(getParam(), propertiesSearched).getValue();
-                    } else {
-                        content = CmsProperty.get(getParam(), properties).getValue();
-                    }
+                    content = CmsProperty.get(getParam(), properties).getValue();
                 }
                 break;
-            case 3: // item
+            case 2: // property-search
+                if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(getParam())) {
+                    content = CmsProperty.get(getParam(), propertiesSearched).getValue();
+                }
+                break;
+            case 3: // item (retrieve value for the given XPath from the content items)
                 if ((extractionResult != null) && CmsStringUtil.isNotEmptyOrWhitespaceOnly(getParam())) {
-                    content = extractionResult.getContentItems().get(getParam());
+                    content = getContentItemForXPath(extractionResult.getContentItems(), getParam());
                 }
                 break;
             case 5: // attribute
@@ -295,9 +292,7 @@ public class CmsSearchFieldMapping {
     }
 
     /**
-     * Returns the mapping type.<p>
-     *
-     * @return the mapping type
+     * @see org.opencms.search.fields.I_CmsSearchFieldMapping#getType()
      */
     public CmsSearchFieldMappingType getType() {
 
@@ -313,7 +308,7 @@ public class CmsSearchFieldMapping {
     public int hashCode() {
 
         if (m_hashCode == 0) {
-            int hashCode = 73 * ((m_type == null) ? 29 : m_type.hashCode());
+            int hashCode = 73 * (m_type == null ? 29 : m_type.hashCode());
             if (m_param != null) {
                 hashCode += m_param.hashCode();
             }
@@ -323,9 +318,7 @@ public class CmsSearchFieldMapping {
     }
 
     /**
-     * Sets the default value for this field mapping in case no content is available.<p> 
-     * 
-     * @param defaultValue the default value to set
+     * @see org.opencms.search.fields.I_CmsSearchFieldMapping#setDefaultValue(java.lang.String)
      */
     public void setDefaultValue(String defaultValue) {
 
@@ -337,12 +330,7 @@ public class CmsSearchFieldMapping {
     }
 
     /**
-     * Sets the mapping parameter.<p>
-     *
-     * The parameter is used depending on the implementation of the rules of 
-     * the selected {@link CmsSearchFieldMappingType}.<p>
-     *
-     * @param param the parameter to set
+     * @see org.opencms.search.fields.I_CmsSearchFieldMapping#setParam(java.lang.String)
      */
     public void setParam(String param) {
 
@@ -354,9 +342,7 @@ public class CmsSearchFieldMapping {
     }
 
     /**
-     * Sets the mapping type.<p>
-     *
-     * @param type the type to set
+     * @see org.opencms.search.fields.I_CmsSearchFieldMapping#setType(org.opencms.search.fields.CmsSearchFieldMappingType)
      */
     public void setType(CmsSearchFieldMappingType type) {
 
@@ -364,9 +350,7 @@ public class CmsSearchFieldMapping {
     }
 
     /**
-     * Sets the mapping type as a String.<p>
-     *
-     * @param type the name of the type to set
+     * @see org.opencms.search.fields.I_CmsSearchFieldMapping#setType(java.lang.String)
      */
     public void setType(String type) {
 
@@ -379,5 +363,29 @@ public class CmsSearchFieldMapping {
                 new Object[] {type}));
         }
         setType(mappingType);
+    }
+
+    /**
+     * Returns a "\n" separated String of values for the given XPath if according content items can be found.<p>
+     * 
+     * @param contentItems the content items to get the value from
+     * @param xpath the short XPath parameter to get the value for
+     * 
+     * @return a "\n" separated String of element values found in the content items for the given XPath
+     */
+    private String getContentItemForXPath(Map<String, String> contentItems, String xpath) {
+
+        if (contentItems.get(xpath) != null) { // content item found for XPath
+            return contentItems.get(xpath);
+        } else { // try a multiple value mapping
+            StringBuffer result = new StringBuffer();
+            for (Map.Entry<String, String> entry : contentItems.entrySet()) {
+                if (CmsXmlUtils.removeXpath(entry.getKey()).equals(xpath)) { // the removed path refers an item
+                    result.append(entry.getValue());
+                    result.append("\n");
+                }
+            }
+            return result.length() > 1 ? result.toString().substring(0, result.length() - 1) : null;
+        }
     }
 }

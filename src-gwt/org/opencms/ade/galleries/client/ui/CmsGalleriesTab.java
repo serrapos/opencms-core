@@ -42,15 +42,16 @@ import org.opencms.gwt.client.ui.tree.CmsTreeItem;
 import org.opencms.gwt.client.util.CmsScrollToBottomHandler;
 import org.opencms.gwt.shared.CmsIconUtil;
 import org.opencms.gwt.shared.CmsListInfoBean;
-import org.opencms.util.CmsPair;
 import org.opencms.util.CmsStringUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Lists;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.RepeatingCommand;
 import com.google.gwt.user.client.ui.Label;
@@ -222,6 +223,7 @@ public class CmsGalleriesTab extends A_CmsListTab {
 
             super(checkBox);
             m_galleryPath = gallerPath;
+            m_selectionHandlers.add(this);
         }
 
         /**
@@ -237,6 +239,24 @@ public class CmsGalleriesTab extends A_CmsListTab {
             }
 
         }
+
+        /**
+         * @see org.opencms.ade.galleries.client.ui.A_CmsListTab.A_SelectionHandler#selectBeforeGoingToResultTab()
+         */
+        @Override
+        protected void selectBeforeGoingToResultTab() {
+
+            for (SelectionHandler otherHandler : m_selectionHandlers) {
+                if ((otherHandler != this)
+                    && (otherHandler.getCheckBox() != null)
+                    && otherHandler.getCheckBox().isChecked()) {
+                    otherHandler.getCheckBox().setChecked(false);
+                    otherHandler.onSelectionChange();
+                }
+            }
+            getCheckBox().setChecked(true);
+            onSelectionChange();
+        }
     }
 
     /** The batch size for adding new elements to the tab.<p> */
@@ -247,17 +267,18 @@ public class CmsGalleriesTab extends A_CmsListTab {
 
     /** An iterator which produces new list items which should be added to the tab.<p> */
     protected Iterator<CmsTreeItem> m_itemIterator;
+
     /** List of selected galleries. */
     protected List<String> m_selectedGalleries;
+
+    /** The selection handlers. */
+    List<SelectionHandler> m_selectionHandlers = Lists.newArrayList();
 
     /** Map of gallery folders by path. */
     private Map<String, CmsGalleryFolderBean> m_galleries;
 
     /** Flag which indicates whether new elements are currently being inserted into the galleries tab.<p> */
     private boolean m_loading;
-
-    /** The search parameter panel for this tab. */
-    private CmsSearchParamPanel m_paramPanel;
 
     /** The tab handler. */
     private CmsGalleriesTabHandler m_tabHandler;
@@ -282,6 +303,7 @@ public class CmsGalleriesTab extends A_CmsListTab {
         }));
         m_tabHandler = tabHandler;
         m_galleries = new HashMap<String, CmsGalleryFolderBean>();
+        init();
     }
 
     /**
@@ -292,6 +314,7 @@ public class CmsGalleriesTab extends A_CmsListTab {
      */
     public void fillContent(List<CmsGalleryFolderBean> galleryInfos, List<String> selectedGalleries) {
 
+        clearList();
         m_selectedGalleries = selectedGalleries;
         if (!galleryInfos.isEmpty()) {
             for (CmsGalleryFolderBean galleryInfo : galleryInfos) {
@@ -303,28 +326,24 @@ public class CmsGalleriesTab extends A_CmsListTab {
         } else {
             showIsEmptyLabel();
         }
+        onContentChange();
     }
 
     /**
-     * Returns the content of the galleries search parameter.<p>
-     *  
-     * @param selectedGalleries the list of selected galleries by the user
-     * 
-     * @return the selected galleries
+     * @see org.opencms.ade.galleries.client.ui.A_CmsTab#getParamPanels(org.opencms.ade.galleries.shared.CmsGallerySearchBean)
      */
-    public String getGalleriesParams(List<String> selectedGalleries) {
+    @Override
+    public List<CmsSearchParamPanel> getParamPanels(CmsGallerySearchBean searchObj) {
 
-        if ((selectedGalleries == null) || (selectedGalleries.size() == 0)) {
-            return null;
-        }
-        StringBuffer result = new StringBuffer(128);
-        for (String galleryPath : selectedGalleries) {
+        List<CmsSearchParamPanel> result = new ArrayList<CmsSearchParamPanel>();
+        for (String galleryPath : searchObj.getGalleries()) {
             CmsGalleryFolderBean galleryBean = m_galleries.get(galleryPath);
             if (galleryBean != null) {
                 String title = galleryBean.getTitle();
                 if (CmsStringUtil.isEmptyOrWhitespaceOnly(title)) {
                     title = galleryBean.getPath();
                 }
+<<<<<<< HEAD
                 result.append(title).append(", ");
             }
         }
@@ -349,8 +368,15 @@ public class CmsGalleriesTab extends A_CmsListTab {
         if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(content)) {
             m_paramPanel.setContent(content);
             return m_paramPanel;
+=======
+                CmsSearchParamPanel panel = new CmsSearchParamPanel(Messages.get().key(
+                    Messages.GUI_PARAMS_LABEL_GALLERIES_0), this);
+                panel.setContent(title, galleryPath);
+                result.add(panel);
+            }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         }
-        return null;
+        return result;
     }
 
     /**
@@ -417,6 +443,7 @@ public class CmsGalleriesTab extends A_CmsListTab {
         } else {
             showIsEmptyLabel();
         }
+        onContentChange();
     }
 
     /**
@@ -461,16 +488,18 @@ public class CmsGalleriesTab extends A_CmsListTab {
             galleryInfo.getPath(),
             null));
         listItemWidget.setIcon(CmsIconUtil.getResourceIconClasses(galleryInfo.getType(), false));
+        listItemWidget.setUnselectable();
         CmsCheckBox checkBox = new CmsCheckBox();
         SelectionHandler selectionHandler = new SelectionHandler(galleryInfo.getPath(), checkBox);
         checkBox.addClickHandler(selectionHandler);
-        listItemWidget.addDoubleClickHandler(selectionHandler);
+        listItemWidget.addClickHandler(selectionHandler);
         if ((selectedGalleries != null) && selectedGalleries.contains(galleryInfo.getPath())) {
             checkBox.setChecked(true);
         }
         if (galleryInfo.isEditable()) {
-            listItemWidget.addButton(createUploadButtonForTarget(galleryInfo.getPath()));
+            listItemWidget.addButton(createUploadButtonForTarget(galleryInfo.getPath(), false));
         }
+        listItemWidget.addButton(createSelectButton(selectionHandler));
         CmsTreeItem treeItem = new CmsTreeItem(forTree, checkBox, listItemWidget);
         treeItem.setId(galleryInfo.getPath());
         return treeItem;
@@ -480,19 +509,14 @@ public class CmsGalleriesTab extends A_CmsListTab {
      * @see org.opencms.ade.galleries.client.ui.A_CmsListTab#getSortList()
      */
     @Override
-    protected List<CmsPair<String, String>> getSortList() {
+    protected LinkedHashMap<String, String> getSortList() {
 
-        List<CmsPair<String, String>> list = new ArrayList<CmsPair<String, String>>();
-        list.add(new CmsPair<String, String>(SortParams.title_asc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_TITLE_ASC_0)));
-        list.add(new CmsPair<String, String>(SortParams.title_desc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_TITLE_DECS_0)));
-        list.add(new CmsPair<String, String>(SortParams.type_asc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_TYPE_ASC_0)));
-        list.add(new CmsPair<String, String>(SortParams.type_desc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_TYPE_DESC_0)));
-        list.add(new CmsPair<String, String>(SortParams.tree.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_HIERARCHIC_0)));
+        LinkedHashMap<String, String> list = new LinkedHashMap<String, String>();
+        list.put(SortParams.title_asc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_TITLE_ASC_0));
+        list.put(SortParams.title_desc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_TITLE_DECS_0));
+        list.put(SortParams.type_asc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_TYPE_ASC_0));
+        list.put(SortParams.type_desc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_TYPE_DESC_0));
+        list.put(SortParams.tree.name(), Messages.get().key(Messages.GUI_SORT_LABEL_HIERARCHIC_0));
         return list;
     }
 

@@ -331,13 +331,29 @@ public class CmsModule implements Comparable<CmsModule> {
         result.m_frozen = false;
 
         if (getExplorerTypes() != null) {
-            result.setExplorerTypes(new ArrayList<CmsExplorerTypeSettings>(getExplorerTypes()));
+            List<CmsExplorerTypeSettings> settings = new ArrayList<CmsExplorerTypeSettings>();
+            for (CmsExplorerTypeSettings setting : getExplorerTypes()) {
+                settings.add((CmsExplorerTypeSettings)setting.clone());
+            }
+            result.setExplorerTypes(settings);
         }
         if (getResourceTypes() != null) {
+            // TODO: The resource types must be cloned also, otherwise modification will effect the origin also
             result.setResourceTypes(new ArrayList<I_CmsResourceType>(getResourceTypes()));
         }
         if (getDependencies() != null) {
+            List<CmsModuleDependency> deps = new ArrayList<CmsModuleDependency>();
+            for (CmsModuleDependency dep : getDependencies()) {
+                deps.add((CmsModuleDependency)dep.clone());
+            }
             result.setDependencies(new ArrayList<CmsModuleDependency>(getDependencies()));
+        }
+        if (getExportPoints() != null) {
+            List<CmsExportPoint> exps = new ArrayList<CmsExportPoint>();
+            for (CmsExportPoint exp : getExportPoints()) {
+                exps.add((CmsExportPoint)exp.clone());
+            }
+            result.setExportPoints(exps);
         }
 
         result.setCreateClassesFolder(m_createClassesFolder);
@@ -350,7 +366,7 @@ public class CmsModule implements Comparable<CmsModule> {
         result.setCreateFormattersFolder(m_createFormattersFolder);
 
         result.setResources(new ArrayList<String>(m_resources));
-        result.setExportPoints(new ArrayList<CmsExportPoint>(m_exportPoints));
+
         return result;
     }
 
@@ -1018,12 +1034,12 @@ public class CmsModule implements Comparable<CmsModule> {
      * <i>Please note:</i>It's not possible to set the module parameters once the module
      * configuration has been frozen.<p>
      * 
-     * @param value the module parameters to set
+     * @param parameters the module parameters to set
      */
-    public void setParameters(SortedMap<String, String> value) {
+    public void setParameters(SortedMap<String, String> parameters) {
 
         checkFrozen();
-        m_parameters = value;
+        m_parameters = parameters;
     }
 
     /**

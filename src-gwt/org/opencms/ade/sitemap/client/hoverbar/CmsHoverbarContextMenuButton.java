@@ -32,7 +32,7 @@ import org.opencms.ade.sitemap.client.ui.css.I_CmsImageBundle;
 import org.opencms.gwt.client.ui.CmsMenuButton;
 import org.opencms.gwt.client.ui.I_CmsButton.Size;
 import org.opencms.gwt.client.ui.contextmenu.CmsContextMenu;
-import org.opencms.gwt.client.ui.contextmenu.CmsContextMenuHandler;
+import org.opencms.gwt.client.ui.contextmenu.CmsContextMenuCloseHandler;
 import org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry;
 import org.opencms.gwt.client.ui.css.I_CmsLayoutBundle;
 
@@ -82,20 +82,25 @@ public class CmsHoverbarContextMenuButton extends CmsMenuButton {
         //getPopupContent().setModal(true);
         m_entries = new ArrayList<I_CmsContextMenuEntry>();
         m_entries.add(new CmsGotoMenuEntry(hoverbar));
+        m_entries.add(new CmsEditRedirectMenuEntry(hoverbar));
         m_entries.add(new CmsEditMenuEntry(hoverbar));
-        m_entries.add(new CmsNewChoiceMenuEntry(hoverbar));
-        m_entries.add(new CmsAddToNavMenuEntry(hoverbar));
-        m_entries.add(new CmsSubSitemapMenuEntry(hoverbar));
+        m_entries.add(new CmsResourceInfoMenuEntry(hoverbar));
+        m_entries.add(new CmsAvailabilityMenuEntry(hoverbar));
+        m_entries.add(new CmsLockReportMenuEntry(hoverbar));
+        m_entries.add(new CmsSeoMenuEntry(hoverbar));
         m_entries.add(new CmsParentSitemapMenuEntry(hoverbar));
         m_entries.add(new CmsGotoSubSitemapMenuEntry(hoverbar));
         m_entries.add(new CmsMergeMenuEntry(hoverbar));
+        m_entries.add(new CmsNewChoiceMenuEntry(hoverbar));
+        m_entries.add(new CmsSubSitemapMenuEntry(hoverbar));
+        m_entries.add(new CmsHideMenuEntry(hoverbar));
+        m_entries.add(new CmsShowMenuEntry(hoverbar));
+        m_entries.add(new CmsAddToNavMenuEntry(hoverbar));
         m_entries.add(new CmsRemoveMenuEntry(hoverbar));
         m_entries.add(new CmsBumpDetailPageMenuEntry(hoverbar));
-        m_entries.add(new CmsAvailabilityMenuEntry(hoverbar));
         m_entries.add(new CmsRefreshMenuEntry(hoverbar));
         m_entries.add(new CmsDeleteMenuEntry(hoverbar));
-        m_entries.add(new CmsEditRedirectMenuEntry(hoverbar));
-        m_entries.add(new CmsLockReportMenuEntry(hoverbar));
+
         setTitle(Messages.get().key(Messages.GUI_HOVERBAR_TITLE_0));
         setVisible(true);
         addClickHandler(new ClickHandler() {
@@ -141,7 +146,7 @@ public class CmsHoverbarContextMenuButton extends CmsMenuButton {
         CmsContextMenu menu = new CmsContextMenu(m_entries, false, getPopup());
         m_menuPanel.setWidget(0, 0, menu);
         // add the close handler for the menu
-        getPopup().addCloseHandler(new CmsContextMenuHandler(menu));
+        getPopup().addCloseHandler(new CmsContextMenuCloseHandler(menu));
         getPopup().addCloseHandler(new CloseHandler<PopupPanel>() {
 
             public void onClose(CloseEvent<PopupPanel> closeEvent) {

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module rename-to="editprovider">
-	<inherits name="org.opencms.ade.publish.Dialog" />
+	<inherits name="org.opencms.ade.publish.PublishDialogHeadless" />
 	<source path="client" />
 	<source path="shared" />
 	<entry-point class="org.opencms.ade.editprovider.client.CmsDirectEditEntryPoint" />

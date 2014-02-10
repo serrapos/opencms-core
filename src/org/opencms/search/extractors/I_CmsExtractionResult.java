@@ -76,18 +76,18 @@ public interface I_CmsExtractionResult {
     String ITEM_TITLE = "title";
 
     /**
-     * Returns the extracted content combined as a String.<p>
-     *
-     * @return the extracted content combined as a String
-     */
-    String getContent();
-
-    /**
      * Returns this extraction result serialized as a byte array.<p>
      * 
      * @return this extraction result serialized as a byte array
      */
     byte[] getBytes();
+
+    /**
+     * Returns the extracted content combined as a String.<p>
+     *
+     * @return the extracted content combined as a String
+     */
+    String getContent();
 
     /**
      * Returns the extracted content as individual items.<p>

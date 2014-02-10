@@ -9,6 +9,7 @@ div.previewDialog {
 	bottom: 0px;
 	display: block;
 	background-color: value("constants.css.backgroundColorDialog");
+	z-index: value("constants.css.zIndexInline");
 }
 .previewDialog * {
 	margin: 0;
@@ -106,7 +107,12 @@ table.infoTable{
 	border: none;
 	padding: 3px;
 	clear: both;
-	table-layout: fixed;
+}
+
+table.infoTable div{
+	overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 table.infoTable tr, table.infoTable td{

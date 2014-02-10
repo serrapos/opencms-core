@@ -3,26 +3,31 @@
 <export>
 	<info>
 		<creator>Admin</creator>
-		<opencms_version>7.0.0</opencms_version>
+		<opencms_version>9.0.0</opencms_version>
 		<createdate>Mon, 25 Jun 2007 14:17:50 GMT</createdate>
 		<infoproject>Offline</infoproject>
 		<export_version>7</export_version>
 	</info>
 	<module>
 		<name>org.opencms.workplace.tools.accounts</name>
-		<nicename><![CDATA[OpenCms 8 Accounts management]]></nicename>
+		<nicename><![CDATA[OpenCms 9 Accounts management]]></nicename>
 		<group>OpenCms Workplace</group>
 		<class/>
 		<description><![CDATA[<p>This module contains the OpenCms administration tools for managing the user accounts and groups.</p>
+<<<<<<< HEAD
 <p><i>(c) 2012 by Alkacon Software GmbH (http://www.alkacon.com).</i></p>]]></description>
 		<version>8.0.4</version>
+=======
+<p><i>&copy; 2014 by Alkacon Software GmbH (http://www.alkacon.com).</i></p>]]></description>
+		<version>9.0.0</version>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 		<authorname><![CDATA[Alkacon Software GmbH]]></authorname>
 		<authoremail><![CDATA[info@alkacon.com]]></authoremail>
 		<datecreated>Mon, 27 Jun 2005 08:00:00 GMT</datecreated>
 		<userinstalled/>
 		<dateinstalled/>
 		<dependencies>
-			<dependency name="org.opencms.workplace.administration" version="1.0.0"/>
+			<dependency name="org.opencms.workplace.administration" version="9.0.0"/>
 		</dependencies>
 		<exportpoints>
 			<exportpoint uri="/system/modules/org.opencms.workplace.tools.accounts/lib/" destination="WEB-INF/lib/"/>
@@ -54,6 +59,8 @@
             <resource uri="/system/workplace/admin/accounts/unit_parent.jsp"/>
             <resource uri="/system/workplace/admin/accounts/user_addinfo.jsp"/>
             <resource uri="/system/workplace/admin/accounts/user_allinfo.jsp"/>
+            <resource uri="/system/workplace/admin/accounts/user_unlock.jsp"/>
+            <resource uri="/system/workplace/admin/accounts/user_kill_sessions.jsp"/>
             <resource uri="/system/workplace/admin/accounts/user_assign.jsp"/>
             <resource uri="/system/workplace/admin/accounts/user_delete.jsp"/>
             <resource uri="/system/workplace/admin/accounts/user_edit.jsp"/>
@@ -100,6 +107,8 @@
             <resource uri="/system/workplace/resources/tools/accounts/icons/big/role_add.png"/>
             <resource uri="/system/workplace/resources/tools/accounts/icons/big/unit.png"/>
             <resource uri="/system/workplace/resources/tools/accounts/icons/big/unit_add.png"/>
+            <resource uri="/system/workplace/resources/tools/accounts/icons/big/unlock_user.png"/>
+            <resource uri="/system/workplace/resources/tools/accounts/icons/big/user_kill_sessions.png"/>
             <resource uri="/system/workplace/resources/tools/accounts/icons/big/unit_delete.png"/>
             <resource uri="/system/workplace/resources/tools/accounts/icons/big/unit_delete_disabled.png"/>
             <resource uri="/system/workplace/resources/tools/accounts/icons/big/unit_edit.png"/>
@@ -1664,6 +1673,131 @@
 			<relations/>
 			<accesscontrol/>
 		</file>
+		
+		<file>
+			<source>system/workplace/admin/accounts/user_unlock.jsp</source>
+			<destination>system/workplace/admin/accounts/user_unlock.jsp</destination>
+			<type>jsp</type>
+			<uuidstructure>5898c26c-560f-4ee5-88d9-b2955aa38155</uuidstructure>
+			<uuidresource>fbb5e384-c323-4e40-b849-ba9249244525</uuidresource>
+			<datelastmodified>Wed, 14 Mar 2007 14:12:01 GMT</datelastmodified>
+			<userlastmodified>Admin</userlastmodified>
+			<datecreated>Mon, 27 Jun 2005 08:00:00 GMT</datecreated>
+			<usercreated>Admin</usercreated>
+			<flags>0</flags>
+			<properties>
+				<property>
+					<name>Description</name>
+					<value><![CDATA[${key.GUI_EDITUSER_UNLOCK_ADMIN_TOOL_HELP_0}]]></value>
+				</property>
+				<property>
+					<name>NavImage</name>
+					<value><![CDATA[tools/accounts/icons/big/unlock_user.png]]></value>
+				</property>
+				<property>
+					<name>NavInfo</name>
+					<value><![CDATA[${key.GUI_EDITUSER_UNLOCK_ADMIN_TOOL_GROUP_0}]]></value>
+				</property>
+				<property>
+					<name>NavPos</name>
+					<value><![CDATA[90]]></value>
+				</property>
+				<property>
+					<name>NavText</name>
+					<value><![CDATA[${key.GUI_EDITUSER_UNLOCK_ADMIN_TOOL_NAME_0}:${key.GUI_EDITUSER_UNLOCK_ADMIN_TOOL_NAVBARNAME_0}]]></value>
+				</property>
+				<property>
+					<name>Title</name>
+					<value><![CDATA[Unlock User]]></value>
+				</property>
+				<property>
+					<name>admintoolhandler-args</name>
+					<value><![CDATA[params:oufqn=${param.oufqn}&userid=${param.userid}&action=initial|path:/accounts/orgunit/users/edit/unlock]]></value>
+				</property>
+				<property>
+					<name>admintoolhandler-class</name>
+					<value><![CDATA[org.opencms.workplace.tools.accounts.CmsAccountsToolHandler]]></value>
+				</property>
+				<property>
+					<name>export</name>
+					<value><![CDATA[false]]></value>
+				</property>
+			</properties>
+			<relations/>
+			<accesscontrol/>
+		</file>
+		
+		<!--  kill sessions -->
+		<file>
+			<source>system/workplace/admin/accounts/user_kill_sessions.jsp</source>
+			<destination>system/workplace/admin/accounts/user_kill_sessions.jsp</destination>
+			<type>jsp</type>
+			<uuidstructure>4dd7dee9-dc2d-4e5f-ae86-9aa78c90e21d</uuidstructure>
+			<uuidresource>1d7eea9d-b797-41d9-9439-e7b67e721c5c</uuidresource>
+			<datelastmodified>Wed, 14 Mar 2007 14:12:01 GMT</datelastmodified>
+			<userlastmodified>Admin</userlastmodified>
+			<datecreated>Mon, 27 Jun 2005 08:00:00 GMT</datecreated>
+			<usercreated>Admin</usercreated>
+			<flags>0</flags>
+			<properties>
+				<property>
+					<name>Description</name>
+					<value><![CDATA[${key.GUI_EDITUSER_KILLSESSIONS_ADMIN_TOOL_HELP_0}]]></value>
+				</property>
+				<property>
+					<name>NavImage</name>
+					<value><![CDATA[tools/accounts/icons/big/user_kill_sessions.png]]></value>
+				</property>
+				<property>
+					<name>NavInfo</name>
+					<value><![CDATA[${key.GUI_EDITUSER_KILLSESSIONS_ADMIN_TOOL_GROUP_0}]]></value>
+				</property>
+				<property>
+					<name>NavPos</name>
+					<value><![CDATA[100]]></value>
+				</property>
+				<property>
+					<name>NavText</name>
+					<value><![CDATA[${key.GUI_EDITUSER_KILLSESSIONS_ADMIN_TOOL_NAME_0}:${key.GUI_EDITUSER_KILLSESSIONS_ADMIN_TOOL_NAVBARNAME_0}]]></value>
+				</property>
+				<property>
+					<name>Title</name>
+					<value><![CDATA[Kill sessions]]></value>
+				</property>
+				<property>
+					<name>admintoolhandler-args</name>
+					<value><![CDATA[params:oufqn=${param.oufqn}&userid=${param.userid}&action=initial|path:/accounts/orgunit/users/edit/kill_sessions]]></value>
+				</property>
+				<property>
+					<name>admintoolhandler-class</name>
+					<value><![CDATA[org.opencms.workplace.tools.accounts.CmsAccountsToolHandler]]></value>
+				</property>
+				<property>
+					<name>export</name>
+					<value><![CDATA[false]]></value>
+				</property>
+			</properties>
+			<relations/>
+			<accesscontrol/>
+		</file>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		<file>
 			<source>system/workplace/admin/accounts/user_groups.jsp</source>
 			<destination>system/workplace/admin/accounts/user_groups.jsp</destination>
@@ -1855,6 +1989,62 @@
 				<property>
 					<name>admintoolhandler-args</name>
 					<value><![CDATA[params:oufqn=${param.oufqn}&userid=${param.userid}&action=initial|path:/accounts/orgunit/users/edit/permissions]]></value>
+				</property>
+				<property>
+					<name>admintoolhandler-class</name>
+					<value><![CDATA[org.opencms.workplace.tools.accounts.CmsAccountsToolHandler]]></value>
+				</property>
+				<property type="shared">
+					<name>export</name>
+					<value><![CDATA[false]]></value>
+				</property>
+			</properties>
+			<relations/>
+			<accesscontrol/>
+		</file>
+		
+		
+		
+		
+		<file>
+			<source>system/workplace/admin/accounts/all_permissions.jsp</source>
+			<destination>system/workplace/admin/accounts/all_permissions.jsp</destination>
+			<type>jsp</type>
+			<uuidstructure>b3ca7d4c-5079-42f7-ae2a-7b37453053ec</uuidstructure>
+			<uuidresource>e15f0034-156e-48ab-9206-918323b052b8</uuidresource>
+			<datelastmodified>Fri, 01 Apr 2011 12:15:32 GMT</datelastmodified>
+			<userlastmodified>Admin</userlastmodified>
+			<datecreated>Thu, 31 Mar 2011 15:03:43 GMT</datecreated>
+			<usercreated>Admin</usercreated>
+			<flags>0</flags>
+			<properties>
+				<property>
+					<name>Description</name>
+					<value><![CDATA[${key.GUI_ALLPERMISSIONS_TOOL_HELP_0}]]></value>
+				</property>
+				<property>
+					<name>NavImage</name>
+					<value><![CDATA[tools/accounts/icons/big/pemissions.png]]></value>
+				</property>
+				<property>
+					<name>NavInfo</name>
+					<value><![CDATA[${key.GUI_ALLPERMISSIONS_TOOL_GROUP_0}]]></value>
+				</property>
+				<property>
+					<name>NavPos</name>
+					<value><![CDATA[40]]></value>
+				</property>
+				<property>
+					<name>NavText</name>
+					<value><![CDATA[${key.GUI_ALLPERMISSIONS_TOOL_NAME_0}:${key.GUI_ALLPERMISSIONS_TOOL_NAME_0}]]></value>
+				</property>
+				<property>
+					<name>Title</name>
+					<value><![CDATA[Title - all permissions]]></value>
+				</property>
+				<property>
+					<name>admintoolhandler-args</name>
+					<value><![CDATA[params:action=initial|path:/accounts/orgunit/allpermissions]]></value>
 				</property>
 				<property>
 					<name>admintoolhandler-class</name>
@@ -2593,6 +2783,8 @@
 			<relations/>
 			<accesscontrol/>
 		</file>
+		
+		
 		<file>
 			<source>system/workplace/resources/tools/accounts/buttons/unit_edit.png</source>
 			<destination>system/workplace/resources/tools/accounts/buttons/unit_edit.png</destination>
@@ -2739,6 +2931,52 @@
 			<relations/>
 			<accesscontrol/>
 		</file>
+		
+		<file>
+			<source>system/workplace/resources/tools/accounts/icons/big/unlock_user.png</source>
+			<destination>system/workplace/resources/tools/accounts/icons/big/unlock_user.png</destination>
+			<type>image</type>
+			<uuidstructure>edecfd8e-a84e-4d4d-88e6-df975014861f</uuidstructure>
+			<uuidresource>a8155119-e5e8-41ea-a344-2ad999b66a8b</uuidresource>
+			<datelastmodified>Wed, 07 Feb 2007 11:31:00 GMT</datelastmodified>
+			<userlastmodified>Admin</userlastmodified>
+			<datecreated>Tue, 16 Jan 2007 10:58:40 GMT</datecreated>
+			<usercreated>Admin</usercreated>
+			<flags>0</flags>
+			<properties>
+				<property type="shared">
+					<name>image.size</name>
+					<value><![CDATA[w:24,h:24]]></value>
+				</property>
+			</properties>
+			<relations/>
+			<accesscontrol/>
+		</file>
+		
+				<file>
+			<source>system/workplace/resources/tools/accounts/icons/big/user_kill_sessions.png</source>
+			<destination>system/workplace/resources/tools/accounts/icons/big/user_kill_sessions.png</destination>
+			<type>image</type>
+			<uuidstructure>a64d1f51-9e5d-423a-83f8-199e7c192431</uuidstructure>
+			<uuidresource>201d0285-02ac-47c3-8e08-28352413b7dc</uuidresource>
+			<datelastmodified>Wed, 07 Feb 2007 11:31:00 GMT</datelastmodified>
+			<userlastmodified>Admin</userlastmodified>
+			<datecreated>Tue, 16 Jan 2007 10:58:40 GMT</datecreated>
+			<usercreated>Admin</usercreated>
+			<flags>0</flags>
+			<properties>
+				<property type="shared">
+					<name>image.size</name>
+					<value><![CDATA[w:24,h:24]]></value>
+				</property>
+			</properties>
+			<relations/>
+			<accesscontrol/>
+		</file>
+		
+		
+		
+		
 		<file>
 			<source>system/workplace/resources/tools/accounts/icons/big/accounts.png</source>
 			<destination>system/workplace/resources/tools/accounts/icons/big/accounts.png</destination>

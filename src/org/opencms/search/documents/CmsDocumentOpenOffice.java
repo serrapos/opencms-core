@@ -31,8 +31,8 @@ import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsResource;
 import org.opencms.main.CmsException;
-import org.opencms.search.CmsIndexException;
 import org.opencms.search.CmsSearchIndex;
+import org.opencms.search.CmsIndexException;
 import org.opencms.search.extractors.CmsExtractorOpenOffice;
 import org.opencms.search.extractors.I_CmsExtractionResult;
 

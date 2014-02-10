@@ -38,10 +38,31 @@ import org.opencms.i18n.I_CmsMessageBundle;
 public final class Messages extends A_CmsMessageBundle {
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_CONTAINERPAGE_TYPE_NOT_CREATABLE_1 = "GUI_CONTAINERPAGE_TYPE_NOT_CREATABLE_1";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_DESCRIPTION_DEFAULT_RESOURCE_CONTENT_0 = "GUI_DESCRIPTION_DEFAULT_RESOURCE_CONTENT_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_ELEMENT_RESOURCE_CAN_NOT_BE_EDITED_0 = "GUI_ELEMENT_RESOURCE_CAN_NOT_BE_EDITED_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_LABEL_PATH_0 = "GUI_LABEL_PATH_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_LOCKED_BY_1 = "GUI_LOCKED_BY_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_LOCKED_FOR_PUBLISH_0 = "GUI_LOCKED_FOR_PUBLISH_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SCHEMA_FORMATTER_LABEL_0 = "GUI_SCHEMA_FORMATTER_LABEL_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SETTING_TEMPLATE_CONTEXTS_DESCRIPTION_0 = "GUI_SETTING_TEMPLATE_CONTEXTS_DESCRIPTION_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SETTING_TEMPLATE_CONTEXTS_NAME_0 = "GUI_SETTING_TEMPLATE_CONTEXTS_NAME_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_TITLE_DEFAULT_RESOURCE_CONTENT_0 = "GUI_TITLE_DEFAULT_RESOURCE_CONTENT_0";

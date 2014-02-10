@@ -27,14 +27,15 @@
 
 package org.opencms.ade.sitemap.client.toolbar;
 
+import org.opencms.ade.sitemap.client.CmsSitemapView;
 import org.opencms.ade.sitemap.client.control.CmsSitemapController;
+import org.opencms.ade.sitemap.shared.CmsClientSitemapEntry;
 import org.opencms.gwt.client.CmsCoreProvider;
 import org.opencms.gwt.client.rpc.CmsRpcAction;
 import org.opencms.gwt.client.ui.CmsAlertDialog;
 import org.opencms.gwt.client.ui.CmsPushButton;
 import org.opencms.gwt.client.ui.I_CmsButton;
 import org.opencms.gwt.client.ui.I_CmsButton.ButtonStyle;
-import org.opencms.gwt.client.util.CmsDomUtil;
 import org.opencms.gwt.client.util.CmsMessages;
 import org.opencms.gwt.shared.CmsReturnLinkInfo;
 import org.opencms.util.CmsStringUtil;
@@ -72,7 +73,7 @@ public class CmsToolbarGoBackButton extends CmsPushButton {
             public void onClick(ClickEvent event) {
 
                 toolbar.onButtonActivation(CmsToolbarGoBackButton.this);
-                CmsDomUtil.ensureMouseOut(getElement());
+                CmsToolbarGoBackButton.this.clearHoverState();
                 setDown(false);
                 setEnabled(false);
                 goBack();
@@ -123,8 +124,11 @@ public class CmsToolbarGoBackButton extends CmsPushButton {
             };
 
             goBackAction.execute();
-
+        } else {
+            CmsSitemapController controller = CmsSitemapView.getInstance().getController();
+            CmsClientSitemapEntry root = controller.getData().getRoot();
+            String newPath = root.getSitePath();
+            controller.leaveEditor(newPath);
         }
-
     }
 }

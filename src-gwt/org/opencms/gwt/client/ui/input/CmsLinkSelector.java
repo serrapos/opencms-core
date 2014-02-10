@@ -107,7 +107,7 @@ public class CmsLinkSelector extends Composite implements I_CmsFormWidget, I_Cms
         m_id = m_textbox.getId();
         String label = Messages.get().key(Messages.GUI_LINK_CHECKBOX_EXTERNAL_0);
         m_externalCheckbox.setText(label);
-        m_inputRow.setCellWidth(m_textbox, "330px");
+        m_inputRow.setCellWidth(m_textbox.getTextBox(), "330px");
         m_editButton.setImageClass(I_CmsInputLayoutBundle.INSTANCE.inputCss().linkEdit());
         m_editButton.setButtonStyle(ButtonStyle.TRANSPARENT, null);
 
@@ -141,7 +141,7 @@ public class CmsLinkSelector extends Composite implements I_CmsFormWidget, I_Cms
              */
             public I_CmsFormWidget createWidget(Map<String, String> widgetParams) {
 
-                return new CmsGalleryField();
+                return new CmsLinkSelector();
             }
         });
     }
@@ -201,6 +201,16 @@ public class CmsLinkSelector extends Composite implements I_CmsFormWidget, I_Cms
             return null;
         }
         return new CmsLinkBean(m_textbox.getText(), m_internal);
+    }
+
+    /**
+     * Returns the text box of this widget.<p>
+     * 
+     * @return the CmsTextBox.
+     */
+    public CmsTextBox getTextBox() {
+
+        return m_textbox;
     }
 
     /**
@@ -327,6 +337,17 @@ public class CmsLinkSelector extends Composite implements I_CmsFormWidget, I_Cms
         }
         m_textbox.setFormValueAsString(link.getLink());
         setInternal(link.isInternal());
+    }
+
+    /**
+     * Sets the name of the input field.<p>
+     * 
+     * @param name of the input field
+     * */
+    public void setName(String name) {
+
+        m_textbox.setName(name);
+
     }
 
     /**

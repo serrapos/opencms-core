@@ -28,6 +28,7 @@
 package org.opencms.xml.containerpage;
 
 import org.opencms.ade.configuration.CmsADEManager;
+import org.opencms.ade.containerpage.shared.CmsInheritanceInfo;
 import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsResource;
@@ -53,7 +54,7 @@ import java.util.Map;
  * 
  * @since 8.0
  */
-public class CmsContainerElementBean {
+public class CmsContainerElementBean implements Cloneable {
 
     /** Flag indicating if a new element should be created replacing the given one on first edit of a container-page. */
     private final boolean m_createNew;
@@ -65,13 +66,19 @@ public class CmsContainerElementBean {
     private final CmsUUID m_elementId;
 
     /** The formatter's structure id. */
-    private final CmsUUID m_formatterId;
+    private CmsUUID m_formatterId;
 
     /** The configured properties. */
     private final Map<String, String> m_individualSettings;
 
+    /** The inheritance info of this element. */
+    private CmsInheritanceInfo m_inheritanceInfo;
+
     /** Indicates whether the represented resource is in memory only and not in the VFS. */
     private boolean m_inMemoryOnly;
+
+    /** Indicating if the element resource is released and not expired. */
+    private boolean m_releasedAndNotExpired;
 
     /** The resource of this element. */
     private transient CmsResource m_resource;
@@ -82,8 +89,8 @@ public class CmsContainerElementBean {
     /** The element site path, only set while rendering. */
     private String m_sitePath;
 
-    /** Indicating if the element resource is released and not expired. */
-    private boolean m_releasedAndNotExpired;
+    /** Indicates the element bean has a temporary file content set. */
+    private boolean m_temporaryContent;
 
     /**
      * Creates a new container page element bean.<p> 
@@ -115,6 +122,47 @@ public class CmsContainerElementBean {
     }
 
     /**
+     * Cloning constructor.<p>
+     * 
+     * @param createNew create new flag
+     * @param elementId element id
+     * @param formatterId formatter id
+     * @param individualSettings individual settings
+     * @param inheritanceInfo inheritance info
+     * @param inMemoryOnly in memory only flag
+     * @param temporaryContent temporary content flag
+     * @param releasedAndNotExpired released and not expired flag
+     * @param resource the resource/file object
+     * @param settings the settings
+     * @param sitePath the site path
+     */
+    private CmsContainerElementBean(
+        boolean createNew,
+        CmsUUID elementId,
+        CmsUUID formatterId,
+        Map<String, String> individualSettings,
+        CmsInheritanceInfo inheritanceInfo,
+        boolean inMemoryOnly,
+        boolean temporaryContent,
+        boolean releasedAndNotExpired,
+        CmsResource resource,
+        Map<String, String> settings,
+        String sitePath) {
+
+        m_createNew = createNew;
+        m_elementId = elementId;
+        m_formatterId = formatterId;
+        m_individualSettings = Collections.unmodifiableMap(individualSettings);
+        m_inheritanceInfo = inheritanceInfo;
+        m_inMemoryOnly = inMemoryOnly;
+        m_releasedAndNotExpired = releasedAndNotExpired;
+        m_resource = resource;
+        m_settings = settings;
+        m_sitePath = sitePath;
+        m_temporaryContent = temporaryContent;
+    }
+
+    /**
      * Clones the given element bean with a different set of settings.<p>
      * 
      * @param source the element to clone
@@ -132,6 +180,7 @@ public class CmsContainerElementBean {
         result.m_resource = source.m_resource;
         result.m_sitePath = source.m_sitePath;
         result.m_inMemoryOnly = source.m_inMemoryOnly;
+        result.m_inheritanceInfo = source.m_inheritanceInfo;
         if (result.m_inMemoryOnly) {
             String editorHash = source.m_editorHash;
             if (editorHash.contains(CmsADEManager.CLIENT_ID_SEPERATOR)) {
@@ -220,6 +269,26 @@ public class CmsContainerElementBean {
     }
 
     /**
+     * @see java.lang.Object#clone()
+     */
+    @Override
+    public CmsContainerElementBean clone() {
+
+        return new CmsContainerElementBean(
+            m_createNew,
+            m_elementId,
+            m_formatterId,
+            m_individualSettings,
+            m_inheritanceInfo,
+            m_inMemoryOnly,
+            m_temporaryContent,
+            m_releasedAndNotExpired,
+            m_resource,
+            m_settings,
+            m_sitePath);
+    }
+
+    /**
      * Returns the ADE client editor has value.<p>
      * 
      * @return the ADE client editor has value
@@ -269,6 +338,16 @@ public class CmsContainerElementBean {
     public Map<String, String> getIndividualSettings() {
 
         return m_individualSettings;
+    }
+
+    /**
+     * Returns the inheritance info.<p>
+     * 
+     * @return the inheritance info or <code>null</code> if not available
+     */
+    public CmsInheritanceInfo getInheritanceInfo() {
+
+        return m_inheritanceInfo;
     }
 
     /**
@@ -329,26 +408,16 @@ public class CmsContainerElementBean {
     public void initResource(CmsObject cms) throws CmsException {
 
         if (m_resource == null) {
-            if (cms.getRequestContext().getCurrentProject().isOnlineProject()) {
-                m_resource = cms.readResource(getId());
-                m_releasedAndNotExpired = true;
-            } else {
-                m_resource = cms.readResource(getId(), CmsResourceFilter.IGNORE_EXPIRATION);
-                m_releasedAndNotExpired = m_resource.isReleasedAndNotExpired(cms.getRequestContext().getRequestTime());
-            }
+            m_resource = cms.readResource(getId(), CmsResourceFilter.IGNORE_EXPIRATION);
+            m_releasedAndNotExpired = m_resource.isReleasedAndNotExpired(cms.getRequestContext().getRequestTime());
         } else if (!isInMemoryOnly()) {
             CmsUUID id = m_resource.getStructureId();
             if (id == null) {
                 id = getId();
             }
             // the resource object may have a wrong root path, e.g. if it was created before the resource was moved
-            if (cms.getRequestContext().getCurrentProject().isOnlineProject()) {
-                m_resource = cms.readResource(getId());
-                m_releasedAndNotExpired = true;
-            } else {
-                m_resource = cms.readResource(getId(), CmsResourceFilter.IGNORE_EXPIRATION);
-                m_releasedAndNotExpired = m_resource.isReleasedAndNotExpired(cms.getRequestContext().getRequestTime());
-            }
+            m_resource = cms.readResource(id, CmsResourceFilter.IGNORE_EXPIRATION);
+            m_releasedAndNotExpired = m_resource.isReleasedAndNotExpired(cms.getRequestContext().getRequestTime());
         }
         if (m_settings == null) {
             m_settings = CmsXmlContentPropertyHelper.mergeDefaults(cms, m_resource, m_individualSettings);
@@ -372,7 +441,7 @@ public class CmsContainerElementBean {
      * 
      * @param cms the CmsObject used for VFS operations
      *  
-     * @return true if the container element refers to a group container
+     * @return <code>true</code> if the container element refers to a group container
      * 
      * @throws CmsException if something goes wrong 
      */
@@ -383,6 +452,23 @@ public class CmsContainerElementBean {
         }
         return CmsResourceTypeXmlContainerPage.GROUP_CONTAINER_TYPE_NAME.equals(OpenCms.getResourceManager().getResourceType(
             m_resource).getTypeName());
+    }
+
+    /**
+     * Returns whether this element refers to an inherited container element.<p>
+     *  
+     * @param cms the CmsObject used for VFS operations
+     * 
+     * @return <code>true</code> if the container element refers to an inherited container
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    public boolean isInheritedContainer(CmsObject cms) throws CmsException {
+
+        if (m_resource == null) {
+            initResource(cms);
+        }
+        return OpenCms.getResourceManager().getResourceType(CmsResourceTypeXmlContainerPage.INHERIT_CONTAINER_TYPE_NAME).getTypeId() == m_resource.getTypeId();
     }
 
     /**
@@ -403,6 +489,47 @@ public class CmsContainerElementBean {
     public boolean isReleasedAndNotExpired() {
 
         return isInMemoryOnly() || m_releasedAndNotExpired;
+    }
+
+    /**
+     * Returns if the element resource contains temporary file content.<p>
+     * 
+     * @return <code>true</code> if the element resource contains temporary file content
+     */
+    public boolean isTemporaryContent() {
+
+        return m_temporaryContent;
+    }
+
+    /**
+     * Sets the inheritance info for this element.<p>
+     * 
+     * @param inheritanceInfo the inheritance info
+     */
+    public void setInheritanceInfo(CmsInheritanceInfo inheritanceInfo) {
+
+        m_inheritanceInfo = inheritanceInfo;
+    }
+
+    /**
+     * Sets the formatter id.<p>
+     * 
+     * @param formatterId the formatter id
+     */
+    public void setFormatterId(CmsUUID formatterId) {
+
+        m_formatterId = formatterId;
+    }
+
+    /**
+     * Sets the element resource as a temporary file.<p>
+     * 
+     * @param elementFile the temporary file
+     */
+    public void setTemporaryFile(CmsFile elementFile) {
+
+        m_resource = elementFile;
+        m_temporaryContent = true;
     }
 
     /**

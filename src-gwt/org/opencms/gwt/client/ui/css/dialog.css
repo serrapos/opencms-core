@@ -2,7 +2,7 @@
     z-index: value("constants.css.zIndexPopup");
 }
 
-.popup, .popup *, .popup table tr td{
+.popup, .popup *, .frameDialog *, .popup table tr td{
 	margin: 0;
 	padding: 0;
 	border: none;
@@ -18,7 +18,16 @@
 	max-height: none;
 	min-width: 0;
 	max-width: none;
+	box-sizing: content-box;
+	-moz-box-sizing: content-box;
 }
+
+.popup table { 
+	border-collapse: separate;
+	border-spacing: inherit;
+}
+
+
 .closePopup{
     position: absolute;
     right: -12px;
@@ -59,7 +68,11 @@
     overflow: visible;
 }
 
+<<<<<<< HEAD
 .frameDialog .popupMainContent {
+=======
+div.frameDialog div.popupMainContent {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 	position: absolute;
 	top:0px;
 	left:0px;
@@ -68,7 +81,11 @@
 	overflow: auto;
 }
 
+<<<<<<< HEAD
 .frameDialog .popupButtonPanel {
+=======
+div.frameDialog div.popupButtonPanel {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 	position:absolute;
 	left:0px;
 	right:0px;
@@ -149,6 +166,8 @@
     padding: 0px 5px 5px 5px;
     height: auto; 
     white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
     height: 25px;
     line-height: 25px;
 }

@@ -42,13 +42,6 @@ public interface I_CmsSitemapItemCss extends CssResource {
      * 
      * @return a CSS class
      **/
-    String brokenLink();
-
-    /**
-     * CSS class accessor.<p>
-     * 
-     * @return a CSS class
-     **/
     String contentHide();
 
     /**
@@ -56,14 +49,42 @@ public interface I_CmsSitemapItemCss extends CssResource {
      * 
      * @return a CSS class
      **/
-    String deletedEntryLabel();
+    String expiredOrNotReleased();
 
     /**
      * CSS class accessor.<p>
      * 
      * @return a CSS class
      **/
-    String highlight();
+    String hasChildren();
+
+    /**
+     * CSS class accessor.<p>
+     * 
+     * @return a CSS class
+     **/
+    String hasNavChildren();
+
+    /**
+     * CSS class accessor.<p>
+     * 
+     * @return a CSS class
+     **/
+    String hasNoChildren();
+
+    /**
+     * CSS class accessor.<p>
+     * 
+     * @return a CSS class
+     **/
+    String hasNoNavChildren();
+
+    /**
+     * CSS class accessor.<p>
+     * 
+     * @return a CSS class
+     **/
+    String hiddenNavEntry();
 
     /**
      * CSS class accessor.<p>
@@ -85,6 +106,13 @@ public interface I_CmsSitemapItemCss extends CssResource {
      * @return a CSS class
      **/
     String markUnchanged();
+
+    /**
+     * CSS class accessor.<p>
+     * 
+     * @return a CSS class
+     **/
+    String navigationLevelIcon();
 
     /**
      * CSS class accessor.<p>
@@ -120,6 +148,13 @@ public interface I_CmsSitemapItemCss extends CssResource {
      * @return a CSS class
      */
     String sitemapEntryDecoration();
+
+    /**
+     * CSS class accessor.<p>
+     * 
+     * @return a CSS class
+     **/
+    String treeItemOpener();
 
     /**
      * CSS class accessor.<p>

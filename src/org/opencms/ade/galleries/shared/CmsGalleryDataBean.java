@@ -52,6 +52,9 @@ public class CmsGalleryDataBean implements IsSerializable {
     /** The current element. */
     private String m_currentElement;
 
+    /** The default search scope. */
+    private CmsGallerySearchScope m_defaultScope = CmsGallerySearchScope.everything;
+
     /** The galleries to display in the list with available galleries. */
     private List<CmsGalleryFolderBean> m_galleries;
 
@@ -70,11 +73,29 @@ public class CmsGalleryDataBean implements IsSerializable {
      */
     private String m_referenceSitePath;
 
+    /** The search scope. */
+    private CmsGallerySearchScope m_scope;
+
+    /** The site selector options for the sitemap tab. */
+    private List<CmsSiteSelectorOption> m_sitemapSiteSelectorOptions;
+
+    /** The start folder. */
+    private String m_startFolder;
+
     /** The start gallery folder. */
     private String m_startGallery;
 
     /** The start up tab id. */
     private GalleryTabId m_startTab;
+
+    /** The tab configuration. */
+    private CmsGalleryTabConfiguration m_tabConfiguration;
+
+    /** The configured tabs. */
+    private GalleryTabId[] m_tabIds;
+
+    /** A token used to determine which tree state is loaded/saved . */
+    private String m_treeToken;
 
     /** The types to display in the list of available categories. */
     private List<CmsResourceTypeBean> m_types;
@@ -82,8 +103,13 @@ public class CmsGalleryDataBean implements IsSerializable {
     /** A list of beans representing the root folders to display in the VFS tab. */
     private List<CmsVfsEntryBean> m_vfsRootFolders;
 
+<<<<<<< HEAD
     /** The search scope. */
     private CmsGallerySearchScope m_scope;
+=======
+    /** List of site selector options. */
+    private List<CmsSiteSelectorOption> m_vfsSiteSelectorOptions;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
     /**
      * Returns the categories.<p>
@@ -103,6 +129,16 @@ public class CmsGalleryDataBean implements IsSerializable {
     public String getCurrentElement() {
 
         return m_currentElement;
+    }
+
+    /**
+     * Gets the default search scope.<p>
+     * 
+     * @return the default search scope
+     */
+    public CmsGallerySearchScope getDefaultScope() {
+
+        return m_defaultScope;
     }
 
     /**
@@ -168,6 +204,26 @@ public class CmsGalleryDataBean implements IsSerializable {
     }
 
     /**
+     * Returns the site selector options for the sitemap.<p>
+     * 
+     * @return the site selector options for the sitemap 
+     */
+    public List<CmsSiteSelectorOption> getSitemapSiteSelectorOptions() {
+
+        return m_sitemapSiteSelectorOptions;
+    }
+
+    /**
+     * Returns the start folder.<p>
+     *
+     * @return the start folder
+     */
+    public String getStartFolder() {
+
+        return m_startFolder;
+    }
+
+    /**
      * Returns the start gallery folder.<p>
      *
      * @return the start gallery folder
@@ -185,6 +241,36 @@ public class CmsGalleryDataBean implements IsSerializable {
     public GalleryTabId getStartTab() {
 
         return m_startTab;
+    }
+
+    /** 
+     * Gets the tab configuration.<p>
+     * 
+     * @return the tab configuration 
+     */
+    public CmsGalleryTabConfiguration getTabConfiguration() {
+
+        return m_tabConfiguration;
+    }
+
+    /**
+     * Returns the configured tabs.<p>
+     *
+     * @return the configured tabs
+     */
+    public GalleryTabId[] getTabIds() {
+
+        return m_tabIds;
+    }
+
+    /**
+     * Gets the tree token, which is used to  determine which tree state is loaded from the session.<p>
+     * 
+     * @return the tree token 
+     */
+    public String getTreeToken() {
+
+        return m_treeToken;
     }
 
     /**
@@ -208,6 +294,16 @@ public class CmsGalleryDataBean implements IsSerializable {
     }
 
     /**
+     * Gets the list of site selector options for the VFS tab.<p>
+     * 
+     * @return the list of site selector options for the VFS tab  
+     */
+    public List<CmsSiteSelectorOption> getVfsSiteSelectorOptions() {
+
+        return m_vfsSiteSelectorOptions;
+    }
+
+    /**
      * Sets the categories.<p>
      *
      * @param categories the categories to set
@@ -225,6 +321,16 @@ public class CmsGalleryDataBean implements IsSerializable {
     public void setCurrentElement(String currentElement) {
 
         m_currentElement = currentElement;
+    }
+
+    /** 
+     * Sets the default search scope.<p>
+     * 
+     * @param scope the default search scope 
+     */
+    public void setDefaultScope(CmsGallerySearchScope scope) {
+
+        m_defaultScope = scope;
     }
 
     /**
@@ -289,6 +395,26 @@ public class CmsGalleryDataBean implements IsSerializable {
     }
 
     /**
+     * Sets the site selector options for the sitemap tab.<p>
+     * 
+     * @param options  the site selector options for the sitemap tab 
+     */
+    public void setSitemapSiteSelectorOptions(List<CmsSiteSelectorOption> options) {
+
+        m_sitemapSiteSelectorOptions = options;
+    }
+
+    /**
+     * Sets the start folder.<p>
+     *
+     * @param startFolder the start folder to set
+     */
+    public void setStartFolder(String startFolder) {
+
+        m_startFolder = startFolder;
+    }
+
+    /**
      * Sets the start gallery folder.<p>
      *
      * @param startGallery the start gallery folder to set
@@ -309,6 +435,37 @@ public class CmsGalleryDataBean implements IsSerializable {
     }
 
     /**
+     * Sets the tab configuration.<p>
+     * 
+     * @param tabConfiguration the tab configuration 
+     */
+    public void setTabConfiguration(CmsGalleryTabConfiguration tabConfiguration) {
+
+        m_tabConfiguration = tabConfiguration;
+
+    }
+
+    /**
+     * Sets the tab id's.<p>
+     *
+     * @param tabIds the tab id's to set
+     */
+    public void setTabIds(GalleryTabId[] tabIds) {
+
+        m_tabIds = tabIds;
+    }
+
+    /**
+     * Sets the tree token.<p>
+     * 
+     * @param treeToken the new tree token 
+     */
+    public void setTreeToken(String treeToken) {
+
+        m_treeToken = treeToken;
+    }
+
+    /**
      * Sets the types map.<p>
      *
      * @param types the types to set
@@ -326,5 +483,15 @@ public class CmsGalleryDataBean implements IsSerializable {
     public void setVfsRootFolders(List<CmsVfsEntryBean> rootFolders) {
 
         m_vfsRootFolders = rootFolders;
+    }
+
+    /**
+     * Sets the available site selector options.<p>
+     * 
+     * @param siteSelectorOptions the available site selector options 
+     */
+    public void setVfsSiteSelectorOptions(List<CmsSiteSelectorOption> siteSelectorOptions) {
+
+        m_vfsSiteSelectorOptions = siteSelectorOptions;
     }
 }

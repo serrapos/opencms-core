@@ -30,7 +30,10 @@ package org.opencms.flex;
 import org.opencms.cache.CmsLruCache;
 import org.opencms.cache.I_CmsLruCacheObject;
 import org.opencms.file.CmsObject;
+<<<<<<< HEAD
 import org.opencms.jsp.util.I_CmsJspDeviceSelector;
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 import org.opencms.loader.CmsJspLoader;
 import org.opencms.main.CmsLog;
 import org.opencms.main.I_CmsEventListener;
@@ -221,9 +224,6 @@ public class CmsFlexCache extends Object implements I_CmsEventListener {
     /** Indicates if offline resources should be cached or not. */
     private boolean m_cacheOffline;
 
-    /** The device selector. */
-    private I_CmsJspDeviceSelector m_deviceSelector;
-
     /** Indicates if the cache is enabled or not. */
     private boolean m_enabled;
 
@@ -248,9 +248,6 @@ public class CmsFlexCache extends Object implements I_CmsEventListener {
 
         m_enabled = configuration.isCacheEnabled();
         m_cacheOffline = configuration.isCacheOffline();
-
-        // set the local device selector
-        m_deviceSelector = configuration.getDeviceSelector();
 
         long maxCacheBytes = configuration.getMaxCacheBytes();
         long avgCacheBytes = configuration.getAvgCacheBytes();
@@ -433,16 +430,6 @@ public class CmsFlexCache extends Object implements I_CmsEventListener {
             return ((CmsFlexCacheVariation)o).m_map.keySet();
         }
         return null;
-    }
-
-    /**
-     * Returns the device selector.<p>
-     *
-     * @return the device selector
-     */
-    public I_CmsJspDeviceSelector getDeviceSelector() {
-
-        return m_deviceSelector;
     }
 
     /**

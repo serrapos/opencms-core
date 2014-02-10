@@ -52,7 +52,10 @@ public final class CmsSite implements Cloneable, Comparable<CmsSite> {
     private static final Log LOG = CmsLog.getLog(CmsSite.class);
 
     /** The aliases for this site, a vector of CmsSiteMatcher Objects. */
-    private List<CmsSiteMatcher> m_aliases;
+    private List<CmsSiteMatcher> m_aliases = new ArrayList<CmsSiteMatcher>();
+
+    /** The URI to use as error page for this site. */
+    private String m_errorPage;
 
     /** If exclusive, and set to true will generate a 404 error, if set to false will redirect to secure url. */
     private boolean m_exclusiveError;
@@ -77,6 +80,9 @@ public final class CmsSite implements Cloneable, Comparable<CmsSite> {
 
     /** Display title of this site. */
     private String m_title;
+
+    /** Indicates whether this site should be considered when writing the web server configuration. */
+    private boolean m_webserver = true;
 
     /**
      * Constructs a new site object without title and id information,
@@ -121,11 +127,59 @@ public final class CmsSite implements Cloneable, Comparable<CmsSite> {
         // init the position value
         m_position = Float.MAX_VALUE;
         try {
+            if (position != null) {
+                m_position = Float.parseFloat(position);
+            }
+        } catch (Throwable e) {
+            // m_position will have Float.MAX_VALUE, so this site will appear last
+        }
+    }
+
+    /**
+     * Constructs a new site object.<p>
+     * 
+     * @param siteRoot root directory of this site in the OpenCms VFS
+     * @param siteRootUUID UUID of this site's root directory in the OpenCms VFS
+     * @param title display name of this site
+     * @param siteMatcher the site matcher for this site
+     * @param position the sorting position
+     * @param errorPage the optional error page for this site
+     * @param secureSite the secure site
+     * @param exclusiveUrl the exclusive flag
+     * @param exclusiveError the exclusive error flag
+     * @param webserver indicates whether to write the web server configuration for this site or not
+     * @param aliases the aliases
+     */
+    public CmsSite(
+        String siteRoot,
+        CmsUUID siteRootUUID,
+        String title,
+        CmsSiteMatcher siteMatcher,
+        String position,
+        String errorPage,
+        CmsSiteMatcher secureSite,
+        boolean exclusiveUrl,
+        boolean exclusiveError,
+        boolean webserver,
+        List<CmsSiteMatcher> aliases) {
+
+        setSiteRoot(siteRoot);
+        setSiteRootUUID(siteRootUUID);
+        setTitle(title);
+        setSiteMatcher(siteMatcher);
+        // init the position value
+        m_position = Float.MAX_VALUE;
+        try {
             m_position = Float.parseFloat(position);
         } catch (Throwable e) {
             // m_position will have Float.MAX_VALUE, so this site will appear last
         }
-        m_aliases = new ArrayList<CmsSiteMatcher>();
+        setErrorPage(errorPage);
+        setSecureServer(secureSite);
+        setExclusiveUrl(exclusiveUrl);
+        setExclusiveError(exclusiveError);
+        setWebserver(webserver);
+        setAliases(aliases);
     }
 
     /**
@@ -141,7 +195,13 @@ public final class CmsSite implements Cloneable, Comparable<CmsSite> {
             (CmsUUID)getSiteRootUUID().clone(),
             getTitle(),
             (CmsSiteMatcher)getSiteMatcher().clone(),
-            String.valueOf(getPosition()));
+            String.valueOf(getPosition()),
+            getErrorPage(),
+            getSecureServer(),
+            isExclusiveUrl(),
+            isExclusiveError(),
+            isWebserver(),
+            getAliases());
     }
 
     /**
@@ -190,6 +250,16 @@ public final class CmsSite implements Cloneable, Comparable<CmsSite> {
     }
 
     /**
+     * Returns the errorPage.<p>
+     *
+     * @return the errorPage
+     */
+    public String getErrorPage() {
+
+        return m_errorPage;
+    }
+
+    /**
      * Returns the sorting position.<p>
      *
      * @return the sorting position
@@ -197,6 +267,16 @@ public final class CmsSite implements Cloneable, Comparable<CmsSite> {
     public float getPosition() {
 
         return m_position;
+    }
+
+    /**
+     * Returns the secureServer.<p>
+     *
+     * @return the secureServer
+     */
+    public CmsSiteMatcher getSecureServer() {
+
+        return m_secureServer;
     }
 
     /**
@@ -310,9 +390,10 @@ public final class CmsSite implements Cloneable, Comparable<CmsSite> {
     }
 
     /**
-     * Returns the server URL prefix to which this site is mapped.<p>
+     * Returns the path of this site's root directory in the OpenCms VFS without tailing slash.<p>
+     * <ul><li><code>e.g. /sites/default</code></li></ul>
      * 
-     * @return the server URL prefix to which this site is mapped
+     * @return the path of this site's root directory in the OpenCms VFS without tailing slash
      */
     public String getSiteRoot() {
 
@@ -391,6 +472,26 @@ public final class CmsSite implements Cloneable, Comparable<CmsSite> {
     }
 
     /**
+     * Returns the web server.<p>
+     *
+     * @return the web server
+     */
+    public boolean isWebserver() {
+
+        return m_webserver;
+    }
+
+    /**
+     * Sets the errorPage.<p>
+     *
+     * @param errorPage the errorPage to set
+     */
+    public void setErrorPage(String errorPage) {
+
+        m_errorPage = errorPage;
+    }
+
+    /**
      * Sets the exclusive error flag.<p>
      * 
      * @param error the exclusive error flag
@@ -408,6 +509,16 @@ public final class CmsSite implements Cloneable, Comparable<CmsSite> {
     public void setExclusiveUrl(boolean exclusive) {
 
         m_exclusiveUrl = exclusive;
+    }
+
+    /**
+     * Sets the web server.<p>
+     *
+     * @param webserver the web server to set
+     */
+    public void setWebserver(boolean webserver) {
+
+        m_webserver = webserver;
     }
 
     /**
@@ -444,6 +555,16 @@ public final class CmsSite implements Cloneable, Comparable<CmsSite> {
     protected void setAliases(List<CmsSiteMatcher> aliases) {
 
         m_aliases = aliases;
+    }
+
+    /**
+     * Sets the display title of this site.<p>
+     * 
+     * @param position the display title of this site
+     */
+    protected void setPosition(float position) {
+
+        m_position = position;
     }
 
     /**
@@ -500,4 +621,5 @@ public final class CmsSite implements Cloneable, Comparable<CmsSite> {
 
         m_title = name;
     }
+
 }

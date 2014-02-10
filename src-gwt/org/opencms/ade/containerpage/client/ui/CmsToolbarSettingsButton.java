@@ -30,7 +30,6 @@ package org.opencms.ade.containerpage.client.ui;
 import org.opencms.ade.containerpage.client.CmsContainerpageController;
 import org.opencms.ade.containerpage.client.CmsContainerpageHandler;
 import org.opencms.gwt.client.ui.I_CmsButton;
-import org.opencms.gwt.client.util.CmsDomUtil;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 
@@ -58,8 +57,12 @@ public class CmsToolbarSettingsButton extends A_CmsToolbarOptionButton {
     public boolean isOptionAvailable(CmsContainerPageElementPanel element) {
 
         boolean disableButtons = CmsContainerpageController.get().isEditingDisabled();
-
-        return element.hasSettings() && !element.getParentTarget().isDetailView() && !disableButtons;
+        boolean useTemplateContexts = CmsContainerpageController.get().getData().getTemplateContextInfo().shouldShowElementTemplateContextSelection();
+        boolean isGroupContainer = element instanceof CmsGroupContainerElementPanel;
+        return (useTemplateContexts || element.hasSettings())
+            && !element.getParentTarget().isDetailView()
+            && !disableButtons
+            && !isGroupContainer;
     }
 
     /**
@@ -68,7 +71,6 @@ public class CmsToolbarSettingsButton extends A_CmsToolbarOptionButton {
     @Override
     public void onElementClick(ClickEvent event, CmsContainerPageElementPanel element) {
 
-        CmsDomUtil.ensureMouseOut(element.getElementOptionBar().getElement());
         getHandler().editElementSettings(element);
     }
 }

@@ -28,20 +28,37 @@
 package org.opencms.widgets;
 
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsResource;
+import org.opencms.i18n.CmsMessages;
+import org.opencms.main.CmsException;
+import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
+import org.opencms.security.CmsOrganizationalUnit;
 import org.opencms.security.CmsRole;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.workplace.CmsWorkplace;
+import org.opencms.xml.content.I_CmsXmlContentHandler.DisplayType;
+import org.opencms.xml.types.A_CmsXmlContentValue;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+
+import org.apache.commons.logging.Log;
 
 /**
  * Provides a OpenCms orgaizational unit selection widget, for use on a widget dialog.<p>
  * 
  * @since 6.5.6 
  */
-public class CmsOrgUnitWidget extends A_CmsWidget {
+public class CmsOrgUnitWidget extends A_CmsWidget implements I_CmsADEWidget {
 
     /** Configuration parameter to set the role the current user must have in the selected ou, optional. */
     public static final String CONFIGURATION_ROLE = "role";
+
+    /** The logger instance for this class. */
+    private static final Log LOG = CmsLog.getLog(CmsOrgUnitWidget.class);
 
     /** The role used in the popup window. */
     private CmsRole m_role;
@@ -95,6 +112,67 @@ public class CmsOrgUnitWidget extends A_CmsWidget {
         }
 
         return result.toString();
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getConfiguration(org.opencms.file.CmsObject, org.opencms.xml.types.A_CmsXmlContentValue, org.opencms.i18n.CmsMessages, org.opencms.file.CmsResource, java.util.Locale)
+     */
+    public String getConfiguration(
+        CmsObject cms,
+        A_CmsXmlContentValue schemaType,
+        CmsMessages messages,
+        CmsResource resource,
+        Locale contentLocale) {
+
+        String result = "";
+
+        List<CmsOrganizationalUnit> ret = new ArrayList<CmsOrganizationalUnit>();
+        try {
+            if (m_role != null) {
+                ret.addAll(OpenCms.getRoleManager().getOrgUnitsForRole(cms, m_role.forOrgUnit(""), true));
+            } else {
+                ret.addAll(OpenCms.getOrgUnitManager().getOrganizationalUnits(cms, "", true));
+            }
+        } catch (CmsException e) {
+            LOG.error(e.getLocalizedMessage(), e);
+        }
+        if (ret.isEmpty()) {
+            result = "No entries have been found. ";
+        } else {
+            Iterator<CmsOrganizationalUnit> it = ret.iterator();
+            boolean first = true;
+            while (it.hasNext()) {
+                CmsOrganizationalUnit unit = it.next();
+                if (!first) {
+                    result += "|";
+                }
+                first = false;
+                String value = "/" + unit.getName();
+                result += "/"
+                    + value
+                    + ":"
+                    + (CmsStringUtil.isNotEmptyOrWhitespaceOnly(unit.getDescription(messages.getLocale()))
+                    ? (unit.getDescription(messages.getLocale()) + ": ")
+                    : "") + value;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getCssResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getCssResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getDefaultDisplayType()
+     */
+    public DisplayType getDefaultDisplayType() {
+
+        return DisplayType.singleline;
     }
 
     /**
@@ -163,6 +241,22 @@ public class CmsOrgUnitWidget extends A_CmsWidget {
     }
 
     /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getInitCall()
+     */
+    public String getInitCall() {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getJavaScriptResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getJavaScriptResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
      * Returns the role, or <code>null</code> if none.<p>
      *
      * @return the role, or <code>null</code> if none
@@ -170,6 +264,22 @@ public class CmsOrgUnitWidget extends A_CmsWidget {
     public CmsRole getRole() {
 
         return m_role;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    public String getWidgetName() {
+
+        return CmsComboWidget.class.getName();
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#isInternal()
+     */
+    public boolean isInternal() {
+
+        return false;
     }
 
     /**

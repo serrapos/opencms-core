@@ -32,6 +32,7 @@ import org.opencms.file.CmsObject;
 import org.opencms.file.CmsResource;
 import org.opencms.file.CmsResourceFilter;
 import org.opencms.file.CmsVfsResourceNotFoundException;
+import org.opencms.i18n.CmsMessages;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
@@ -40,6 +41,9 @@ import org.opencms.relations.CmsCategoryService;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.util.CmsUUID;
 import org.opencms.workplace.CmsWorkplace;
+import org.opencms.xml.content.I_CmsXmlContentHandler.DisplayType;
+import org.opencms.xml.types.A_CmsXmlContentValue;
+import org.opencms.xml.types.CmsXmlCategoryValue;
 import org.opencms.xml.types.I_CmsXmlContentValue;
 
 import java.util.ArrayList;
@@ -58,7 +62,7 @@ import org.apache.commons.logging.Log;
  * 
  * @since 7.0.3 
  */
-public class CmsCategoryWidget extends A_CmsWidget {
+public class CmsCategoryWidget extends A_CmsWidget implements I_CmsADEWidget {
 
     /** Configuration parameter to set the category to display. */
     public static final String CONFIGURATION_CATEGORY = "category";
@@ -69,6 +73,12 @@ public class CmsCategoryWidget extends A_CmsWidget {
     /** Configuration parameter to set the 'property' parameter. */
     public static final String CONFIGURATION_PROPERTY = "property";
 
+    /** Configuration parameter to set the 'selection type' parameter. */
+    private static final String CONFIGURATION_PARENTSELECTION = "parentSelection";
+
+    /** Configuration parameter to set the 'selection type' parameter. */
+    private static final String CONFIGURATION_SELECTIONTYPE = "selectiontype";
+
     /** The log object for this class. */
     private static final Log LOG = CmsLog.getLog(CmsCategoryWidget.class);
 
@@ -78,8 +88,14 @@ public class CmsCategoryWidget extends A_CmsWidget {
     /** The 'only leaf' flag. */
     private String m_onlyLeafs;
 
+    /** The value if the parents should be selected with the children. */
+    private boolean m_parentSelection;
+
     /** The property to read the starting category from. */
     private String m_property;
+
+    /** The selection type parsed from configuration string. */
+    private String m_selectiontype = "single";
 
     /**
      * Creates a new category widget.<p>
@@ -110,9 +126,6 @@ public class CmsCategoryWidget extends A_CmsWidget {
 
         // append category to configuration
         if (m_category != null) {
-            if (result.length() > 0) {
-                result.append("|");
-            }
             result.append(CONFIGURATION_CATEGORY);
             result.append("=");
             result.append(m_category);
@@ -139,6 +152,73 @@ public class CmsCategoryWidget extends A_CmsWidget {
     }
 
     /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getConfiguration(org.opencms.file.CmsObject, org.opencms.xml.types.A_CmsXmlContentValue, org.opencms.i18n.CmsMessages, org.opencms.file.CmsResource, java.util.Locale)
+     */
+    public String getConfiguration(
+        CmsObject cms,
+        A_CmsXmlContentValue schemaType,
+        CmsMessages messages,
+        CmsResource resource,
+        Locale contentLocale) {
+
+        String result = getConfiguration();
+        // append 'selection type' to configuration in case of the schemaType
+        if (schemaType.getTypeName().equals(CmsXmlCategoryValue.TYPE_NAME)) {
+            m_selectiontype = "multi";
+        } else {
+            m_selectiontype = "single";
+        }
+
+        if (m_selectiontype != null) {
+            if (result.length() > 0) {
+                result += "|";
+            }
+            result += CONFIGURATION_SELECTIONTYPE;
+            result += "=";
+            result += m_selectiontype;
+        }
+
+        if (m_parentSelection) {
+            if (result.length() > 0) {
+                result += "|";
+            }
+            result += CONFIGURATION_PARENTSELECTION;
+        }
+        CmsCategoryService catService = CmsCategoryService.getInstance();
+        List<String> categoriesList = catService.getCategoryRepositories(cms, cms.getSitePath(resource));
+        Iterator<String> it = categoriesList.iterator();
+        String catList = "|CategoryList=";
+        int i = 0;
+        while (it.hasNext()) {
+            if (i > 0) {
+                catList += ",";
+            }
+            String rootPath = it.next();
+            catList += rootPath;
+            i++;
+        }
+
+        return result + catList;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getCssResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getCssResourceLinks(CmsObject cms) {
+
+        // nothing to do
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getDefaultDisplayType()
+     */
+    public DisplayType getDefaultDisplayType() {
+
+        return DisplayType.wide;
+    }
+
+    /**
      * @see org.opencms.widgets.I_CmsWidget#getDialogIncludes(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog)
      */
     @Override
@@ -152,7 +232,6 @@ public class CmsCategoryWidget extends A_CmsWidget {
     }
 
     /**
-    >>>>>>> THEIRS
      * @see org.opencms.widgets.I_CmsWidget#getDialogWidget(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog, org.opencms.widgets.I_CmsWidgetParameter)
      */
     public String getDialogWidget(CmsObject cms, I_CmsWidgetDialog widgetDialog, I_CmsWidgetParameter param) {
@@ -267,12 +346,16 @@ public class CmsCategoryWidget extends A_CmsWidget {
                         Messages.get().getBundle(widgetDialog.getLocale()).key(Messages.GUI_CATEGORY_SELECT_0)));
                 }
                 result.append(">");
-                result.append(buildSelectBox(param.getId(), i, options, (selected != null
-                ? CmsCategoryService.getInstance().readCategory(
-                    cms,
-                    CmsResource.getPathPart(selected.getPath(), i + baseLevel),
-                    referencePath).getId().toString()
-                : ""), param.hasError(), (i == (level - baseLevel - 1))));
+                result.append(buildSelectBox(
+                    param.getId(),
+                    i,
+                    options,
+                    (selected != null ? CmsCategoryService.getInstance().readCategory(
+                        cms,
+                        CmsResource.getPathPart(selected.getPath(), i + baseLevel),
+                        referencePath).getId().toString() : ""),
+                    param.hasError(),
+                    (i == (level - baseLevel - 1))));
                 result.append("</span>&nbsp;");
             }
             result.append("</td>");
@@ -280,6 +363,49 @@ public class CmsCategoryWidget extends A_CmsWidget {
             result.append(e.getLocalizedMessage());
         }
         return result.toString();
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getInitCall()
+     */
+    public String getInitCall() {
+
+        // nothing to do
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getJavaScriptResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getJavaScriptResourceLinks(CmsObject cms) {
+
+        // nothing to do
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    public String getWidgetName() {
+
+        return CmsCategoryWidget.class.getName();
+    }
+
+    /**
+     * @see org.opencms.widgets.A_CmsWidget#isCompactViewEnabled()
+     */
+    @Override
+    public boolean isCompactViewEnabled() {
+
+        return false;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#isInternal()
+     */
+    public boolean isInternal() {
+
+        return false;
     }
 
     /**
@@ -328,6 +454,11 @@ public class CmsCategoryWidget extends A_CmsWidget {
                     onlyLeafs = onlyLeafs.substring(0, onlyLeafs.indexOf('|'));
                 }
                 m_onlyLeafs = onlyLeafs;
+            }
+            int parentSelectionIndex = configuration.indexOf(CONFIGURATION_PARENTSELECTION);
+            if (parentSelectionIndex != -1) {
+                // parent selection is given
+                m_parentSelection = true;
             }
             int propertyIndex = configuration.indexOf(CONFIGURATION_PROPERTY);
             if (propertyIndex != -1) {

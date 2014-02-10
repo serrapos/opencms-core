@@ -19,7 +19,7 @@
  *
  * For further information about OpenCms, please see the
  * project website: http://www.opencms.org
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -27,139 +27,31 @@
 
 package org.opencms.gwt.client.ui.css;
 
-import org.opencms.gwt.client.ui.css.I_CmsLayoutBundle.I_CmsContextmenuItemCss;
+import org.opencms.gwt.client.ui.css.I_CmsLayoutBundle.I_CmsOpenerHoverCss;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.resources.client.ClientBundle;
-import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.resources.client.CssResource.NotStrict;
 import com.google.gwt.resources.client.CssResource.Shared;
+import com.google.gwt.resources.client.DataResource;
 import com.google.gwt.resources.client.ImageResource;
 import com.google.gwt.resources.client.ImageResource.ImageOptions;
 import com.google.gwt.resources.client.ImageResource.RepeatStyle;
 
 /**
  * Resource bundle to access CSS and image resources.
- * 
+ *
  * @since 8.0.0
  */
 public interface I_CmsImageBundle extends ClientBundle {
 
-    /** The context menu item CSS classes. */
-    @Shared
-    public interface I_CmsContextMenuIcons extends I_CmsContextmenuItemCss {
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String availability();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String bump();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String delete();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String edit();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String gotoPage();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String gotoParent();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String gotoSub();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String lock();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String logout();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String mergeSitemap();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String move();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String newElement();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String properties();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String refresh();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String remove();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String subSitemap();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String workplace();
-
-    }
-
     /** Bundles the image sprite CSS classes. */
     @Shared
-    interface I_CmsImageStyle extends CssResource {
+    interface I_CmsImageStyle extends I_CmsOpenerHoverCss {
 
-        /** 
+        /**
          * Access method.<p>
-         * 
+         *
          * @return the CSS class name
          */
         String addIcon();
@@ -169,113 +61,208 @@ public interface I_CmsImageBundle extends ClientBundle {
          * 
          * @return the CSS class name
          */
-        String changeOrderIcon();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String closeIcon();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String croppingIcon();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String deleteIcon();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String editIcon();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String lockedIcon();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String moveIcon();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String opencmsSymbol();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String propertyIcon();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String removeCroppingIcon();
+        String arrowDownIcon();
 
         /** 
          * Access method.<p>
          * 
          * @return the CSS class name
          */
-        String removeIcon();
+        String arrowUpIcon();
+
+        /** Access method.<p>
+        *
+        * @return the CSS class name
+        */
+        String checkIcon();
+
+        /** Access method.<p>
+         *
+         * @return the CSS class name
+         */
+        String closeIcon();
+
+        /** Access method.<p>
+         *
+         * @return the CSS class name
+         */
+<<<<<<< HEAD
+        String lock();
 
         /** Access method.<p>
          * 
+         * @return the CSS class name
+         */
+        String logout();
+=======
+        String croppingIcon();
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
+
+        /** Access method.<p>
+         *
+         * @return the CSS class name
+         */
+        String deleteIcon();
+
+        /** Access method.<p>
+        *
+        * @return the CSS class name
+        */
+        String directoryIcon();
+
+        /** Access method.<p>
+        *
+        * @return the CSS class name
+        */
+        String downloadGalleryIcon();
+
+        /** Access method.<p>
+         *
+         * @return the CSS class name
+         */
+        String editIcon();
+
+        /** Access method.<p>
+        *
+        * @return the CSS class name
+        */
+        String htmlGalleryIcon();
+
+        /** Access method.<p>
+        *
+        * @return the CSS class name
+        */
+        String imageSearchIcon();
+
+        /** Access method.<p>
+         * 
+         * @return the CSS class name
+         */
+        String infoBigIcon();
+
+        /** Access method.<p>
+        *
+        * @return the CSS class name
+        */
+        String linkGalleryIcon();
+
+        /** Access method.<p>
+         *
+         * @return the CSS class name
+         */
+        String lockedIcon();
+
+        /** Access method.<p>
+        *
+        * @return the CSS class name
+        */
+        String lockIcon();
+
+        /** Access method.<p>
+        *
+        * @return the CSS class name
+        */
+        String menuIcon();
+
+        /** Access method.<p>
+         *
+         * @return the CSS class name
+         */
+        String moveIcon();
+
+        /** Access method.<p>
+         *
+         * @return the CSS class name
+         */
+        String opencmsSymbol();
+
+        /** Access method.<p>
+        *
+        * @return the CSS class name
+        */
+        String popupIcon();
+
+        /** Access method.<p>
+        *
+        * @return the CSS class name
+        */
+        String previewIcon();
+
+        /** Access method.<p>
+         *
+         * @return the CSS class name
+         */
+        String propertyIcon();
+
+        /** Access method.<p>
+         *
+         * @return the CSS class name
+         */
+        String removeCroppingIcon();
+
+        /**
+         * Access method.<p>
+         *
+         * @return the CSS class name
+         */
+        String removeIcon();
+
+        /** Access method.<p>
+         *
          * @return the CSS class name
          */
         String resetIcon();
 
         /** Access method.<p>
-         * 
+         *
          * @return the CSS class name
          */
         String searchIcon();
 
         /** Access method.<p>
-         * 
+        *
+        * @return the CSS class name
+        */
+        String tableGalleryIcon();
+
+        /** Access method.<p>
+         *
          * @return the CSS class name
          */
         String triangleDown();
 
         /** Access method.<p>
-         * 
+         *
          * @return the CSS class name
          */
         String triangleRight();
 
         /** Access method.<p>
-         * 
+         *
          * @return the CSS class name
          */
         String unlockedIcon();
 
         /** Access method.<p>
-         * 
+         *
          * @return the CSS class name
          */
         String uploadIcon();
 
         /** Access method.<p>
-         * 
+        *
+        * @return the CSS class name
+        */
+        String uploadSmallIcon();
+
+        /** Access method.<p>
+         *
          * @return the CSS class name
          */
         String warningBigIcon();
 
         /** Access method.<p>
-         * 
+         *
          * @return the CSS class name
          */
         String warningIcon();
@@ -285,8 +272,16 @@ public interface I_CmsImageBundle extends ClientBundle {
     I_CmsImageBundle INSTANCE = GWT.create(I_CmsImageBundle.class);
 
     /**
+     * Access method.<p>
+     *
+     * @return the image resource
+     */
+    @Source("images/addImage.png")
+    ImageResource addImage();
+
+    /**
      * Image resource accessor.<p>
-     * 
+     *
      * @return an image resource
      */
     @Source("images/arrowBottomImage.png")
@@ -294,7 +289,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Image resource accessor.<p>
-     * 
+     *
      * @return an image resource
      */
     @Source("images/arrowRightImage.png")
@@ -302,38 +297,38 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Accessor for the big icon resource bundle.<p>
-     * 
-     * @return the big icon resource bundle 
+     *
+     * @return the big icon resource bundle
      */
     I_CmsBigIconBundle bigIcons();
 
     /**
      * Image resource accessor.<p>
-     * 
+     *
      * @return an image resource
      */
     @Source("images/broken_image.png")
     ImageResource brokenImage();
 
     /**
+     * Image resource accessor.<p>
+     *
+     * @return an image resource
+     */
+    @Source("images/icons/changedIcon.png")
+    ImageResource changedIcon();
+
+    /**
      * Access method.<p>
-     * 
-     * @return the image resource 
+     *
+     * @return the image resource
      */
     @Source("images/closeImage.png")
     ImageResource closeImage();
 
     /**
-     * Access method.<p>
-     * 
-     * @return the button CSS
-     */
-    @Source("contextMenuIcons.css")
-    I_CmsContextMenuIcons contextMenuIcons();
-
-    /**
      * Image resource accessor.<p>
-     * 
+     *
      * @return an image resource
      */
     @Source("images/cropImage.png")
@@ -341,7 +336,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Image resource accessor.<p>
-     * 
+     *
      * @return an image resource
      */
     @Source("images/cropRemoveImage.png")
@@ -349,15 +344,47 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/dialogCloseImage.png")
     ImageResource dialogCloseImage();
 
     /**
-     * Image resource accessor.<p>
+     * Access method.<p>
+     *
+     * @return the image resource
+     */
+    @Source("images/icons/filetypeNavlevelSmall.png")
+    ImageResource directorySmallImage();
+
+    /**
+     * Access method.<p>
+     *
+     * @return the image resource
+     */
+    @Source("images/icons/downloadGallery.png")
+    ImageResource downloadGalleryIcon();
+
+    /** 
+     * Returns the edit cursor icon resource.<p>
      * 
+     * @return the edit cursor icon
+     */
+    @Source("images/editCursor.gif")
+    DataResource editCursorGif();
+
+    /** 
+     * Returns the edit cursor icon resource.<p>
+     * 
+     * @return the edit cursor icon
+     */
+    @Source("images/editCursor.ico")
+    DataResource editCursorIco();
+
+    /**
+     * Image resource accessor.<p>
+     *
      * @return an image resource
      */
     @Source("images/errorImage.png")
@@ -365,22 +392,38 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Image resource accessor.<p>
-     * 
+     *
      * @return an image resource
      */
     @Source("images/groupImage.png")
     ImageResource groupImage();
 
     /**
+     * Access method.<p>
+     *
+     * @return the image resource
+     */
+    @Source("images/icons/htmlGallery.png")
+    ImageResource htmlGalleryIcon();
+
+    /**
      * Accessor for the icon resource bundle.<p>
-     * 
+     *
      * @return the icon resource bundle
      */
     I_CmsIconBundle icons();
 
     /**
+     * Access method.<p>
+     *
+     * @return the image resource
+     */
+    @Source("images/icons/imageSearchIcon.png")
+    ImageResource imageSearchIcon();
+
+    /**
      * Image resource accessor.<p>
-     * 
+     *
      * @return an image resource
      */
     @Source("images/informationBigImage.png")
@@ -389,7 +432,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/invalidElement.png")
@@ -398,7 +441,15 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
+     * @return the image resource
+     */
+    @Source("images/icons/linkGallery.png")
+    ImageResource linkGalleryIcon();
+
+    /**
+     * Access method.<p>
+     *
      * @return the image resource
      */
     @Source("images/loadingBigImage.gif")
@@ -406,7 +457,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/loadingSmallImage.gif")
@@ -414,7 +465,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/lockOtherImage.png")
@@ -422,7 +473,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/lockSharedImage.png")
@@ -430,7 +481,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/lockUserImage.png")
@@ -438,7 +489,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/menuArrowBottomImage.png")
@@ -446,7 +497,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/menuArrowTopImage.png")
@@ -454,7 +505,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/minusImage.png")
@@ -462,7 +513,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/opencmsSymbolImage.png")
@@ -470,7 +521,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/placeholderImage.png")
@@ -479,15 +530,15 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
-     * @return the image resource 
+     *
+     * @return the image resource
      */
     @Source("images/plusImage.png")
     ImageResource plusImage();
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/ratioLockedImage.png")
@@ -495,7 +546,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/ratioUnlockedImage.png")
@@ -503,7 +554,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/resetSizeImage.png")
@@ -511,7 +562,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the button CSS
      */
     @NotStrict
@@ -520,23 +571,39 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
-     * @return the image resource 
+     *
+     * @return the image resource
+     */
+    @Source("images/icons/tableGallery.png")
+    ImageResource tableGalleryIcon();
+
+    /**
+     * Access method.<p>
+     *
+     * @return the image resource
      */
     @Source("images/triangleDownImage.png")
     ImageResource triangleDownImage();
 
     /**
      * Access method.<p>
-     * 
-     * @return the image resource 
+     *
+     * @return the image resource
      */
     @Source("images/triangleRightImage.png")
     ImageResource triangleRightImage();
 
     /**
+     * Access method.<p>
+     *
+     * @return the image resource
+     */
+    @Source("images/triangleRightImageDisabled.png")
+    ImageResource triangleRightImageDisabled();
+
+    /**
      * Image resource accessor.<p>
-     * 
+     *
      * @return an image resource
      */
     @Source("images/userImage.png")
@@ -544,7 +611,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Image resource accessor.<p>
-     * 
+     *
      * @return an image resource
      */
     @Source("images/warningBigImage.png")
@@ -553,7 +620,7 @@ public interface I_CmsImageBundle extends ClientBundle {
 
     /**
      * Access method.<p>
-     * 
+     *
      * @return the image resource
      */
     @Source("images/warningSmallImage.png")

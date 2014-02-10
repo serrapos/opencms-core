@@ -43,6 +43,7 @@ import org.opencms.jsp.CmsJspLoginBean;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
+import org.opencms.security.CmsCustomLoginException;
 import org.opencms.security.CmsOrganizationalUnit;
 import org.opencms.util.CmsRequestUtil;
 import org.opencms.util.CmsStringUtil;
@@ -334,9 +335,16 @@ public class CmsLogin extends CmsJspLoginBean {
                     // the login was successful
                     m_action = ACTION_LOGIN;
 
-                    // set the default project of the user
-                    CmsUserSettings settings = new CmsUserSettings(cms);
-
+                    CmsWorkplaceSettings workplaceSettings = CmsWorkplace.initWorkplaceSettings(cms, null, false);
+                    String startSite = CmsWorkplace.getStartSiteRoot(cms, workplaceSettings);
+                    // switch to the preferred site
+                    workplaceSettings.setSite(startSite);
+                    cms.getRequestContext().setSiteRoot(startSite);
+                    // store the workplace settings
+                    getRequest().getSession().setAttribute(
+                        CmsWorkplaceManager.SESSION_WORKPLACE_SETTINGS,
+                        workplaceSettings);
+                    CmsUserSettings settings = workplaceSettings.getUserSettings();
                     // get the direct edit path
                     m_directEditPath = getDirectEditPath(settings);
 
@@ -345,6 +353,7 @@ public class CmsLogin extends CmsJspLoginBean {
                         if (OpenCms.getOrgUnitManager().getAllAccessibleProjects(cms, project.getOuFqn(), false).contains(
                             project)) {
                             // user has access to the project, set this as current project
+                            workplaceSettings.setProject(project.getUuid());
                             cms.getRequestContext().setCurrentProject(project);
                         }
                     } catch (CmsException e) {
@@ -375,8 +384,13 @@ public class CmsLogin extends CmsJspLoginBean {
                         }
                     }
                     if (m_message == null) {
-                        // any other error - display default message
-                        m_message = Messages.get().container(Messages.GUI_LOGIN_FAILED_0);
+                        CmsException loginException = getLoginException();
+                        if (loginException instanceof CmsCustomLoginException) {
+                            m_message = loginException.getMessageContainer();
+                        } else {
+                            // any other error - display default message
+                            m_message = Messages.get().container(Messages.GUI_LOGIN_FAILED_0);
+                        }
                     }
                 }
             }
@@ -779,8 +793,17 @@ public class CmsLogin extends CmsJspLoginBean {
         html.append("\t}\n");
         html.append("}\n");
 
+        // function to check IE version, in case of a version < IE8 login will be disabled and an error message shown.
+        html.append("function checkBrowser(){\n  if ($.browser.msie && $.browser.version<8){\n  $('#");
+        html.append(PARAM_FORM);
+        html.append("').after('<div style=\"color: #B31B34; font-weight: bold; font-size: 14px; margin: 20px; text-align: center;\">");
+        html.append(Messages.get().getBundle(m_locale).key(Messages.GUI_LOGIN_UNSUPPORTED_BROWSER_0));
+        html.append("</div>');\n $('#");
+        html.append(PARAM_FORM);
+        html.append("').css(\"display\",\"none\"); /** $('input').attr('disabled', 'disabled');\n  alert('wrong browser'); */\n}\n}\n");
+
         // called when the login form page is loaded
-        html.append("function doOnload() {\n");
+        html.append("function doOnload() {\n checkBrowser();\n");
         html.append("\tdocument.");
         html.append(PARAM_FORM);
         html.append(".");
@@ -989,7 +1012,7 @@ public class CmsLogin extends CmsJspLoginBean {
 
         StringBuffer html = new StringBuffer(8192);
 
-        html.append("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\">\n");
+        html.append("<!DOCTYPE html>\n");
         html.append("<html><head>\n");
         html.append("<title>");
 
@@ -1277,7 +1300,11 @@ public class CmsLogin extends CmsJspLoginBean {
         html.append(Messages.get().getBundle(m_locale).key(Messages.GUI_LOGIN_TRADEMARKS_0));
         html.append("</div>\n");
         html.append("<div style=\"text-align: center; font-size: 10px; white-space: nowrap;\">");
+<<<<<<< HEAD
         html.append("&copy; 2002 - 2012 Alkacon Software GmbH. ");
+=======
+        html.append("&copy; 2002 - 2014 Alkacon Software GmbH. ");
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         html.append(Messages.get().getBundle(m_locale).key(Messages.GUI_LOGIN_RIGHTS_RESERVED_0));
         html.append("</div>\n");
 
@@ -1397,15 +1424,18 @@ public class CmsLogin extends CmsJspLoginBean {
     private String getDirectEditPath(CmsUserSettings userSettings) {
 
         if (userSettings.getStartView().equals(CmsWorkplace.VIEW_DIRECT_EDIT)) {
-            String folder = userSettings.getStartFolder();
-            if (CmsStringUtil.isEmptyOrWhitespaceOnly(getCmsObject().getRequestContext().getSiteRoot())
-                || getCmsObject().getRequestContext().getSiteRoot().equals("/")) {
-                folder = CmsStringUtil.joinPaths(userSettings.getStartSite(), folder);
-            }
+
             try {
-                CmsResource targetRes = getCmsObject().readDefaultFile(folder);
+                CmsObject cloneCms = OpenCms.initCmsObject(getCmsObject());
+                cloneCms.getRequestContext().setSiteRoot(userSettings.getStartSite());
+                String projectName = userSettings.getStartProject();
+                if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(projectName)) {
+                    cloneCms.getRequestContext().setCurrentProject(cloneCms.readProject(projectName));
+                }
+                String folder = userSettings.getStartFolder();
+                CmsResource targetRes = cloneCms.readDefaultFile(folder);
                 if (targetRes != null) {
-                    return targetRes.getRootPath();
+                    return cloneCms.getSitePath(targetRes);
                 }
             } catch (Exception e) {
                 LOG.debug(e);

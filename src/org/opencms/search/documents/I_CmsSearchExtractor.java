@@ -46,7 +46,7 @@ import org.opencms.search.extractors.I_CmsExtractionResult;
 public interface I_CmsSearchExtractor {
 
     /**
-     * Extractes the content of a given index resource according to the resource file type and the 
+     * Extracts the content of a given index resource according to the resource file type and the 
      * configuration of the given index.<p>
      * 
      * @param cms the cms object
@@ -55,8 +55,9 @@ public interface I_CmsSearchExtractor {
      * 
      * @return the extracted content of the resource
      * 
-     * @throws CmsException if somethin goes wrong
+     * @throws CmsException if something goes wrong
      */
-    I_CmsExtractionResult extractContent(CmsObject cms, CmsResource resource, CmsSearchIndex index) throws CmsException;
+    I_CmsExtractionResult extractContent(CmsObject cms, CmsResource resource, CmsSearchIndex index)
+    throws CmsException;
 
 }

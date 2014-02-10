@@ -34,6 +34,7 @@ import org.opencms.gwt.shared.CmsContextMenuEntryBean;
 import org.opencms.gwt.shared.CmsCoreData;
 import org.opencms.gwt.shared.CmsCoreData.AdeContext;
 import org.opencms.gwt.shared.CmsLockInfo;
+import org.opencms.gwt.shared.CmsResourceCategoryInfo;
 import org.opencms.gwt.shared.CmsReturnLinkInfo;
 import org.opencms.gwt.shared.CmsValidationQuery;
 import org.opencms.gwt.shared.CmsValidationResult;
@@ -84,6 +85,14 @@ public interface I_CmsCoreServiceAsync {
      * @param callback the async callback
      */
     void getCategoriesForSitePath(String sitePath, AsyncCallback<List<CmsCategoryTreeEntry>> callback);
+
+    /**
+     * Returns the category information for the given resource.<p>
+     * 
+     * @param structureId the resource structure id
+     * @param callback the callback which receives the result
+     */
+    void getCategoryInfo(CmsUUID structureId, AsyncCallback<CmsResourceCategoryInfo> callback);
 
     /**
      * Returns a list of menu entry beans for the context menu.<p>
@@ -144,6 +153,15 @@ public interface I_CmsCoreServiceAsync {
     void lockTemp(CmsUUID structureId, AsyncCallback<String> callback);
 
     /**
+     * Locks the given resource with a temporary lock if it exists.<p>
+     * If the resource does not exist yet, the closest existing ancestor folder will check if it is lockable.<p>
+     * 
+     * @param sitePath the site path of the resource to lock 
+     * @param callback the async callback
+     */
+    void lockIfExists(String sitePath, AsyncCallback<String> callback);
+
+    /**
      * Locks the given resource with a temporary lock additionally checking that 
      * the given resource has not been modified after the given timestamp.<p>
      * 
@@ -187,6 +205,23 @@ public interface I_CmsCoreServiceAsync {
     void setAvailabilityInfo(String vfsPath, CmsAvailabilityInfoBean bean, AsyncCallback<Void> callback);
 
     /**
+     * Sets the categories of the given resource. Will remove all other categories.<p>
+     * 
+     * @param structureId the resource structure id
+     * @param categories the categories to set
+     * @param callback the callback which receives the result
+     */
+    void setResourceCategories(CmsUUID structureId, List<String> categories, AsyncCallback<Void> callback);
+
+    /**
+     * Sets the show editor help flag.<p>
+     * 
+     * @param showHelp the show help flag
+     * @param callback the asynchronous callback
+     */
+    void setShowEditorHelp(boolean showHelp, AsyncCallback<Void> callback);
+
+    /**
      * Writes the tool-bar visibility into the session cache.<p>
      * 
      * @param visible <code>true</code> if the tool-bar is visible
@@ -202,6 +237,15 @@ public interface I_CmsCoreServiceAsync {
      */
     @SynchronizedRpcRequest
     void unlock(CmsUUID structureId, AsyncCallback<String> callback);
+
+    /**
+     * Unlocks the given resource.<p>
+     * 
+     * @param sitePath the resource site path
+     * @param callback the async callback
+     */
+    @SynchronizedRpcRequest
+    void unlock(String sitePath, AsyncCallback<String> callback);
 
     /**
      * Performs a batch of validations and returns the results.<p>

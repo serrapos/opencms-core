@@ -29,6 +29,7 @@ package org.opencms.gwt;
 
 import org.opencms.gwt.shared.CmsCoreData;
 import org.opencms.gwt.shared.rpc.I_CmsCoreService;
+import org.opencms.i18n.CmsEncoder;
 import org.opencms.jsp.CmsJspActionElement;
 import org.opencms.main.OpenCms;
 import org.opencms.util.CmsStringUtil;
@@ -61,6 +62,9 @@ public class CmsGwtActionElement extends CmsJspActionElement {
     /** The opening script tag. */
     protected static final String SCRIPT_TAG_OPEN = "<script type=\"text/javascript\">\n<!--\n";
 
+    /** In page variable name for missing permutation message. */
+    private static final String CMS_NO_PERMUTATION_MESSAGE = "CMS_NO_PERMUTATION_MESSAGE";
+
     /** The resource icon CSS URI. */
     private static final String ICON_CSS_URI = "/system/modules/org.opencms.gwt/resourceIcon.css";
 
@@ -83,14 +87,109 @@ public class CmsGwtActionElement extends CmsJspActionElement {
      * Returns the script tag for the "*.nocache.js".<p>
      * 
      * @param moduleName the module name to get the script tag for
+     * @param moduleVersion the module version
      * 
      * @return the <code>"&lt;script&gt;"</code> tag for the "*.nocache.js".<p>
      */
+    public static String createNoCacheScript(String moduleName, String moduleVersion) {
+
+        String result = "<script type=\"text/javascript\" src=\""
+            + CmsWorkplace.getResourceUri("ade/" + moduleName + "/" + moduleName + ".nocache.js");
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(moduleVersion)) {
+            result += "?version=" + moduleVersion;
+        }
+        result += "\"></script>";
+        return result;
+    }
+
+    /**
+     * Serializes the result of the given method for RPC-prefetching.<p>
+     * 
+     * @param name the dictionary name 
+     * @param method the method
+     * @param data the result to serialize
+     * 
+     * @return the serialized data
+     * 
+     * @throws SerializationException if something goes wrong
+     */
+    public static String exportDictionary(String name, Method method, Object data) throws SerializationException {
+
+        return exportDictionary(name, serialize(method, data));
+    }
+
+    /**
+     * Exports a dictionary by the given name as the content attribute of a meta tag.<p>
+     * 
+     * @param name the dictionary name
+     * @param data the data
+     * 
+     * @return the meta tag
+     */
+    public static String exportDictionary(String name, String data) {
+
+        StringBuffer sb = new StringBuffer();
+        sb.append("<meta name=\"").append(name).append("\" content=\"").append(data).append("\" />");
+        return sb.toString();
+    }
+
+    /**
+     * Generates the HTML for a meta tag with given name and content.<p>
+     * 
+     * @param name the name of the meta tag 
+     * @param data the content of the meta tag 
+     * 
+     * @return the HTML for the meta tag 
+     */
+    public static String exportMeta(String name, String data) {
+
+        String escName = CmsEncoder.escapeXml(name);
+        String escData = CmsEncoder.escapeXml(data);
+        return ("<meta name=\"" + escName + "\" content=\"" + escData + "\" />");
+    }
+
+    /**
+     * Serializes the result of the given method for RPC-prefetching.<p>
+     * 
+     * @param method the method
+     * @param data the result to serialize
+     * 
+     * @return the serialized data
+     * 
+     * @throws SerializationException if something goes wrong
+     */
+    public static String serialize(Method method, Object data) throws SerializationException {
+
+        String result = RPC.encodeResponseForSuccess(method, data, CmsPrefetchSerializationPolicy.instance());
+        result = CmsEncoder.escapeXml(result, true);
+        return result;
+    }
+
+    /**
+     * Wraps the given buffer with surrounding script tags.<p> 
+     * 
+     * @param sb the string buffer to wrap
+     * 
+     * @return the string buffer
+     */
+    public static StringBuffer wrapScript(StringBuffer sb) {
+
+        sb.insert(0, SCRIPT_TAG_OPEN);
+        sb.append(SCRIPT_TAG_CLOSE).append("\n");
+        return sb;
+    }
+
+    /**
+     * Returns the script tag for the "*.nocache.js".<p>
+     * 
+     * @param moduleName the module name to get the script tag for
+     * 
+     * @return the <code>"&lt;script&gt;"</code> tag for the "*.nocache.js".<p>
+     */
+    @Deprecated
     public String createNoCacheScript(String moduleName) {
 
-        return "<script type=\"text/javascript\" src=\""
-            + CmsWorkplace.getResourceUri("ade/" + moduleName + "/" + moduleName + ".nocache.js")
-            + "\"></script>";
+        return createNoCacheScript(moduleName, null);
     }
 
     /**
@@ -123,13 +222,24 @@ public class CmsGwtActionElement extends CmsJspActionElement {
             wpLocale = Locale.ENGLISH.getLanguage();
         }
         StringBuffer sb = new StringBuffer();
-        String prefetchedData = serialize(I_CmsCoreService.class.getMethod("prefetch"), getCoreData());
-        sb.append(CmsCoreData.DICT_NAME).append("='").append(prefetchedData).append("';");
-        sb.append(ClientMessages.get().export(getRequest()));
+        // print out the missing permutation message to be used from the nocache.js generated by custom linker
+        // see org.opencms.gwt.linker.CmsIFrameLinker
+        sb.append("var ").append(CMS_NO_PERMUTATION_MESSAGE).append("='").append(
+            Messages.get().getBundle(OpenCms.getWorkplaceManager().getWorkplaceLocale(getCmsObject())).key(
+                Messages.ERR_NO_PERMUTATION_AVAILABLE_0)).append("';\n");
         wrapScript(sb);
+        // append meta tag to set the IE to standard document mode
+        sb.append("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />");
+        String prefetchedData = exportDictionary(
+            CmsCoreData.DICT_NAME,
+            I_CmsCoreService.class.getMethod("prefetch"),
+            getCoreData());
+        sb.append(prefetchedData);
+        sb.append(ClientMessages.get().export(getRequest()));
         sb.append("<style type=\"text/css\">\n @import url(\"").append(iconCssLink(iconCssClassPrefix)).append(
             "\");\n</style>\n");
-        sb.append("<meta name=\"gwt:property\" content=\"locale=").append(wpLocale).append("\">\n");
+        // append the workplace locale information
+        sb.append("<meta name=\"gwt:property\" content=\"locale=").append(wpLocale).append("\" />\n");
         return sb.toString();
     }
 
@@ -167,7 +277,7 @@ public class CmsGwtActionElement extends CmsJspActionElement {
     public CmsCoreData getCoreData() {
 
         if (m_coreData == null) {
-            m_coreData = CmsCoreService.newInstance(getRequest()).prefetch();
+            m_coreData = CmsCoreService.prefetch(getRequest());
         }
         return m_coreData;
     }
@@ -180,50 +290,6 @@ public class CmsGwtActionElement extends CmsJspActionElement {
     public Locale getWorkplaceLocale() {
 
         return OpenCms.getWorkplaceManager().getWorkplaceLocale(getCmsObject());
-    }
-
-    /**
-     * Serializes the result of the given method for RPC-prefetching.<p>
-     * 
-     * @param method the method
-     * @param data the result to serialize
-     * 
-     * @return the serialized data
-     * 
-     * @throws SerializationException if something goes wrong
-     */
-    protected String serialize(Method method, Object data) throws SerializationException {
-
-        return escape(RPC.encodeResponseForSuccess(method, data, CmsPrefetchSerializationPolicy.instance()));
-    }
-
-    /**
-     * Wraps the given buffer with surrounding script tags.<p> 
-     * 
-     * @param sb the string buffer to wrap
-     * 
-     * @return the string buffer
-     */
-    protected StringBuffer wrapScript(StringBuffer sb) {
-
-        sb.insert(0, SCRIPT_TAG_OPEN);
-        sb.append(SCRIPT_TAG_CLOSE).append("\n");
-        return sb;
-    }
-
-    /**
-     * Escapes the given string for serialization.<p>
-     * 
-     * @param s the string to escape
-     * 
-     * @return the escaped string
-     */
-    private String escape(String s) {
-
-        // escape back slashes
-        String ret = s.replaceAll("\\\\", "\\\\\\\\");
-        // escape single quotation marks
-        return ret.replaceAll("'", "\\\\'");
     }
 
     /**

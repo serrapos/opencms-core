@@ -267,6 +267,7 @@ public class CmsXmlHtmlValue extends A_CmsXmlContentValue {
         if (CmsHtmlConverter.isConversionEnabled(contentConversion)) {
             CmsHtmlConverter converter = new CmsHtmlConverter(encoding, contentConversion);
             finalValue = converter.convertToStringSilent(finalValue);
+            finalValue = fixNullCharacters(finalValue);
         }
         if (linkProcessor != null) {
             try {
@@ -301,6 +302,28 @@ public class CmsXmlHtmlValue extends A_CmsXmlContentValue {
     }
 
     /**
+     * JTidy sometimes erroneouslsy produces HTML containing 'null' characters (Unicode code point 0), which are 
+     * invalid in an XML document. Until we find a way to prevent JTidy doing that, we remove the null characters 
+     * from the HTML, and log a warning.<p>
+     *
+     * @param jtidyOutput the JTidy output 
+     * @return the output with null characters removed 
+     */
+    protected String fixNullCharacters(String jtidyOutput) {
+
+        String outputWithoutNullChars = jtidyOutput.replaceAll("\u0000", "");
+        if (jtidyOutput.length() != outputWithoutNullChars.length()) {
+            String context = "";
+            if (m_document.getFile() != null) {
+                context = "(file=" + m_document.getFile().getRootPath() + ")";
+            }
+            LOG.warn("HTML cleanup produced invalid null characters in output. " + context);
+            LOG.debug("HTML cleanup output = " + jtidyOutput);
+        }
+        return outputWithoutNullChars;
+    }
+
+    /**
      * Creates the String value for this HTML value element.<p>
      * 
      * @param cms an initialized instance of a CmsObject
@@ -311,6 +334,15 @@ public class CmsXmlHtmlValue extends A_CmsXmlContentValue {
     private String createStringValue(CmsObject cms, I_CmsXmlDocument document) {
 
         Element data = m_element.element(CmsXmlPage.NODE_CONTENT);
+        if (data == null) {
+            String content = m_element.getText();
+            m_element.clearContent();
+            int index = m_element.getParent().elements(m_element.getQName()).indexOf(m_element);
+            m_element.addAttribute(CmsXmlPage.ATTRIBUTE_NAME, getName() + index);
+            m_element.addElement(CmsXmlPage.NODE_LINKS);
+            m_element.addElement(CmsXmlPage.NODE_CONTENT).addCDATA(content);
+            data = m_element.element(CmsXmlPage.NODE_CONTENT);
+        }
         Attribute enabled = m_element.attribute(CmsXmlPage.ATTRIBUTE_ENABLED);
 
         String content = "";

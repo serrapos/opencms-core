@@ -314,7 +314,12 @@ public class CmsSitemapDNDController implements I_CmsDNDController {
             parent.getId(),
             typeInfo.getId(),
             typeInfo.getCopyResourceId(),
+<<<<<<< HEAD
             typeInfo.getCreateParameter());
+=======
+            typeInfo.getCreateParameter(),
+            false);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**

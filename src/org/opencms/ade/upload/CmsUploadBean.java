@@ -27,7 +27,6 @@
 
 package org.opencms.ade.upload;
 
-import org.opencms.ade.upload.shared.I_CmsUploadConstants;
 import org.opencms.db.CmsDbSqlException;
 import org.opencms.db.CmsImportFolder;
 import org.opencms.file.CmsFile;
@@ -37,11 +36,14 @@ import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsResource;
 import org.opencms.file.CmsResourceFilter;
 import org.opencms.file.types.CmsResourceTypePlain;
+import org.opencms.gwt.shared.I_CmsUploadConstants;
 import org.opencms.i18n.CmsMessages;
+import org.opencms.json.JSONArray;
 import org.opencms.json.JSONException;
 import org.opencms.json.JSONObject;
 import org.opencms.jsp.CmsJspBean;
 import org.opencms.loader.CmsLoaderException;
+import org.opencms.lock.CmsLockException;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
@@ -57,10 +59,8 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -106,11 +106,17 @@ public class CmsUploadBean extends CmsJspBean {
     /** The map of parameters read from the current request. */
     private Map<String, String[]> m_parameterMap;
 
-    /** The names of the resources that have been created successfully. */
-    private Set<String> m_resourcesCreated = new HashSet<String>();
+    /** The names by id of the resources that have been created successfully. */
+    private HashMap<String, String> m_resourcesCreated = new HashMap<String, String>();
+
+    /** A CMS context for the root site. */
+    private CmsObject m_rootCms;
 
     /** The server side upload delay. */
     private int m_uploadDelay;
+
+    /** The upload hook URI. */
+    private String m_uploadHook;
 
     /**
      * Constructor, with parameters.<p>
@@ -118,11 +124,17 @@ public class CmsUploadBean extends CmsJspBean {
      * @param context the JSP page context object
      * @param req the JSP request 
      * @param res the JSP response 
+     * 
+     * @throws CmsException if something goes wrong 
      */
-    public CmsUploadBean(PageContext context, HttpServletRequest req, HttpServletResponse res) {
+    public CmsUploadBean(PageContext context, HttpServletRequest req, HttpServletResponse res)
+    throws CmsException {
 
         super();
         init(context, req, res);
+
+        m_rootCms = OpenCms.initCmsObject(getCmsObject());
+        m_rootCms.getRequestContext().setSiteRoot("");
     }
 
     /**
@@ -194,7 +206,7 @@ public class CmsUploadBean extends CmsJspBean {
             // an expected error occurred while parsing the request, the error message is already set in the exception
             LOG.debug(e.getMessage(), e);
             return generateResponse(Boolean.FALSE, e.getMessage(), formatStackTrace(e));
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // an unexpected error occurred while parsing the request, create a non-specific error message 
             LOG.error(e.getMessage(), e);
             String message = m_bundle.key(org.opencms.ade.upload.Messages.ERR_UPLOAD_UNEXPECTED_0);
@@ -229,8 +241,14 @@ public class CmsUploadBean extends CmsJspBean {
      */
     private void createResources(CmsUploadListener listener) throws CmsException, UnsupportedEncodingException {
 
+        CmsObject cms = getCmsObject();
+        String[] isRootPathVals = m_parameterMap.get(I_CmsUploadConstants.UPLOAD_IS_ROOT_PATH_FIELD_NAME);
+        if ((isRootPathVals != null) && (isRootPathVals.length > 0) && Boolean.parseBoolean(isRootPathVals[0])) {
+            cms = m_rootCms;
+        }
         // get the target folder
-        String targetFolder = getTargetFolder();
+        String targetFolder = getTargetFolder(cms);
+        m_uploadHook = OpenCms.getWorkplaceManager().getUploadHook(cms, targetFolder);
 
         List<String> filesToUnzip = getFilesToUnzip();
 
@@ -250,16 +268,20 @@ public class CmsUploadBean extends CmsJspBean {
                     // import the zip
                     CmsImportFolder importZip = new CmsImportFolder();
                     try {
-                        importZip.importZip(content, targetFolder, getCmsObject(), false);
+                        importZip.importZip(content, targetFolder, cms, false);
                     } finally {
                         // get the created resource names
-                        m_resourcesCreated.addAll(importZip.getCreatedResourceNames());
+                        for (CmsResource importedResource : importZip.getImportedResources()) {
+                            m_resourcesCreated.put(
+                                importedResource.getStructureId().toString(),
+                                importedResource.getName());
+                        }
                     }
                 } else {
                     // create the resource
-                    String newResname = createSingleResource(fileName, targetFolder, content);
+                    CmsResource importedResource = createSingleResource(cms, fileName, targetFolder, content);
                     // add the name of the created resource to the list of successful created resources
-                    m_resourcesCreated.add(newResname);
+                    m_resourcesCreated.put(importedResource.getStructureId().toString(), importedResource.getName());
                 }
 
                 if (listener.isCanceled()) {
@@ -270,22 +292,31 @@ public class CmsUploadBean extends CmsJspBean {
     }
 
     /**
-     * Creates a single resource and returns the site path of the new resource.<p>
+     * Creates a single resource and returns the new resource.<p>
      * 
+<<<<<<< HEAD
+=======
+     * @param cms the CMS context to use 
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * @param fileName the name of the resource to create
      * @param targetFolder the folder to store the new resource
      * @param content the content of the resource to create
      * 
-     * @return the new resource site path
+     * @return the new resource
      * 
      * @throws CmsException if something goes wrong
      * @throws CmsLoaderException if something goes wrong
      * @throws CmsDbSqlException if something goes wrong
      */
-    private String createSingleResource(String fileName, String targetFolder, byte[] content)
+    private CmsResource createSingleResource(CmsObject cms, String fileName, String targetFolder, byte[] content)
     throws CmsException, CmsLoaderException, CmsDbSqlException {
 
+<<<<<<< HEAD
         String newResname = getNewResourceName(getCmsObject(), fileName, targetFolder);
+=======
+        String newResname = getNewResourceName(cms, fileName, targetFolder);
+        CmsResource createdResource = null;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
         // determine Title property value to set on new resource
         String title = fileName;
@@ -318,39 +349,83 @@ public class CmsUploadBean extends CmsJspBean {
         properties.add(titleProp);
 
         int plainId = OpenCms.getResourceManager().getResourceType(CmsResourceTypePlain.getStaticTypeName()).getTypeId();
+<<<<<<< HEAD
         if (!getCmsObject().existsResource(newResname, CmsResourceFilter.IGNORE_EXPIRATION)) {
+=======
+        if (!cms.existsResource(newResname, CmsResourceFilter.IGNORE_EXPIRATION)) {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
             // if the resource does not exist, create it
+
             try {
                 // create the resource
                 int resTypeId = OpenCms.getResourceManager().getDefaultTypeForName(newResname).getTypeId();
+<<<<<<< HEAD
                 getCmsObject().createResource(newResname, resTypeId, content, properties);
+=======
+                createdResource = cms.createResource(newResname, resTypeId, content, properties);
+                try {
+                    cms.unlockResource(newResname);
+                } catch (CmsLockException e) {
+                    LOG.info("Couldn't unlock uploaded file", e);
+                }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
             } catch (CmsSecurityException e) {
                 // in case of not enough permissions, try to create a plain text file
-                getCmsObject().createResource(newResname, plainId, content, properties);
+                createdResource = cms.createResource(newResname, plainId, content, properties);
+                cms.unlockResource(newResname);
             } catch (CmsDbSqlException sqlExc) {
                 // SQL error, probably the file is too large for the database settings, delete file
-                getCmsObject().lockResource(newResname);
-                getCmsObject().deleteResource(newResname, CmsResource.DELETE_PRESERVE_SIBLINGS);
+                cms.lockResource(newResname);
+                cms.deleteResource(newResname, CmsResource.DELETE_PRESERVE_SIBLINGS);
                 throw sqlExc;
+            } catch (OutOfMemoryError e) {
+                // the file is to large try to clear up
+                cms.lockResource(newResname);
+                cms.deleteResource(newResname, CmsResource.DELETE_PRESERVE_SIBLINGS);
+                throw e;
             }
+
         } else {
             // if the resource already exists, replace it
-            CmsResource res = getCmsObject().readResource(newResname, CmsResourceFilter.ALL);
-            if (!getCmsObject().getLock(res).isOwnedBy(getCmsObject().getRequestContext().getCurrentUser())) {
-                getCmsObject().lockResource(res);
-            }
-            CmsFile file = getCmsObject().readFile(res);
-            byte[] contents = file.getContents();
+            CmsResource res = cms.readResource(newResname, CmsResourceFilter.ALL);
+            boolean wasLocked = false;
             try {
+<<<<<<< HEAD
                 getCmsObject().replaceResource(newResname, res.getTypeId(), content, null);
             } catch (CmsDbSqlException sqlExc) {
                 // SQL error, probably the file is too large for the database settings, restore content
                 file.setContents(contents);
                 getCmsObject().writeFile(file);
                 throw sqlExc;
+=======
+                if (!cms.getLock(res).isOwnedBy(cms.getRequestContext().getCurrentUser())) {
+                    cms.lockResource(res);
+                    wasLocked = true;
+                }
+                CmsFile file = cms.readFile(res);
+                byte[] contents = file.getContents();
+                try {
+                    cms.replaceResource(newResname, res.getTypeId(), content, null);
+                    createdResource = res;
+                } catch (CmsDbSqlException sqlExc) {
+                    // SQL error, probably the file is too large for the database settings, restore content
+                    file.setContents(contents);
+                    cms.writeFile(file);
+                    throw sqlExc;
+                } catch (OutOfMemoryError e) {
+                    // the file is to large try to clear up
+                    file.setContents(contents);
+                    cms.writeFile(file);
+                    throw e;
+                }
+            } finally {
+                if (wasLocked) {
+                    cms.unlockResource(res);
+                }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
             }
         }
-        return newResname;
+        return createdResource;
     }
 
     /**
@@ -360,7 +435,7 @@ public class CmsUploadBean extends CmsJspBean {
      * 
      * @return the stacktrace as String
      */
-    private String formatStackTrace(Exception e) {
+    private String formatStackTrace(Throwable e) {
 
         StringBuffer result = new StringBuffer(64);
         for (String s : new ThrowableInformation(e).getThrowableStrRep()) {
@@ -386,6 +461,11 @@ public class CmsUploadBean extends CmsJspBean {
             result.put(I_CmsUploadConstants.KEY_MESSAGE, message);
             result.put(I_CmsUploadConstants.KEY_STACKTRACE, stacktrace);
             result.put(I_CmsUploadConstants.KEY_REQUEST_SIZE, getRequest().getContentLength());
+            result.put(I_CmsUploadConstants.KEY_UPLOADED_FILES, new JSONArray(m_resourcesCreated.keySet()));
+            result.put(I_CmsUploadConstants.KEY_UPLOADED_FILE_NAMES, new JSONArray(m_resourcesCreated.values()));
+            if (m_uploadHook != null) {
+                result.put(I_CmsUploadConstants.KEY_UPLOAD_HOOK, m_uploadHook);
+            }
         } catch (JSONException e) {
             LOG.error(m_bundle.key(org.opencms.ade.upload.Messages.ERR_UPLOAD_JSON_0), e);
         }
@@ -403,7 +483,7 @@ public class CmsUploadBean extends CmsJspBean {
         if (!m_resourcesCreated.isEmpty()) {
             // some resources have been created, tell the user which resources were created successfully
             StringBuffer buf = new StringBuffer(64);
-            for (String name : m_resourcesCreated) {
+            for (String name : m_resourcesCreated.values()) {
                 buf.append("<br />");
                 buf.append(name);
             }
@@ -442,28 +522,28 @@ public class CmsUploadBean extends CmsJspBean {
      * if the given folder does not exist root folder
      * of the current site is returned.<p>
      * 
+     * @param cms the CMS context to use 
+     * 
      * @return the target folder for the new resource
      * 
      * @throws CmsException if something goes wrong
      */
-    private String getTargetFolder() throws CmsException {
+    private String getTargetFolder(CmsObject cms) throws CmsException {
 
         // get the target folder on the vfs
-        CmsResource target = getCmsObject().readResource("/", CmsResourceFilter.IGNORE_EXPIRATION);
+        CmsResource target = cms.readResource("/", CmsResourceFilter.IGNORE_EXPIRATION);
         if (m_parameterMap.get(I_CmsUploadConstants.UPLOAD_TARGET_FOLDER_FIELD_NAME) != null) {
             String targetFolder = m_parameterMap.get(I_CmsUploadConstants.UPLOAD_TARGET_FOLDER_FIELD_NAME)[0];
             if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(targetFolder)) {
-                if (getCmsObject().existsResource(targetFolder)) {
-                    CmsResource tmpTarget = getCmsObject().readResource(
-                        targetFolder,
-                        CmsResourceFilter.IGNORE_EXPIRATION);
+                if (cms.existsResource(targetFolder)) {
+                    CmsResource tmpTarget = cms.readResource(targetFolder, CmsResourceFilter.IGNORE_EXPIRATION);
                     if (tmpTarget.isFolder()) {
                         target = tmpTarget;
                     }
                 }
             }
         }
-        String targetFolder = getCmsObject().getRequestContext().removeSiteRoot(target.getRootPath());
+        String targetFolder = cms.getRequestContext().removeSiteRoot(target.getRootPath());
         if (!targetFolder.endsWith("/")) {
             // add folder separator to currentFolder
             targetFolder += "/";

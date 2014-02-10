@@ -28,6 +28,7 @@
 package org.opencms.main;
 
 import org.opencms.ade.configuration.CmsADEManager;
+import org.opencms.db.CmsAliasManager;
 import org.opencms.db.CmsDefaultUsers;
 import org.opencms.db.CmsExportPoint;
 import org.opencms.db.CmsLoginManager;
@@ -38,6 +39,7 @@ import org.opencms.file.CmsResource;
 import org.opencms.i18n.CmsLocaleManager;
 import org.opencms.importexport.CmsImportExportManager;
 import org.opencms.loader.CmsResourceManager;
+import org.opencms.loader.CmsTemplateContextManager;
 import org.opencms.module.CmsModuleManager;
 import org.opencms.monitor.CmsMemoryMonitor;
 import org.opencms.publish.CmsPublishManager;
@@ -48,17 +50,20 @@ import org.opencms.security.CmsOrgUnitManager;
 import org.opencms.security.CmsRole;
 import org.opencms.security.CmsRoleManager;
 import org.opencms.security.I_CmsAuthorizationHandler;
+import org.opencms.security.I_CmsCredentialsResolver;
 import org.opencms.security.I_CmsPasswordHandler;
 import org.opencms.security.I_CmsValidationHandler;
 import org.opencms.site.CmsSiteManagerImpl;
 import org.opencms.staticexport.CmsLinkManager;
 import org.opencms.staticexport.CmsStaticExportManager;
+import org.opencms.workflow.I_CmsWorkflowManager;
 import org.opencms.workplace.CmsWorkplaceManager;
 import org.opencms.xml.CmsXmlContentTypeManager;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -175,6 +180,16 @@ public final class OpenCms {
     }
 
     /**
+     * Gets the alias manager.<p>
+     * 
+     * @return the alias manager 
+     */
+    public static CmsAliasManager getAliasManager() {
+
+        return OpenCmsCore.getInstance().getAliasManager();
+    }
+
+    /**
      * Returns the configured authorization handler.<p>
      *
      * @return the configured authorization handler
@@ -182,6 +197,16 @@ public final class OpenCms {
     public static I_CmsAuthorizationHandler getAuthorizationHandler() {
 
         return OpenCmsCore.getInstance().getAuthorizationHandler();
+    }
+
+    /**
+     * Gets the credentials resolver instance.<p>
+     * 
+     * @return the credentials resolver 
+     */
+    public static I_CmsCredentialsResolver getCredentialsResolver() {
+
+        return OpenCmsCore.getInstance().getCredentialsResolver();
     }
 
     /**
@@ -214,6 +239,16 @@ public final class OpenCms {
     public static CmsEventManager getEventManager() {
 
         return OpenCmsCore.getInstance().getEventManager();
+    }
+
+    /**
+     * Gets the thread pool executor.<p>
+     * 
+     * @return the thread pool executor 
+     */
+    public static ScheduledThreadPoolExecutor getExecutor() {
+
+        return OpenCmsCore.getInstance().getExecutor();
     }
 
     /**
@@ -501,6 +536,16 @@ public final class OpenCms {
     }
 
     /**
+     * Gets the template context manager.<p>
+     * 
+     * @return the template context manager instance 
+     */
+    public static CmsTemplateContextManager getTemplateContextManager() {
+
+        return OpenCmsCore.getInstance().getTemplateContextManager();
+    }
+
+    /**
      * Returns the OpenCms Thread store.<p>
      * 
      * @return the OpenCms Thread store
@@ -518,6 +563,16 @@ public final class OpenCms {
     public static I_CmsValidationHandler getValidationHandler() {
 
         return OpenCmsCore.getInstance().getValidationHandler();
+    }
+
+    /**
+     * Gets the initialized workflow manager.<p>
+     *  
+     * @return the initialized workflow manager 
+     */
+    public static I_CmsWorkflowManager getWorkflowManager() {
+
+        return OpenCmsCore.getInstance().getWorkflowManager();
     }
 
     /**

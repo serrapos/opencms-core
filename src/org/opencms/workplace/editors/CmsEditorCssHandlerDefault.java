@@ -29,8 +29,11 @@ package org.opencms.workplace.editors;
 
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsPropertyDefinition;
+import org.opencms.loader.CmsTemplateContextManager;
+import org.opencms.loader.I_CmsTemplateContextProvider;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
+import org.opencms.main.OpenCms;
 import org.opencms.util.CmsStringUtil;
 
 import org.apache.commons.logging.Log;
@@ -50,6 +53,40 @@ public class CmsEditorCssHandlerDefault implements I_CmsEditorCssHandler {
      */
     public String getUriStyleSheet(CmsObject cms, String editedResourcePath) {
 
+        String editContext = (String)(cms.getRequestContext().getAttribute(CmsXmlContentEditor.ATTRIBUTE_EDITCONTEXT));
+        String result = "";
+        if (!CmsStringUtil.isEmptyOrWhitespaceOnly(editContext)) {
+            // prefer the style sheet of the edit context (usually this will be a container page)
+            result = internalGetUriStyleSheet(cms, editContext);
+        }
+        if (CmsStringUtil.isEmptyOrWhitespaceOnly(result)) {
+            result = internalGetUriStyleSheet(cms, editedResourcePath);
+        }
+        return result;
+    }
+
+    /**
+     * @see org.opencms.workplace.editors.I_CmsEditorCssHandler#matches(org.opencms.file.CmsObject, java.lang.String)
+     */
+    public boolean matches(CmsObject cms, String editedResourcePath) {
+
+        // this returns always true, as it is the default CSS handler
+        return true;
+    }
+
+    /**
+     * Finds the style sheet by reading the template property of the template for a given path.<p>
+     * 
+     * @param cms the current CMS context 
+     * @param editedResourcePath the resource path 
+     * 
+     * @return the CSS uri from the template for the given path 
+     */
+    private String internalGetUriStyleSheet(CmsObject cms, String editedResourcePath) {
+
+        if (editedResourcePath == null) {
+            return "";
+        }
         String result = "";
         try {
             // determine the path of the template
@@ -57,6 +94,16 @@ public class CmsEditorCssHandlerDefault implements I_CmsEditorCssHandler {
             try {
                 templatePath = cms.readPropertyObject(editedResourcePath, CmsPropertyDefinition.PROPERTY_TEMPLATE, true).getValue(
                     "");
+                if (CmsTemplateContextManager.isProvider(templatePath)) {
+                    I_CmsTemplateContextProvider provider = OpenCms.getTemplateContextManager().getTemplateContextProvider(
+                        templatePath);
+                    if (provider != null) {
+                        String providerResult = provider.getEditorStyleSheet(cms, editedResourcePath);
+                        if (providerResult != null) {
+                            return providerResult;
+                        }
+                    }
+                }
             } catch (CmsException e) {
                 if (LOG.isWarnEnabled()) {
                     LOG.warn(Messages.get().getBundle().key(Messages.LOG_READ_TEMPLATE_PROP_FAILED_0), e);
@@ -73,15 +120,6 @@ public class CmsEditorCssHandlerDefault implements I_CmsEditorCssHandler {
             }
         }
         return result;
-    }
-
-    /**
-     * @see org.opencms.workplace.editors.I_CmsEditorCssHandler#matches(org.opencms.file.CmsObject, java.lang.String)
-     */
-    public boolean matches(CmsObject cms, String editedResourcePath) {
-
-        // this returns always true, as it is the default CSS handler
-        return true;
     }
 
 }

@@ -21,7 +21,24 @@
 	white-space: normal;
 }
 
-div.toolTip.cornerAll, div.toolTip{
+.toolTip *{
+	margin: 0;
+	padding: 0;
+	border: none;
+	color: value("constants.css.textColor");
+	font-family: value("constants.css.fontFamily");
+	font-size: value("constants.css.fontSize");
+	line-height: value("constants.css.lineHeight");
+	background: transparent;
+	text-align: left;
+	height: auto;
+	width: auto;
+	min-height: 0;
+	max-height: none;
+	min-width: 0;
+	max-width: none;
+}
+div.toolTip.cornerAll, div.toolTip {
 	position: absolute;
 	z-index: value("constants.css.zIndexDND");
 	border: 1px solid value("constants.css.borderColor");
@@ -52,17 +69,52 @@ div.toolTip.cornerAll, div.toolTip{
 	padding: 0px;
 }
 
-.textSmall{
+div.header{
+	border: 2px solid value("constants.css.borderColor");
+	background: value("constants.css.backgroundColorDialog");
+	width: value("constants.css.toolbarWidth");
+	padding: 10px 0px;
+	margin: 0px auto 10px;
+}
+
+/** joined vendor prefix style, for better fall back behavior */
+div.header{
+	background-image: literal("-moz-linear-gradient(")value("constants.css.gradientFormDialog") literal(")");
+	background-image: literal("-ms-linear-gradient(")value("constants.css.gradientFormDialog") literal(")");
+	background-image: literal("-webkit-linear-gradient(")value("constants.css.gradientFormDialog") literal(")");
+	background-image: literal("-o-linear-gradient(")value("constants.css.gradientFormDialog") literal(")");
+	background-image: literal("linear-gradient(")value("constants.css.gradientFormDialog") literal(")");
+}
+
+div.header h2{
+	font-size: value("constants.css.fontSizeBig");
+	font-weight: bold;
+	margin: 0px;
+	vertical-align: middle;
+}
+
+div.header > div{
+	float:left;
+	font-size: value("constants.css.fontSize");
+	margin: 0px 0px 0px 10px;
+	vertical-align: middle;
+}
+div.header p{
+	font-size: value("constants.css.fontSize");
+	margin: 8px 0px;
+}
+
+.textSmall, div.textSmall{
 	font-family: value("constants.css.fontFamily");
 	font-size: value("constants.css.fontSizeSmall");
 	line-height: value("constants.css.lineHeightSmall");
 }
-.textMedium{
+.textMedium, div.textMedium{
 	font-family: value("constants.css.fontFamily");
 	font-size: value("constants.css.fontSize");
 	line-height: value("constants.css.lineHeight");
 }
-.textBig{
+.textBig, div.textBig{
 	font-family: value("constants.css.fontFamily");
 	font-size: value("constants.css.fontSizeBig");
 	line-height: value("constants.css.lineHeightBig");
@@ -88,9 +140,11 @@ div.toolTip.cornerAll, div.toolTip{
 .clearFix:after {
     content: ".";
     display: block;
-    height: 0;
+    height: 0 !important;
+    min-height: 0 !important;
     clear: both;
     visibility: hidden;
+    overflow: hidden !important;
 }
 
 @sprite div.disablingOverlay{
@@ -108,6 +162,7 @@ div.toolTip.cornerAll, div.toolTip{
 .hideOverlay div.disablingOverlay{
 	background: transparent;
 }
+<<<<<<< HEAD
 .cornerAll, .buttonCornerAll, .cornerBottom, .cornerTop{}
 /** browser specific styles **/
 @if user.agent ie8 {
@@ -134,9 +189,36 @@ div.toolTip.cornerAll, div.toolTip{
 		border-top-right-radius: value("constants.css.borderRadius");
 	}
 	
+=======
+.cornerAll{
+	border-radius: value("constants.css.borderRadius");
+}
+.buttonCornerAll{
+	border-radius: value("constants.css.borderRadiusButton");
+}
+.cornerBottom{
+	border-bottom-left-radius: value("constants.css.borderRadius");
+	border-bottom-right-radius: value("constants.css.borderRadius");
+}
+.cornerTop{
+	border-top-left-radius: value("constants.css.borderRadius");
+	border-top-right-radius: value("constants.css.borderRadius");
+}
+/** browser specific styles **/
+@if user.agent ie8 {
+	/** ie7, ie8 **/
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 	.shadow{
 		box-shadow: 2px 2px 6px value("constants.css.boxShadowColorOther");
 	}
+<<<<<<< HEAD
+=======
+} @else {
+	/** opera, ie9, firefox, chrome */
+	.shadow{
+		box-shadow: 2px 2px 6px value("constants.css.boxShadowColorOther");
+	}
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 }
 
 .clearStyles, .clearStyles *{

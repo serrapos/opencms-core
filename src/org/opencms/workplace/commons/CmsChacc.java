@@ -514,10 +514,17 @@ public class CmsChacc extends CmsDialog {
                 name = role.getFqn();
             }
             try {
+<<<<<<< HEAD
                 getCms().rmacc(file, type, name);
             } catch (CmsException e) {
                 LOG.warn(e.getLocalizedMessage(), e);
                 getCms().rmacc(file, type, uuid);
+=======
+                getCms().rmacc(file, type, uuid);
+            } catch (CmsException e) {
+                LOG.warn(e.getLocalizedMessage(), e);
+                getCms().rmacc(file, type, name);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
             }
             return true;
         } catch (CmsException e) {

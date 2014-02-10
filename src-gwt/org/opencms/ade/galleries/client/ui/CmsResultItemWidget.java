@@ -49,7 +49,11 @@ import com.google.gwt.user.client.ui.HTML;
 public class CmsResultItemWidget extends CmsListItemWidget {
 
     /** Standard image tile scale parameter. */
+<<<<<<< HEAD
     private static final String IMAGE_SCALE_PARAM = "?__scale=w:142,h:100,t:1,c:white,r:2";
+=======
+    private static final String IMAGE_SCALE_PARAM = "?__scale=w:142,h:100,t:1,c:ffffff,r:2";
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
     /** The image resource type name. */
     private static final String IMAGE_TYPE = "image";
@@ -57,6 +61,7 @@ public class CmsResultItemWidget extends CmsListItemWidget {
     /** Tile view flag. */
     private boolean m_hasTileView;
 
+    /** The tool tip handler. */
     private CmsToolTipHandler m_tooltipHandler;
 
     /**
@@ -73,11 +78,15 @@ public class CmsResultItemWidget extends CmsListItemWidget {
         if (IMAGE_TYPE.equals(infoBean.getType())) {
             m_hasTileView = true;
             // add tile view marker css classes
-
+            String src = infoBean.getViewLink();
+            if (src == null) {
+                src = CmsCoreProvider.get().link(infoBean.getPath());
+            }
             // insert tile view image div
-            HTML imageTile = new HTML("<img src=\""
-                + CmsCoreProvider.get().link(infoBean.getPath())
-                + IMAGE_SCALE_PARAM
+            HTML imageTile = new HTML("<img src=\"" + src + IMAGE_SCALE_PARAM
+            // add time stamp to override image caching
+                + "&time="
+                + System.currentTimeMillis()
                 + "\" />");
             imageTile.setStyleName(I_CmsLayoutBundle.INSTANCE.galleryResultItemCss().imageTile());
             m_tooltipHandler = new CmsToolTipHandler(imageTile, generateTooltipHtml(infoBean));

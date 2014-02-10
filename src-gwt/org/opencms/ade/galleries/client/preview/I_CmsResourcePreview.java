@@ -31,6 +31,7 @@ import org.opencms.ade.galleries.client.preview.ui.A_CmsPreviewDialog;
 import org.opencms.ade.galleries.client.ui.CmsGalleryDialog;
 import org.opencms.ade.galleries.shared.CmsResourceInfoBean;
 import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants.GalleryMode;
+import org.opencms.util.CmsUUID;
 
 import java.util.Map;
 
@@ -95,6 +96,13 @@ public interface I_CmsResourcePreview<T extends CmsResourceInfoBean> {
     String getResourcePath();
 
     /**
+     * Returns the site independent perma link.<p>
+     * 
+     * @return the site independent link
+     */
+    String getViewLink();
+
+    /**
      * Loads the resource info and displays the retrieved data.<p>
      * 
      * @param resourcePath the resource path
@@ -125,9 +133,10 @@ public interface I_CmsResourcePreview<T extends CmsResourceInfoBean> {
      * Sets the selected resource in the opening editor for the given gallery mode.<p>
      * 
      * @param resourcePath the resource path
+     * @param structureId the structure id
      * @param title the resource title
      */
-    void selectResource(String resourcePath, String title);
+    void selectResource(String resourcePath, CmsUUID structureId, String title);
 
     /**
      * Checks if further user input is required and other wise sets the selected resource

@@ -37,6 +37,27 @@ import org.opencms.gwt.client.util.CmsMessages;
 public final class Messages {
 
     /** Message constant for key in the resource bundle. */
+    public static final String ERR_LOCK_RESOURCE_CHANGED_BY_1 = "ERR_LOCK_RESOURCE_CHANGED_BY_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_LOCK_RESOURCE_LOCKED_BY_1 = "ERR_LOCK_RESOURCE_LOCKED_BY_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_LOCK_TITLE_RESOURCE_CHANGED_0 = "ERR_LOCK_TITLE_RESOURCE_CHANGED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_LOCK_TITLE_RESOURCE_LOCKED_0 = "ERR_LOCK_TITLE_RESOURCE_LOCKED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_READING_CONTAINER_PAGE_DATA_0 = "ERR_READING_CONTAINER_PAGE_DATA_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ASK_DELETE_REMOVED_ELEMENT_0 = "GUI_ASK_DELETE_REMOVED_ELEMENT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ASK_DELETE_REMOVED_ELEMENT_TITLE_0 = "GUI_ASK_DELETE_REMOVED_ELEMENT_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_BUTTON_BREAK_UP_TEXT_0 = "GUI_BUTTON_BREAK_UP_TEXT_0";
 
     /** Message constant for key in the resource bundle. */
@@ -70,6 +91,24 @@ public final class Messages {
     public static final String GUI_BUTTON_SAVE_TEXT_0 = "GUI_BUTTON_SAVE_TEXT_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_CLIPBOARD_ITEM_CAN_NOT_BE_EDITED_0 = "GUI_CLIPBOARD_ITEM_CAN_NOT_BE_EDITED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CONFIRM_REMOVAL_CAN_DELETE_0 = "GUI_CONFIRM_REMOVAL_CAN_DELETE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CONFIRM_REMOVAL_CAPTION_0 = "GUI_CONFIRM_REMOVAL_CAPTION_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CONFIRM_REMOVAL_DELETE_CHECKBOX_0 = "GUI_CONFIRM_REMOVAL_DELETE_CHECKBOX_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CONFIRM_REMOVAL_TEXT_0 = "GUI_CONFIRM_REMOVAL_TEXT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_COPY_MODEL_TITLE_WRAPPER_1 = "GUI_COPY_MODEL_TITLE_WRAPPER_1";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_DIALOG_LEAVE_NOT_SAVED_0 = "GUI_DIALOG_LEAVE_NOT_SAVED_0";
 
     /** Message constant for key in the resource bundle. */
@@ -82,10 +121,10 @@ public final class Messages {
     public static final String GUI_DIALOG_PUBLISH_NOT_SAVED_0 = "GUI_DIALOG_PUBLISH_NOT_SAVED_0";
 
     /** Message constant for key in the resource bundle. */
-    public static final String GUI_DIALOG_RELOAD_TITLE_0 = "GUI_DIALOG_RELOAD_TITLE_0";
+    public static final String GUI_DIALOG_RELOAD_TEXT_0 = "GUI_DIALOG_RELOAD_TEXT_0";
 
     /** Message constant for key in the resource bundle. */
-    public static final String GUI_DIALOG_RELOAD_TEXT_0 = "GUI_DIALOG_RELOAD_TEXT_0";
+    public static final String GUI_DIALOG_RELOAD_TITLE_0 = "GUI_DIALOG_RELOAD_TITLE_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_DIALOG_RESET_TITLE_0 = "GUI_DIALOG_RESET_TITLE_0";
@@ -95,6 +134,12 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_DIALOG_SAVE_QUESTION_0 = "GUI_DIALOG_SAVE_QUESTION_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_EDIT_SMALL_ELEMENTS_0 = "GUI_EDIT_SMALL_ELEMENTS_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_FORMATTERS_LEGEND_0 = "GUI_FORMATTERS_LEGEND_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_GROUPCONTAINER_CAPTION_0 = "GUI_GROUPCONTAINER_CAPTION_0";
@@ -109,10 +154,22 @@ public final class Messages {
     public static final String GUI_GROUPCONTAINER_LOADING_DATA_0 = "GUI_GROUPCONTAINER_LOADING_DATA_0";
 
     /** Message constant for key in the resource bundle. */
-    public static final String GUI_MODEL_SELECT_TITLE_0 = "GUI_MODEL_SELECT_TITLE_0";
+    public static final String GUI_INHERITANCECONTAINER_CAPTION_0 = "GUI_INHERITANCECONTAINER_CAPTION_0";
 
     /** Message constant for key in the resource bundle. */
-    public static final String GUI_MODEL_SELECT_MESSAGE_0 = "GUI_MODEL_SELECT_MESSAGE_0";
+    public static final String GUI_INHERITANCECONTAINER_CONFIG_NAME_0 = "GUI_INHERITANCECONTAINER_CONFIG_NAME_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_INHERITANCECONTAINER_HIDE_ELEMENTS_0 = "GUI_INHERITANCECONTAINER_HIDE_ELEMENTS_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_INHERITANCECONTAINER_NO_HIDDEN_ELEMENTS_0 = "GUI_INHERITANCECONTAINER_NO_HIDDEN_ELEMENTS_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_INHERITANCECONTAINER_SHOW_HIDDEN_0 = "GUI_INHERITANCECONTAINER_SHOW_HIDDEN_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_KEEP_ELEMENT_0 = "GUI_KEEP_ELEMENT_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_LOCK_FAIL_0 = "GUI_LOCK_FAIL_0";
@@ -133,6 +190,9 @@ public final class Messages {
     public static final String GUI_NOTIFICATION_GROUP_CONTAINER_SAVED_0 = "GUI_NOTIFICATION_GROUP_CONTAINER_SAVED_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_NOTIFICATION_INHERITANCE_CONTAINER_SAVED_0 = "GUI_NOTIFICATION_INHERITANCE_CONTAINER_SAVED_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_NOTIFICATION_PAGE_SAVED_0 = "GUI_NOTIFICATION_PAGE_SAVED_0";
 
     /** Message constant for key in the resource bundle. */
@@ -146,6 +206,12 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_PROPERTY_DIALOG_TITLE_0 = "GUI_PROPERTY_DIALOG_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SELECT_FORMATTER_LABEL_0 = "GUI_SELECT_FORMATTER_LABEL_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SETTINGS_LEGEND_0 = "GUI_SETTINGS_LEGEND_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_TAB_FAVORITES_DESCRIPTION_0 = "GUI_TAB_FAVORITES_DESCRIPTION_0";
@@ -162,20 +228,14 @@ public final class Messages {
     /** Message constant for key in the resource bundle. */
     public static final String GUI_TAB_RECENT_TITLE_0 = "GUI_TAB_RECENT_TITLE_0";
 
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_TEMPLATE_CONTEXT_NO_VARIANT_0 = "GUI_TEMPLATE_CONTEXT_NO_VARIANT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_TITLE_INHERITED_FROM_1 = "GUI_TITLE_INHERITED_FROM_1";
+
     /** Name of the used resource bundle. */
     private static final String BUNDLE_NAME = "org.opencms.ade.containerpage.clientmessages";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String ERR_LOCK_RESOURCE_CHANGED_BY_1 = "ERR_LOCK_RESOURCE_CHANGED_BY_1";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String ERR_LOCK_RESOURCE_LOCKED_BY_1 = "ERR_LOCK_RESOURCE_LOCKED_BY_1";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String ERR_LOCK_TITLE_RESOURCE_CHANGED_0 = "ERR_LOCK_TITLE_RESOURCE_CHANGED_0";
-
-    /** Message constant for key in the resource bundle. */
-    public static final String ERR_LOCK_TITLE_RESOURCE_LOCKED_0 = "ERR_LOCK_TITLE_RESOURCE_LOCKED_0";
 
     /** Static instance member. */
     private static CmsMessages INSTANCE;

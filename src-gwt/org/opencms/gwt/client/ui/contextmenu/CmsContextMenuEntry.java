@@ -27,7 +27,7 @@
 
 package org.opencms.gwt.client.ui.contextmenu;
 
-import org.opencms.gwt.client.util.CmsCollectionUtil;
+import org.opencms.gwt.client.util.CmsClientCollectionUtil;
 import org.opencms.gwt.shared.CmsContextMenuEntryBean;
 import org.opencms.util.CmsUUID;
 
@@ -45,9 +45,6 @@ public class CmsContextMenuEntry implements I_CmsContextMenuEntry {
 
     /** The context menu handler. */
     private I_CmsContextMenuHandler m_handler;
-
-    /** The CSS image class for the icon in front of the label of this entry. */
-    private String m_imageClass;
 
     /** The command for this entry. */
     private I_CmsContextMenuCommand m_menuCommand;
@@ -68,9 +65,6 @@ public class CmsContextMenuEntry implements I_CmsContextMenuEntry {
     public CmsContextMenuEntry(I_CmsContextMenuHandler handler, CmsUUID structureId, I_CmsContextMenuCommand menuCommand) {
 
         m_menuCommand = menuCommand;
-        if (m_menuCommand != null) {
-            setImageClass(m_menuCommand.getCommandIconClass());
-        }
         m_handler = handler;
         m_structureId = structureId;
     }
@@ -86,6 +80,18 @@ public class CmsContextMenuEntry implements I_CmsContextMenuEntry {
     }
 
     /**
+     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry#generateMenuItem()
+     */
+    public A_CmsContextMenuItem generateMenuItem() {
+
+        if ((m_menuCommand != null) && m_menuCommand.hasItemWidget() && m_bean.isActive()) {
+            return m_menuCommand.getItemWidget(m_structureId, m_handler, m_bean);
+        } else {
+            return new CmsContextMenuItem(this);
+        }
+    }
+
+    /**
      * Returns the bean.<p>
      *
      * @return the bean
@@ -96,21 +102,12 @@ public class CmsContextMenuEntry implements I_CmsContextMenuEntry {
     }
 
     /**
-     * Returns the imageClass.<p>
-     *
-     * @return the imageClass
+     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry#getIconClass()
      */
-    public String getImageClass() {
+    public String getIconClass() {
 
-        return m_imageClass;
-    }
+        return m_bean.getIconClass();
 
-    /**
-     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry#getImagePath()
-     */
-    public String getImagePath() {
-
-        return m_bean.getImagePath();
     }
 
     /**
@@ -158,7 +155,7 @@ public class CmsContextMenuEntry implements I_CmsContextMenuEntry {
      */
     public boolean hasSubMenu() {
 
-        if (!CmsCollectionUtil.isEmptyOrNull(getSubMenu())) {
+        if (!CmsClientCollectionUtil.isEmptyOrNull(getSubMenu())) {
             return true;
         }
         return false;
@@ -196,16 +193,6 @@ public class CmsContextMenuEntry implements I_CmsContextMenuEntry {
     public void setBean(CmsContextMenuEntryBean bean) {
 
         m_bean = bean;
-    }
-
-    /**
-     * Sets the imageClass.<p>
-     *
-     * @param imageClass the imageClass to set
-     */
-    public void setImageClass(String imageClass) {
-
-        m_imageClass = imageClass;
     }
 
     /**

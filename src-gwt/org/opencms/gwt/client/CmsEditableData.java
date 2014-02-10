@@ -51,11 +51,17 @@ public class CmsEditableData implements I_CmsEditableData {
     /** The new title. */
     private String m_newTitle;
 
+    /** The no edit reason. */
+    private String m_noEditReason;
+
     /** The site path. */
     private String m_sitePath;
 
     /** The structure id. */
     private CmsUUID m_structureId;
+
+    /** The unreleased or expired flag. */
+    private boolean m_unreleaseOrExpired;
 
     /**
      * @see org.opencms.gwt.client.I_CmsEditableData#getEditId()
@@ -98,6 +104,14 @@ public class CmsEditableData implements I_CmsEditableData {
     }
 
     /**
+     * @see org.opencms.gwt.client.I_CmsEditableData#getNoEditReason()
+     */
+    public String getNoEditReason() {
+
+        return m_noEditReason;
+    }
+
+    /**
      * @see org.opencms.gwt.client.I_CmsEditableData#getSitePath()
      */
     public String getSitePath() {
@@ -111,6 +125,14 @@ public class CmsEditableData implements I_CmsEditableData {
     public CmsUUID getStructureId() {
 
         return m_structureId;
+    }
+
+    /**
+     * @see org.opencms.gwt.client.I_CmsEditableData#isUnreleasedOrExpired()
+     */
+    public boolean isUnreleasedOrExpired() {
+
+        return m_unreleaseOrExpired;
     }
 
     /**
@@ -164,6 +186,16 @@ public class CmsEditableData implements I_CmsEditableData {
     }
 
     /**
+     * Sets the no edit reason.<p>
+     *
+     * @param noEditReason the no edit reason to set
+     */
+    public void setNoEditReason(String noEditReason) {
+
+        m_noEditReason = noEditReason;
+    }
+
+    /**
      * @see org.opencms.gwt.client.I_CmsEditableData#setSitePath(java.lang.String)
      */
     public void setSitePath(String sitePath) {
@@ -180,5 +212,15 @@ public class CmsEditableData implements I_CmsEditableData {
     public void setStructureId(CmsUUID structureId) {
 
         m_structureId = structureId;
+    }
+
+    /**
+     * Sets the unreleased or expired flag.<p>
+     * 
+     * @param unreleaseOrExpired the unreleased or expired flag
+     */
+    public void setUnreleaseOrExpired(boolean unreleaseOrExpired) {
+
+        m_unreleaseOrExpired = unreleaseOrExpired;
     }
 }

@@ -30,7 +30,9 @@ package org.opencms.gwt.client;
 import org.opencms.db.CmsResourceState;
 import org.opencms.gwt.client.rpc.CmsRpcAction;
 import org.opencms.gwt.client.rpc.CmsRpcPrefetcher;
+import org.opencms.gwt.client.ui.CmsErrorDialog;
 import org.opencms.gwt.client.ui.CmsNotification;
+import org.opencms.gwt.client.ui.input.upload.CmsFileInfo;
 import org.opencms.gwt.shared.CmsCoreData;
 import org.opencms.gwt.shared.CmsLockInfo;
 import org.opencms.gwt.shared.rpc.I_CmsCoreService;
@@ -41,8 +43,15 @@ import org.opencms.util.CmsStringUtil;
 import org.opencms.util.CmsUUID;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.NodeList;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.rpc.SerializationException;
 import com.google.gwt.user.client.rpc.ServiceDefTarget;
+import com.google.web.bindery.event.shared.Event;
+import com.google.web.bindery.event.shared.EventBus;
+import com.google.web.bindery.event.shared.SimpleEventBus;
 
 /**
  * Client side core data provider.<p>
@@ -68,15 +77,21 @@ public final class CmsCoreProvider extends CmsCoreData {
     /** The client time when the data is loaded. */
     private long m_clientTime;
 
+    /** Event bus for client side events. */
+    private EventBus m_eventBus = new SimpleEventBus();
+
     /** Flag which indicates whether we are in Internet Explorer 7. */
     private boolean m_isIe7;
 
     /**
      * Prevent instantiation.<p> 
+     * 
+     * @throws SerializationException if deserialization failed 
      */
-    protected CmsCoreProvider() {
+    protected CmsCoreProvider()
+    throws SerializationException {
 
-        super((CmsCoreData)CmsRpcPrefetcher.getSerializedObject(getService(), DICT_NAME));
+        super((CmsCoreData)CmsRpcPrefetcher.getSerializedObjectFromDictionary(getService(), DICT_NAME));
         m_clientTime = System.currentTimeMillis();
 
         I_CmsUserAgentInfo userAgentInfo = GWT.create(I_CmsUserAgentInfo.class);
@@ -91,9 +106,35 @@ public final class CmsCoreProvider extends CmsCoreData {
     public static CmsCoreProvider get() {
 
         if (INSTANCE == null) {
-            INSTANCE = new CmsCoreProvider();
+            try {
+                INSTANCE = new CmsCoreProvider();
+            } catch (SerializationException e) {
+                CmsErrorDialog.handleException(new Exception(
+                    "Deserialization of core data failed. This may be caused by expired java-script resources, please clear your browser cache and try again.",
+                    e));
+            }
         }
         return INSTANCE;
+    }
+
+    /**
+     * Gets the content attribute of a meta tag with a given name.<p>
+     * 
+     * @param nameToFind the name of the meta tag
+     *  
+     * @return the content attribute value of the found meta tag, or null if no meta tag with the given name was found 
+     */
+    public static String getMetaElementContent(String nameToFind) {
+
+        NodeList<Element> metas = Document.get().getDocumentElement().getElementsByTagName("meta");
+        for (int i = 0; i < metas.getLength(); i++) {
+            Element meta = metas.getItem(i);
+            String name = meta.getAttribute("name");
+            if (nameToFind.equals(name)) {
+                return meta.getAttribute("content");
+            }
+        }
+        return null;
     }
 
     /**
@@ -183,6 +224,16 @@ public final class CmsCoreProvider extends CmsCoreData {
         action.execute();
     }
 
+    /** 
+     * Fires a client side event.<p>
+     * 
+     * @param event the event to fire 
+     */
+    public void fireEvent(Event<?> event) {
+
+        m_eventBus.fireEvent(event);
+    }
+
     /**
      * Returns the adjusted site root for a resource using the provided site root as a base.<p>
      * 
@@ -212,6 +263,16 @@ public final class CmsCoreProvider extends CmsCoreData {
     public long getEstimatedServerTime() {
 
         return m_clientTime + (System.currentTimeMillis() - m_clientTime);
+    }
+
+    /**
+     * Gets the core event bus.<p>
+     * 
+     * @return the core event bus 
+     */
+    public EventBus getEventBus() {
+
+        return m_eventBus;
     }
 
     /**
@@ -245,6 +306,23 @@ public final class CmsCoreProvider extends CmsCoreData {
             }
         };
         action.execute();
+    }
+
+    /**
+     * Returns the resource type name for a given filename.<p>
+     * 
+     * @param file the file info
+     * 
+     * @return the resource type name
+     */
+    public String getResourceType(CmsFileInfo file) {
+
+        String typeName = null;
+        typeName = getExtensionMapping().get(file.getFileSuffix().toLowerCase());
+        if (typeName == null) {
+            typeName = "plain";
+        }
+        return typeName;
     }
 
     /**
@@ -311,6 +389,89 @@ public final class CmsCoreProvider extends CmsCoreData {
     }
 
     /**
+     * Tries to lock a resource with a given structure id and returns an error if the locking fails.<p>
+     * 
+     * @param structureId the structure id of the resource to lock 
+     * 
+     * @return the error message or null if the locking succeeded 
+     */
+    public String lockOrReturnError(final CmsUUID structureId) {
+
+        CmsRpcAction<String> lockAction = new CmsRpcAction<String>() {
+
+            /**
+            * @see org.opencms.gwt.client.rpc.CmsRpcAction#execute()
+            */
+            @Override
+            public void execute() {
+
+                setLoadingMessage(Messages.get().key(Messages.GUI_LOCKING_0));
+                start(200, false);
+                getService().lockTemp(structureId, this);
+            }
+
+            /**
+            * @see org.opencms.gwt.client.rpc.CmsRpcAction#onResponse(java.lang.Object)
+            */
+            @Override
+            public void onResponse(String result) {
+
+                stop(false);
+                if (result == null) {
+                    // ok
+                    return;
+                }
+                // unable to lock
+                final String text = Messages.get().key(Messages.GUI_LOCK_NOTIFICATION_2, structureId, result);
+                CmsNotification.get().sendDeferred(CmsNotification.Type.WARNING, text);
+            }
+        };
+        return lockAction.executeSync();
+    }
+
+    /**
+     * Tries to lock a resource with a given site path and returns an error if the locking fails.<p>
+     * If the resource does not exist yet, the next existing ancestor folder will be checked if it is lockable.<p>
+     * 
+     * @param sitePath the site path of the resource to lock 
+     * 
+     * @return the error message or null if the locking succeeded 
+     */
+    public String lockOrReturnError(final String sitePath) {
+
+        CmsRpcAction<String> lockAction = new CmsRpcAction<String>() {
+
+            /**
+            * @see org.opencms.gwt.client.rpc.CmsRpcAction#execute()
+            */
+            @Override
+            public void execute() {
+
+                setLoadingMessage(Messages.get().key(Messages.GUI_LOCKING_0));
+                start(200, false);
+                getService().lockIfExists(sitePath, this);
+            }
+
+            /**
+            * @see org.opencms.gwt.client.rpc.CmsRpcAction#onResponse(java.lang.Object)
+            */
+            @Override
+            public void onResponse(String result) {
+
+                stop(false);
+                if (result == null) {
+                    // ok
+                    return;
+                }
+                // unable to lock
+                final String text = Messages.get().key(Messages.GUI_LOCK_NOTIFICATION_2, sitePath, result);
+                CmsNotification.get().sendDeferred(CmsNotification.Type.WARNING, text);
+            }
+        };
+        return lockAction.executeSync();
+    }
+
+    /**
      * Locks the given resource with a temporary lock, synchronously and additionally checking that 
      * the given resource has not been modified after the given timestamp.<p>
      * 
@@ -363,7 +524,8 @@ public final class CmsCoreProvider extends CmsCoreData {
     public String removeSiteRoot(String rootPath) {
 
         String siteRoot = getAdjustedSiteRoot(getSiteRoot(), rootPath);
-        if ((siteRoot == getSiteRoot())
+        if ((siteRoot != null)
+            && (siteRoot.equals(getSiteRoot()))
             && rootPath.startsWith(siteRoot)
             && ((rootPath.length() == siteRoot.length()) || (rootPath.charAt(siteRoot.length()) == '/'))) {
             rootPath = rootPath.substring(siteRoot.length());
@@ -445,6 +607,48 @@ public final class CmsCoreProvider extends CmsCoreData {
                 }
                 // unable to lock
                 String text = Messages.get().key(Messages.GUI_UNLOCK_NOTIFICATION_2, structureId.toString(), result);
+                CmsNotification.get().send(CmsNotification.Type.WARNING, text);
+            }
+        };
+        return unlockAction.executeSync() == null;
+    }
+
+    /**
+     * Unlocks the given resource, synchronously.<p>
+     * 
+     * @param sitePath the resource site path
+     * 
+     * @return <code>true</code> if succeeded, if not a a warning is already shown to the user
+     */
+    public boolean unlock(final String sitePath) {
+
+        // lock the sitemap
+        CmsRpcAction<String> unlockAction = new CmsRpcAction<String>() {
+
+            /**
+            * @see org.opencms.gwt.client.rpc.CmsRpcAction#execute()
+            */
+            @Override
+            public void execute() {
+
+                setLoadingMessage(Messages.get().key(Messages.GUI_UNLOCKING_0));
+                start(200, false);
+                getService().unlock(sitePath, this);
+            }
+
+            /**
+            * @see org.opencms.gwt.client.rpc.CmsRpcAction#onResponse(java.lang.Object)
+            */
+            @Override
+            public void onResponse(String result) {
+
+                stop(false);
+                if (result == null) {
+                    // ok
+                    return;
+                }
+                // unable to lock
+                String text = Messages.get().key(Messages.GUI_UNLOCK_NOTIFICATION_2, sitePath, result);
                 CmsNotification.get().send(CmsNotification.Type.WARNING, text);
             }
         };

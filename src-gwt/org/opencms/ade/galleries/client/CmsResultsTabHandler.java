@@ -70,6 +70,18 @@ public class CmsResultsTabHandler extends A_CmsTabHandler {
     }
 
     /**
+     * Returns if a preview is available for the given resource type.<p>
+     * 
+     * @param resourceType the requested resource type
+     * 
+     * @return <code>true</code> if a preview is available for the given resource type
+     */
+    public boolean hasPreview(String resourceType) {
+
+        return m_controller.hasPreview(resourceType);
+    }
+
+    /**
      * Returns if resource entries in the search result are selectable.<p>
      * 
      * @return if resource entries in the search result are selectable
@@ -141,14 +153,19 @@ public class CmsResultsTabHandler extends A_CmsTabHandler {
     }
 
     /**
-     * Selects the given resource and sets its path into the xml-content field or editor link.<p>
-     * 
-     * @param resourcePath the item resource path 
-     * @param title the resource title
-     * @param resourceType the item resource type
+     * @see org.opencms.ade.galleries.client.A_CmsTabHandler#removeParam(java.lang.String)
      */
-    public void selectResource(String resourcePath, String title, String resourceType) {
+    @Override
+    public void removeParam(String paramKey) {
 
-        m_controller.selectResource(resourcePath, title, resourceType);
+        // nothing to do
+    }
+
+    /**
+     * Updates the result tab.<p>
+     */
+    public void updateResult() {
+
+        m_controller.updateResultsTab(false);
     }
 }

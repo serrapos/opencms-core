@@ -27,46 +27,77 @@
 
 package org.opencms.gwt;
 
+import org.opencms.ade.galleries.CmsPreviewService;
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsProject;
 import org.opencms.file.CmsProperty;
 import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsResource;
+import org.opencms.file.CmsResource.CmsResourceUndoMode;
 import org.opencms.file.CmsResourceFilter;
+import org.opencms.file.CmsUser;
+import org.opencms.file.types.CmsResourceTypeBinary;
+import org.opencms.file.types.CmsResourceTypeImage;
+import org.opencms.file.types.CmsResourceTypePlain;
 import org.opencms.file.types.CmsResourceTypeXmlContainerPage;
+import org.opencms.file.types.CmsResourceTypeXmlContent;
+import org.opencms.file.types.CmsResourceTypeXmlPage;
 import org.opencms.file.types.I_CmsResourceType;
 import org.opencms.gwt.shared.CmsAvailabilityInfoBean;
 import org.opencms.gwt.shared.CmsBrokenLinkBean;
 import org.opencms.gwt.shared.CmsDeleteResourceBean;
+import org.opencms.gwt.shared.CmsGwtConstants;
 import org.opencms.gwt.shared.CmsListInfoBean;
 import org.opencms.gwt.shared.CmsListInfoBean.LockIcon;
 import org.opencms.gwt.shared.CmsLockReportInfo;
 import org.opencms.gwt.shared.CmsPrepareEditResponse;
+import org.opencms.gwt.shared.CmsPreviewInfo;
 import org.opencms.gwt.shared.CmsPrincipalBean;
+import org.opencms.gwt.shared.CmsRenameInfoBean;
+import org.opencms.gwt.shared.CmsReplaceInfo;
+import org.opencms.gwt.shared.CmsResourceStatusBean;
+import org.opencms.gwt.shared.CmsRestoreInfoBean;
 import org.opencms.gwt.shared.CmsVfsEntryBean;
+import org.opencms.gwt.shared.alias.CmsAliasBean;
 import org.opencms.gwt.shared.property.CmsClientProperty;
 import org.opencms.gwt.shared.property.CmsPropertiesBean;
 import org.opencms.gwt.shared.property.CmsPropertyChangeSet;
 import org.opencms.gwt.shared.property.CmsPropertyModification;
 import org.opencms.gwt.shared.rpc.I_CmsVfsService;
+import org.opencms.i18n.CmsLocaleManager;
 import org.opencms.i18n.CmsMessages;
+import org.opencms.jsp.CmsJspTagContainer;
+import org.opencms.loader.CmsImageScaler;
 import org.opencms.loader.CmsLoaderException;
 import org.opencms.lock.CmsLock;
+import org.opencms.lock.CmsLockActionRecord;
+import org.opencms.lock.CmsLockActionRecord.LockChange;
 import org.opencms.lock.CmsLockType;
 import org.opencms.main.CmsException;
+import org.opencms.main.CmsIllegalArgumentException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
 import org.opencms.relations.CmsRelation;
 import org.opencms.relations.CmsRelationFilter;
 import org.opencms.security.CmsAccessControlEntry;
+import org.opencms.security.CmsPermissionSet;
 import org.opencms.security.I_CmsPrincipal;
+import org.opencms.util.CmsDateUtil;
 import org.opencms.util.CmsMacroResolver;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.util.CmsUUID;
+import org.opencms.workplace.explorer.CmsExplorerTypeSettings;
 import org.opencms.workplace.explorer.CmsResourceUtil;
+import org.opencms.xml.containerpage.CmsXmlContainerPageFactory;
+import org.opencms.xml.content.CmsXmlContentFactory;
 import org.opencms.xml.content.CmsXmlContentProperty;
+import org.opencms.xml.page.CmsXmlPageFactory;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -75,9 +106,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.FactoryUtils;
 import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.commons.logging.Log;
+
+import com.google.common.collect.Maps;
 
 /**
  * A service class for reading the VFS tree.<p>
@@ -89,8 +123,185 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
     /** The static log object for this class. */
     private static final Log LOG = CmsLog.getLog(CmsVfsService.class);
 
+    /** The allowed preview mime types. Checked for binary content only. */
+    private static Set<String> m_previewMimeTypes = new HashSet<String>();
+
     /** Serialization id. */
     private static final long serialVersionUID = -383483666952834348L;
+
+    /** A helper object containing the implementations of the alias-related service methods. */
+    private CmsAliasHelper m_aliasHelper = new CmsAliasHelper();
+
+    /** Initialize the preview mime types. */
+    static {
+        CollectionUtils.addAll(m_previewMimeTypes, (new String[] {
+            "application/msword",
+            "application/pdf",
+            "application/excel",
+            "application/mspowerpoint",
+            "application/zip"}));
+    }
+
+    /**
+     * Adds the lock state information to the resource info bean.<p>
+     * 
+     * @param cms the CMS context
+     * @param resource the resource to get the page info for
+     * @param resourceInfo the resource info to add the lock state to
+     * 
+     * @return the resource info bean
+     * 
+     * @throws CmsException if something else goes wrong 
+     */
+    public static CmsListInfoBean addLockInfo(CmsObject cms, CmsResource resource, CmsListInfoBean resourceInfo)
+    throws CmsException {
+
+        CmsResourceUtil resourceUtil = new CmsResourceUtil(cms, resource);
+        CmsLock lock = resourceUtil.getLock();
+        LockIcon icon = LockIcon.NONE;
+        String iconTitle = null;
+        CmsLockType lockType = lock.getType();
+        if (!lock.isOwnedBy(cms.getRequestContext().getCurrentUser())) {
+            if ((lockType == CmsLockType.EXCLUSIVE)
+                || (lockType == CmsLockType.INHERITED)
+                || (lockType == CmsLockType.TEMPORARY)) {
+                icon = LockIcon.CLOSED;
+            } else if ((lockType == CmsLockType.SHARED_EXCLUSIVE) || (lockType == CmsLockType.SHARED_INHERITED)) {
+                icon = LockIcon.SHARED_CLOSED;
+            }
+        } else {
+            if ((lockType == CmsLockType.EXCLUSIVE)
+                || (lockType == CmsLockType.INHERITED)
+                || (lockType == CmsLockType.TEMPORARY)) {
+                icon = LockIcon.OPEN;
+            } else if ((lockType == CmsLockType.SHARED_EXCLUSIVE) || (lockType == CmsLockType.SHARED_INHERITED)) {
+                icon = LockIcon.SHARED_OPEN;
+            }
+        }
+        if ((lock.getUserId() != null) && !lock.getUserId().isNullUUID()) {
+            CmsUser lockOwner = cms.readUser(lock.getUserId());
+            iconTitle = Messages.get().getBundle().key(Messages.GUI_LOCKED_BY_1, lockOwner.getFullName());
+            resourceInfo.addAdditionalInfo(
+                Messages.get().getBundle().key(Messages.GUI_LOCKED_OWNER_0),
+                lockOwner.getFullName());
+        }
+        resourceInfo.setLockIcon(icon);
+        resourceInfo.setLockIconTitle(iconTitle);
+        if (icon != LockIcon.NONE) {
+            resourceInfo.setTitle(resourceInfo.getTitle() + " (" + iconTitle + ")");
+        }
+        return resourceInfo;
+    }
+
+    /**
+     * Formats a date given the current user's workplace locale.<p>
+     * 
+     * @param cms the current CMS context  
+     * @param date the date to format
+     * 
+     * @return the formatted date 
+     */
+    public static String formatDateTime(CmsObject cms, long date) {
+
+        return CmsDateUtil.getDateTime(
+            new Date(date),
+            DateFormat.MEDIUM,
+            OpenCms.getWorkplaceManager().getWorkplaceLocale(cms));
+    }
+
+    /**
+     * Returns the no preview reason if there is any.<p>
+     * 
+     * @param cms the current cms context
+     * @param resource the resource to check
+     * 
+     * @return the no preview reason if there is any
+     */
+    public static String getNoPreviewReason(CmsObject cms, CmsResource resource) {
+
+        String noPreviewReason = null;
+        if (resource.getState().isDeleted()) {
+            noPreviewReason = Messages.get().getBundle().key(Messages.GUI_NO_PREVIEW_DELETED_0);
+        } else if (resource.isFolder()) {
+            noPreviewReason = Messages.get().getBundle().key(Messages.GUI_NO_PREVIEW_FOLDER_0);
+        } else {
+            String siteRoot = OpenCms.getSiteManager().getSiteRoot(resource.getRootPath());
+            // previewing only resources that are in the same site or don't have a site root at all
+            if ((siteRoot != null) && !siteRoot.equals(cms.getRequestContext().getSiteRoot())) {
+                noPreviewReason = Messages.get().getBundle().key(Messages.GUI_NO_PREVIEW_OTHER_SITE_0);
+            } else if (resource.getTypeId() == CmsResourceTypeBinary.getStaticTypeId()) {
+                String mimeType = OpenCms.getResourceManager().getMimeType(resource.getName(), null, "empty");
+                if (!m_previewMimeTypes.contains(mimeType)) {
+                    noPreviewReason = Messages.get().getBundle().key(Messages.GUI_NO_PREVIEW_WRONG_MIME_TYPE_0);
+                }
+            }
+        }
+        return noPreviewReason;
+    }
+
+    /**
+     * Gets page information of a resource.<p>
+     * 
+     * @param cms the CMS context
+     * @param res the resource
+     * 
+     * @return gets the page information for the given resource 
+     * 
+     * @throws CmsException
+     * @throws CmsLoaderException
+     */
+    public static CmsListInfoBean getPageInfo(CmsObject cms, CmsResource res) throws CmsException, CmsLoaderException {
+
+        CmsListInfoBean result = new CmsListInfoBean();
+
+        result.setResourceState(res.getState());
+
+        String title = cms.readPropertyObject(res, CmsPropertyDefinition.PROPERTY_TITLE, false).getValue();
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(title)) {
+            result.setTitle(title);
+        } else {
+            result.setTitle(res.getName());
+        }
+        result.setSubTitle(cms.getSitePath(res));
+        String secure = cms.readPropertyObject(res, CmsPropertyDefinition.PROPERTY_SECURE, true).getValue();
+        if (Boolean.parseBoolean(secure)) {
+            result.setStateIcon(CmsListInfoBean.StateIcon.secure);
+        } else {
+            String export = cms.readPropertyObject(res, CmsPropertyDefinition.PROPERTY_EXPORT, true).getValue();
+            if (Boolean.parseBoolean(export)) {
+                result.setStateIcon(CmsListInfoBean.StateIcon.export);
+            } else {
+                result.setStateIcon(CmsListInfoBean.StateIcon.standard);
+            }
+        }
+        String resTypeName = OpenCms.getResourceManager().getResourceType(res.getTypeId()).getTypeName();
+        String key = OpenCms.getWorkplaceManager().getExplorerTypeSetting(resTypeName).getKey();
+        Locale currentLocale = cms.getRequestContext().getLocale();
+        CmsMessages messages = OpenCms.getWorkplaceManager().getMessages(currentLocale);
+        String resTypeNiceName = messages.key(key);
+        result.addAdditionalInfo(messages.key(org.opencms.workplace.commons.Messages.GUI_LABEL_TYPE_0), resTypeNiceName);
+        result.setResourceType(resTypeName);
+        return result;
+    }
+
+    /**
+     * Returns a bean to display the {@link org.opencms.gwt.client.ui.CmsListItemWidget} including the lock state.<p>
+     * 
+     * @param cms the CMS context
+     * @param resource the resource to get the page info for
+     * 
+     * @return a bean to display the {@link org.opencms.gwt.client.ui.CmsListItemWidget}.<p>
+     * 
+     * @throws CmsLoaderException if the resource type could not be found
+     * @throws CmsException if something else goes wrong 
+     */
+    public static CmsListInfoBean getPageInfoWithLock(CmsObject cms, CmsResource resource)
+    throws CmsLoaderException, CmsException {
+
+        CmsListInfoBean result = getPageInfo(cms, resource);
+        addLockInfo(cms, resource, result);
+        return result;
+    }
 
     /**
      * Processes a file path, which may have macros in it, so it can be opened by the XML content editor.<p>
@@ -113,31 +324,42 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
     }
 
     /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#createPropertyDefinition(java.lang.String)
+     */
+    public void createPropertyDefinition(String name) throws CmsRpcException {
+
+        CmsObject cms = getCmsObject();
+        try {
+            cms.createPropertyDefinition(name.trim());
+        } catch (Exception e) {
+            error(e);
+        }
+
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#deleteResource(org.opencms.util.CmsUUID)
+     */
+    public void deleteResource(CmsUUID structureId) throws CmsRpcException {
+
+        try {
+            CmsObject cms = getCmsObject();
+            CmsResource res = cms.readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
+            deleteResource(res);
+        } catch (Throwable e) {
+            error(e);
+        }
+    }
+
+    /**
      * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#deleteResource(java.lang.String)
      */
     public void deleteResource(String sitePath) throws CmsRpcException {
 
         try {
             CmsResource res = getCmsObject().readResource(sitePath, CmsResourceFilter.IGNORE_EXPIRATION);
-            String path = null;
-            try {
-                path = getCmsObject().getSitePath(res);
-                getCmsObject().lockResource(path);
-                getCmsObject().deleteResource(path, CmsResource.DELETE_PRESERVE_SIBLINGS);
-            } catch (Exception e) {
-                // should never happen
-                error(e);
-            } finally {
-                try {
-                    if (path != null) {
-                        getCmsObject().unlockResource(path);
-                    }
-                } catch (Exception e) {
-                    // should really never happen
-                    LOG.debug(e.getLocalizedMessage(), e);
-                }
-            }
-        } catch (CmsException e) {
+            deleteResource(res);
+        } catch (Throwable e) {
             error(e);
         }
     }
@@ -148,7 +370,7 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
     public void forceUnlock(CmsUUID structureId) throws CmsRpcException {
 
         try {
-            CmsResource resource = getCmsObject().readResource(structureId);
+            CmsResource resource = getCmsObject().readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
             // get the current lock
             CmsLock currentLock = getCmsObject().getLock(resource);
             // check if the resource is locked at all
@@ -158,10 +380,22 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
                 getCmsObject().changeLock(resource);
             }
             getCmsObject().unlockResource(resource);
-        } catch (CmsException e) {
+        } catch (Throwable e) {
             error(e);
         }
+    }
 
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#getAliasesForPage(org.opencms.util.CmsUUID)
+     */
+    public List<CmsAliasBean> getAliasesForPage(CmsUUID uuid) throws CmsRpcException {
+
+        try {
+            return m_aliasHelper.getAliasesForPage(uuid);
+        } catch (Throwable e) {
+            error(e);
+            return null;
+        }
     }
 
     /**
@@ -172,7 +406,7 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
         try {
             CmsResource res = getCmsObject().readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
             return getAvailabilityInfo(res);
-        } catch (CmsException e) {
+        } catch (Throwable e) {
             error(e);
             return null; // will never be reached 
         }
@@ -186,7 +420,22 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
         try {
             CmsResource res = getCmsObject().readResource(vfsPath, CmsResourceFilter.IGNORE_EXPIRATION);
             return getAvailabilityInfo(res);
-        } catch (CmsException e) {
+        } catch (Throwable e) {
+            error(e);
+            return null; // will never be reached 
+        }
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#getBrokenLinks(org.opencms.util.CmsUUID)
+     */
+    public CmsDeleteResourceBean getBrokenLinks(CmsUUID structureId) throws CmsRpcException {
+
+        try {
+            CmsResource entryResource = getCmsObject().readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
+
+            return getBrokenLinks(entryResource);
+        } catch (Throwable e) {
             error(e);
             return null; // will never be reached 
         }
@@ -199,47 +448,9 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
 
         try {
             CmsResource entryResource = getCmsObject().readResource(sitePath, CmsResourceFilter.IGNORE_EXPIRATION);
-            CmsDeleteResourceBean result = null;
 
-            CmsListInfoBean info = null;
-            List<CmsBrokenLinkBean> brokenLinks = null;
-
-            CmsObject cms = getCmsObject();
-            String resourceSitePath = cms.getSitePath(entryResource);
-
-            try {
-                ensureSession();
-
-                List<CmsResource> descendants = new ArrayList<CmsResource>();
-                HashSet<CmsUUID> deleteIds = new HashSet<CmsUUID>();
-
-                descendants.add(entryResource);
-                if (entryResource.isFolder()) {
-                    descendants.addAll(cms.readResources(resourceSitePath, CmsResourceFilter.IGNORE_EXPIRATION));
-                }
-                for (CmsResource deleteRes : descendants) {
-                    deleteIds.add(deleteRes.getStructureId());
-                }
-                MultiValueMap linkMap = MultiValueMap.decorate(
-                    new HashMap<Object, Object>(),
-                    FactoryUtils.instantiateFactory(HashSet.class));
-                for (CmsResource resource : descendants) {
-                    List<CmsResource> linkSources = getLinkSources(cms, resource, deleteIds);
-                    for (CmsResource source : linkSources) {
-                        linkMap.put(resource, source);
-                    }
-                }
-
-                brokenLinks = getBrokenLinkBeans(linkMap);
-                info = getPageInfo(entryResource);
-
-                result = new CmsDeleteResourceBean(resourceSitePath, info, brokenLinks);
-
-            } catch (Throwable e) {
-                error(e);
-            }
-            return result;
-        } catch (CmsException e) {
+            return getBrokenLinks(entryResource);
+        } catch (Throwable e) {
             error(e);
             return null; // will never be reached 
         }
@@ -256,10 +467,62 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
             resources.addAll(cms.getResourcesInFolder(path, CmsResourceFilter.DEFAULT));
             List<CmsVfsEntryBean> result = makeEntryBeans(resources, false);
             return result;
-        } catch (CmsException e) {
+        } catch (Throwable e) {
             error(e);
         }
         return null;
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#getDefaultProperties(java.util.List)
+     */
+    public Map<CmsUUID, Map<String, CmsXmlContentProperty>> getDefaultProperties(List<CmsUUID> structureIds)
+    throws CmsRpcException {
+
+        try {
+            return internalGetDefaultProperties(structureIds);
+        } catch (Throwable e) {
+            error(e);
+            return null;
+        }
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#getDefinedProperties()
+     */
+    public ArrayList<String> getDefinedProperties() throws CmsRpcException {
+
+        CmsObject cms = getCmsObject();
+        try {
+            List<CmsPropertyDefinition> definitions = cms.readAllPropertyDefinitions();
+            ArrayList<String> result = new ArrayList<String>();
+            for (CmsPropertyDefinition def : definitions) {
+                result.add(def.getName());
+            }
+            return result;
+        } catch (Exception e) {
+            error(e);
+            return null;
+        }
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#getFileReplaceInfo(org.opencms.util.CmsUUID)
+     */
+    public CmsReplaceInfo getFileReplaceInfo(CmsUUID structureId) throws CmsRpcException {
+
+        CmsReplaceInfo result = null;
+        try {
+            CmsObject cms = getCmsObject();
+            CmsResource res = cms.readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
+            CmsListInfoBean fileInfo = getPageInfo(res);
+            boolean isLockable = cms.getLock(res).isLockableBy(cms.getRequestContext().getCurrentUser());
+            long maxFileSize = OpenCms.getWorkplaceManager().getFileBytesMaxUploadSize(cms);
+            result = new CmsReplaceInfo(fileInfo, cms.getSitePath(res), isLockable, maxFileSize);
+        } catch (Throwable e) {
+            error(e);
+        }
+        return result;
     }
 
     /**
@@ -268,17 +531,18 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
     public CmsLockReportInfo getLockReportInfo(CmsUUID structureId) throws CmsRpcException {
 
         CmsLockReportInfo result = null;
+        CmsObject cms = getCmsObject();
         try {
-            CmsResource resource = getCmsObject().readResource(structureId);
+            CmsResource resource = cms.readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
             List<CmsListInfoBean> lockedInfos = new ArrayList<CmsListInfoBean>();
-            List<CmsResource> lockedResources = getCmsObject().getBlockingLockedResources(resource);
+            List<CmsResource> lockedResources = cms.getBlockingLockedResources(resource);
             if (lockedResources != null) {
                 for (CmsResource lockedResource : lockedResources) {
-                    lockedInfos.add(getPageInfoWithLock(lockedResource));
+                    lockedInfos.add(getPageInfoWithLock(cms, lockedResource));
                 }
             }
-            result = new CmsLockReportInfo(getPageInfoWithLock(resource), lockedInfos);
-        } catch (CmsException e) {
+            result = new CmsLockReportInfo(getPageInfoWithLock(cms, resource), lockedInfos);
+        } catch (Throwable e) {
             error(e);
         }
         return result;
@@ -292,7 +556,7 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
         try {
             CmsResource res = getCmsObject().readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
             return getPageInfo(res);
-        } catch (CmsException e) {
+        } catch (Throwable e) {
             error(e);
             return null; // will never be reached 
         }
@@ -306,9 +570,119 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
         try {
             CmsResource res = getCmsObject().readResource(vfsPath, CmsResourceFilter.IGNORE_EXPIRATION);
             return getPageInfo(res);
-        } catch (CmsException e) {
+        } catch (Throwable e) {
             error(e);
             return null; // will never be reached 
+        }
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#getPreviewInfo(org.opencms.util.CmsUUID, java.lang.String)
+     */
+    public CmsPreviewInfo getPreviewInfo(CmsUUID structureId, String locale) throws CmsRpcException {
+
+        CmsPreviewInfo result = null;
+        try {
+            result = getPreviewInfo(
+                getCmsObject().readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION),
+                CmsLocaleManager.getLocale(locale));
+        } catch (Exception e) {
+            error(e);
+        }
+        return result;
+
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#getPreviewInfo(java.lang.String, java.lang.String)
+     */
+    public CmsPreviewInfo getPreviewInfo(String sitePath, String locale) throws CmsRpcException {
+
+        CmsPreviewInfo result = null;
+        try {
+            result = getPreviewInfo(
+                getCmsObject().readResource(sitePath, CmsResourceFilter.IGNORE_EXPIRATION),
+                CmsLocaleManager.getLocale(locale));
+        } catch (Exception e) {
+            error(e);
+        }
+        return result;
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#getRenameInfo(org.opencms.util.CmsUUID)
+     */
+    public CmsRenameInfoBean getRenameInfo(CmsUUID structureId) throws CmsRpcException {
+
+        try {
+            CmsObject cms = getCmsObject();
+            CmsResource resource = cms.readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
+            CmsListInfoBean listInfo = getPageInfo(resource);
+            String sitePath = cms.getSitePath(resource);
+            return new CmsRenameInfoBean(sitePath, structureId, listInfo);
+        } catch (Throwable e) {
+            error(e);
+            return null;
+        }
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#getResourceStatus(org.opencms.util.CmsUUID, java.lang.String, boolean, java.util.List)
+     */
+    public CmsResourceStatusBean getResourceStatus(
+        CmsUUID structureId,
+        String contentLocale,
+        boolean includeTargets,
+        List<CmsUUID> additionalTargets) throws CmsRpcException {
+
+        try {
+            CmsObject cms = getCmsObject();
+            CmsDefaultResourceStatusProvider provider = new CmsDefaultResourceStatusProvider();
+            return provider.getResourceStatus(cms, structureId, contentLocale, includeTargets, additionalTargets);
+        } catch (Throwable e) {
+            error(e);
+            return null;
+        }
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#getRestoreInfo(org.opencms.util.CmsUUID)
+     */
+    public CmsRestoreInfoBean getRestoreInfo(CmsUUID structureId) throws CmsRpcException {
+
+        try {
+            CmsObject cms = getCmsObject();
+            CmsResource resource = cms.readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
+            CmsListInfoBean listInfo = getPageInfo(resource);
+            CmsRestoreInfoBean result = new CmsRestoreInfoBean();
+            result.setListInfoBean(listInfo);
+
+            CmsObject onlineCms = OpenCms.initCmsObject(cms);
+            CmsProject onlineProject = cms.readProject(CmsProject.ONLINE_PROJECT_NAME);
+            onlineCms.getRequestContext().setCurrentProject(onlineProject);
+            CmsResource onlineResource = onlineCms.readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
+            result.setOnlinePath(onlineResource.getRootPath());
+            result.setOfflinePath(resource.getRootPath());
+
+            String offlineDate = formatDateTime(resource.getDateLastModified());
+            String onlineDate = formatDateTime(onlineResource.getDateLastModified());
+            result.setOfflineDate(offlineDate);
+            result.setOnlineDate(onlineDate);
+            result.setStructureId(structureId);
+
+            CmsObject offlineRootCms = OpenCms.initCmsObject(cms);
+            offlineRootCms.getRequestContext().setSiteRoot("");
+            CmsObject onlineRootCms = OpenCms.initCmsObject(onlineCms);
+            onlineRootCms.getRequestContext().setSiteRoot("");
+            String parent = CmsResource.getParentFolder(onlineResource.getRootPath());
+            boolean canUndoMove = offlineRootCms.existsResource(parent, CmsResourceFilter.IGNORE_EXPIRATION);
+
+            result.setCanUndoMove(canUndoMove);
+
+            return result;
+        } catch (Throwable e) {
+            error(e);
+            return null;
         }
     }
 
@@ -320,7 +694,7 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
         try {
             CmsObject cms = getCmsObject();
             List<CmsResource> roots = new ArrayList<CmsResource>();
-            roots.add(cms.readResource("/"));
+            roots.add(cms.readResource("/", CmsResourceFilter.IGNORE_EXPIRATION));
             return makeEntryBeans(roots, true);
         } catch (CmsException e) {
             error(e);
@@ -427,19 +801,77 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
 
         try {
             CmsObject cms = getCmsObject();
-            CmsResource currentPage = cms.readResource(currentPageId);
+            CmsResource currentPage = cms.readResource(currentPageId, CmsResourceFilter.IGNORE_EXPIRATION);
             String path = prepareFileNameForEditor(cms, currentPage, pathWithMacros);
-            CmsResource resource = cms.readResource(path);
+            CmsResource resource = cms.readResource(path, CmsResourceFilter.IGNORE_EXPIRATION);
             ensureLock(resource);
             CmsPrepareEditResponse result = new CmsPrepareEditResponse();
             result.setRootPath(resource.getRootPath());
             result.setSitePath(cms.getSitePath(resource));
             result.setStructureId(resource.getStructureId());
             return result;
-        } catch (CmsException e) {
+        } catch (Throwable e) {
             error(e);
         }
         return null;
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#renameResource(org.opencms.util.CmsUUID, java.lang.String)
+     */
+    public String renameResource(CmsUUID structureId, String newName) throws CmsRpcException {
+
+        try {
+            return renameResourceInternal(structureId, newName);
+        } catch (Throwable e) {
+            error(e);
+            return null;
+        }
+    }
+
+    /**
+     * Internal implementation for renaming a resource.<p>
+     * 
+     * @param structureId the structure id of the resource to rename 
+     * @param newName the new resource name 
+     * @return either null if the rename was successful, or an error message 
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    public String renameResourceInternal(CmsUUID structureId, String newName) throws CmsException {
+
+        CmsObject cms = getCmsObject();
+        Locale locale = OpenCms.getWorkplaceManager().getWorkplaceLocale(cms);
+        try {
+            CmsResource.checkResourceName(newName);
+        } catch (CmsIllegalArgumentException e) {
+            return e.getLocalizedMessage(locale);
+        }
+        CmsResource resource = cms.readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
+        String oldSitePath = cms.getSitePath(resource);
+        String parentPath = CmsResource.getParentFolder(oldSitePath);
+        String newSitePath = CmsStringUtil.joinPaths(parentPath, newName);
+        try {
+            ensureLock(resource);
+            cms.moveResource(oldSitePath, newSitePath);
+            resource = cms.readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
+        } catch (CmsException e) {
+            return e.getLocalizedMessage(OpenCms.getWorkplaceManager().getWorkplaceLocale(cms));
+        }
+        tryUnlock(resource);
+        return null;
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#saveAliases(org.opencms.util.CmsUUID, java.util.List)
+     */
+    public void saveAliases(CmsUUID structureId, List<CmsAliasBean> aliasBeans) throws CmsRpcException {
+
+        try {
+            m_aliasHelper.saveAliases(structureId, aliasBeans);
+        } catch (Throwable e) {
+            error(e);
+        }
     }
 
     /**
@@ -447,11 +879,27 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
      */
     public void saveProperties(CmsPropertyChangeSet changes) throws CmsRpcException {
 
+        String origSiteRoot = getCmsObject().getRequestContext().getSiteRoot();
         try {
+            getCmsObject().getRequestContext().setSiteRoot("");
             internalSaveProperties(changes);
         } catch (Throwable t) {
             error(t);
+        } finally {
+            getCmsObject().getRequestContext().setSiteRoot(origSiteRoot);
         }
+    }
+
+    /**
+     * Sets the current cms context.<p>
+     *
+     * @param cms the current cms context to set
+     */
+    @Override
+    public synchronized void setCms(CmsObject cms) {
+
+        super.setCms(cms);
+        m_aliasHelper.setCms(cms);
     }
 
     /**
@@ -468,6 +916,52 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
             error(e);
         }
         return result;
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#syncDeleteResource(org.opencms.util.CmsUUID)
+     */
+    public void syncDeleteResource(CmsUUID structureId) throws CmsRpcException {
+
+        deleteResource(structureId);
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#undoChanges(org.opencms.util.CmsUUID, boolean)
+     */
+    public void undoChanges(CmsUUID structureId, boolean undoMove) throws CmsRpcException {
+
+        try {
+            CmsObject cms = getCmsObject();
+            CmsResource resource = cms.readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
+            ensureLock(resource);
+            CmsResourceUndoMode mode = undoMove ? CmsResource.UNDO_MOVE_CONTENT : CmsResource.UNDO_CONTENT;
+            String path = cms.getSitePath(resource);
+            cms.undoChanges(path, mode);
+            try {
+                resource = cms.readResource(structureId, CmsResourceFilter.IGNORE_EXPIRATION);
+                path = cms.getSitePath(resource);
+                cms.unlockResource(path);
+            } catch (CmsException e) {
+                LOG.info("Could not unlock resource after undoing changes: " + e.getLocalizedMessage(), e);
+            }
+        } catch (Throwable e) {
+            error(e);
+        }
+    }
+
+    /**
+     * @see org.opencms.gwt.shared.rpc.I_CmsVfsService#validateAliases(org.opencms.util.CmsUUID, java.util.Map)
+     */
+    public Map<String, String> validateAliases(CmsUUID uuid, Map<String, String> aliasPaths) throws CmsRpcException {
+
+        try {
+            return m_aliasHelper.validateAliases(uuid, aliasPaths);
+        } catch (Throwable e) {
+            error(e);
+        }
+        return null;
+
     }
 
     /**
@@ -513,6 +1007,60 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
     }
 
     /**
+     * Helper method to get the default property configuration for the given resource type.<p>
+     * 
+     * @param typeName the name of the resource type 
+     * 
+     * @return the default property configuration for the given type 
+     */
+    protected Map<String, CmsXmlContentProperty> getDefaultPropertiesForType(String typeName) {
+
+        Map<String, CmsXmlContentProperty> propertyConfig = new LinkedHashMap<String, CmsXmlContentProperty>();
+        CmsExplorerTypeSettings explorerType = OpenCms.getWorkplaceManager().getExplorerTypeSetting(typeName);
+        if (explorerType != null) {
+            List<String> defaultProps = explorerType.getProperties();
+            for (String propName : defaultProps) {
+                CmsXmlContentProperty property = new CmsXmlContentProperty(
+                    propName,
+                    "string",
+                    "string",
+                    "",
+                    "",
+                    "",
+                    "",
+                    null,
+                    "",
+                    "",
+                    "false");
+                propertyConfig.put(propName, property);
+            }
+        }
+        return propertyConfig;
+    }
+
+    /**
+     * Internal method for computing the default property configurations for a list of structure ids.<p>
+     * 
+     * @param structureIds the structure ids for which we want the default property configurations 
+     * @return a map from the given structure ids to their default property configurations 
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    protected Map<CmsUUID, Map<String, CmsXmlContentProperty>> internalGetDefaultProperties(List<CmsUUID> structureIds)
+    throws CmsException {
+
+        CmsObject cms = getCmsObject();
+        Map<CmsUUID, Map<String, CmsXmlContentProperty>> result = Maps.newHashMap();
+        for (CmsUUID structureId : structureIds) {
+            CmsResource resource = cms.readResource(structureId, CmsResourceFilter.ALL);
+            String typeName = OpenCms.getResourceManager().getResourceType(resource).getTypeName();
+            Map<String, CmsXmlContentProperty> propertyConfig = getDefaultPropertiesForType(typeName);
+            result.put(structureId, propertyConfig);
+        }
+        return result;
+    }
+
+    /**
      * Saves a set of property changes.<p>
      *  
      * @param changes the set of property changes 
@@ -521,9 +1069,16 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
     protected void internalSaveProperties(CmsPropertyChangeSet changes) throws CmsException {
 
         CmsObject cms = getCmsObject();
-        CmsResource target = cms.readResource(changes.getTargetStructureId());
-        ensureLock(cms.getSitePath(target));
-        internalUpdateProperties(cms, target, changes.getChanges());
+        CmsResource target = cms.readResource(changes.getTargetStructureId(), CmsResourceFilter.IGNORE_EXPIRATION);
+        CmsLockActionRecord actionRecord = ensureLock(cms.getSitePath(target));
+        try {
+            internalUpdateProperties(cms, target, changes.getChanges());
+        } finally {
+            if (actionRecord.getChange() == LockChange.locked) {
+                cms.unlockResource(cms.getSitePath(target));
+            }
+        }
+
     }
 
     /**
@@ -576,6 +1131,55 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * Internal method to delete the given resource.<p>
+     * 
+     * @param resource the resource to delete
+     * 
+     * @throws CmsException if something goes wrong
+     */
+    private void deleteResource(CmsResource resource) throws CmsException {
+
+        String path = null;
+        CmsObject cms = getCmsObject();
+        try {
+            path = cms.getSitePath(resource);
+            cms.lockResource(path);
+            cms.deleteResource(path, CmsResource.DELETE_PRESERVE_SIBLINGS);
+
+            // check if any detail container page resource exists to this resource
+            String detailContainers = CmsJspTagContainer.getDetailOnlyPageName(path);
+            if (cms.existsResource(detailContainers, CmsResourceFilter.IGNORE_EXPIRATION)) {
+                deleteResource(cms.readResource(detailContainers, CmsResourceFilter.IGNORE_EXPIRATION));
+            }
+        } finally {
+            try {
+                if (path != null) {
+                    getCmsObject().unlockResource(path);
+                }
+            } catch (Exception e) {
+                // should really never happen
+                LOG.debug(e.getLocalizedMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * Formats the date for the current user's locale.<p>
+     * 
+     * @param date the date to format
+     *  
+     * @return the formatted date for the current user's locale 
+     */
+    private String formatDateTime(long date) {
+
+        CmsObject cms = getCmsObject();
+        return formatDateTime(cms, date);
+    }
+
+    /**
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * Returns a bean that contains the infos for the {@link org.opencms.gwt.client.ui.contextmenu.CmsAvailabilityDialog}.<p>
      * 
      * @param res the resource to get the availability infos for
@@ -629,6 +1233,39 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
     }
 
     /**
+     * Returns the available locales mapped to there display name for the given resource 
+     * or <code>null</code> in case of non xml-content/xml-page resources.<p>
+     * 
+     * @param resource the resource
+     * 
+     * @return the available locales
+     */
+    private LinkedHashMap<String, String> getAvailableLocales(CmsResource resource) {
+
+        LinkedHashMap<String, String> result = null;
+        List<Locale> locales = null;
+        try {
+            if (CmsResourceTypeXmlPage.isXmlPage(resource)) {
+                locales = CmsXmlPageFactory.unmarshal(getCmsObject(), resource, getRequest()).getLocales();
+            } else if (CmsResourceTypeXmlContent.isXmlContent(resource)) {
+                locales = CmsXmlContentFactory.unmarshal(getCmsObject(), resource, getRequest()).getLocales();
+            } else if (CmsResourceTypeXmlContainerPage.isContainerPage(resource)) {
+                locales = CmsXmlContainerPageFactory.unmarshal(getCmsObject(), resource).getLocales();
+            }
+        } catch (CmsException e) {
+            LOG.warn(e.getLocalizedMessage(), e);
+        }
+        if (locales != null) {
+            Locale wpLocale = OpenCms.getWorkplaceManager().getWorkplaceLocale(getCmsObject());
+            result = new LinkedHashMap<String, String>();
+            for (Locale locale : locales) {
+                result.put(locale.toString(), locale.getDisplayName(wpLocale));
+            }
+        }
+        return result;
+    }
+
+    /**
      * Helper method for converting a map which maps resources to resources to a list of "broken link" beans,
      * which have beans representing the source of the corresponding link as children.<p>  
      * 
@@ -641,16 +1278,70 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
     @SuppressWarnings("unchecked")
     private List<CmsBrokenLinkBean> getBrokenLinkBeans(MultiValueMap linkMap) throws CmsException {
 
+        CmsBrokenLinkRenderer brokenLinkRenderer = new CmsBrokenLinkRenderer(getCmsObject());
         List<CmsBrokenLinkBean> result = new ArrayList<CmsBrokenLinkBean>();
-        for (CmsResource entry : (Set<CmsResource>)linkMap.keySet()) {
-            CmsBrokenLinkBean parentBean = createSitemapBrokenLinkBean(entry);
+        for (CmsResource key : (Set<CmsResource>)linkMap.keySet()) {
+
+            CmsBrokenLinkBean parentBean = createSitemapBrokenLinkBean(key);
             result.add(parentBean);
-            Collection<CmsResource> values = linkMap.getCollection(entry);
+            Collection<CmsResource> values = linkMap.getCollection(key);
             for (CmsResource resource : values) {
-                CmsBrokenLinkBean childBean = createSitemapBrokenLinkBean(resource);
-                parentBean.addChild(childBean);
+                List<CmsBrokenLinkBean> brokenLinkBeans = brokenLinkRenderer.renderBrokenLink(key, resource);
+                for (CmsBrokenLinkBean childBean : brokenLinkBeans) {
+                    parentBean.addChild(childBean);
+                }
             }
         }
+        return result;
+    }
+
+    /**
+     * Internal method to get the broken links information for the given resource.<p>
+     * 
+     * @param entryResource the resource
+     * 
+     * @return the broken links information
+     * 
+     * @throws CmsException if something goes wrong
+     */
+    private CmsDeleteResourceBean getBrokenLinks(CmsResource entryResource) throws CmsException {
+
+        CmsDeleteResourceBean result = null;
+
+        CmsListInfoBean info = null;
+        List<CmsBrokenLinkBean> brokenLinks = null;
+
+        CmsObject cms = getCmsObject();
+        String resourceSitePath = cms.getSitePath(entryResource);
+
+        ensureSession();
+
+        List<CmsResource> descendants = new ArrayList<CmsResource>();
+        HashSet<CmsUUID> deleteIds = new HashSet<CmsUUID>();
+
+        descendants.add(entryResource);
+        if (entryResource.isFolder()) {
+            descendants.addAll(cms.readResources(resourceSitePath, CmsResourceFilter.IGNORE_EXPIRATION));
+        }
+
+        for (CmsResource deleteRes : descendants) {
+            deleteIds.add(deleteRes.getStructureId());
+        }
+        MultiValueMap linkMap = MultiValueMap.decorate(
+            new HashMap<Object, Object>(),
+            FactoryUtils.instantiateFactory(HashSet.class));
+        for (CmsResource resource : descendants) {
+            List<CmsResource> linkSources = getLinkSources(cms, resource, deleteIds);
+            for (CmsResource source : linkSources) {
+                linkMap.put(resource, source);
+            }
+        }
+
+        brokenLinks = getBrokenLinkBeans(linkMap);
+        info = getPageInfo(entryResource);
+
+        result = new CmsDeleteResourceBean(resourceSitePath, info, brokenLinks);
+
         return result;
     }
 
@@ -692,82 +1383,97 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
     private CmsListInfoBean getPageInfo(CmsResource res) throws CmsException, CmsLoaderException {
 
         CmsObject cms = getCmsObject();
-        CmsListInfoBean result = new CmsListInfoBean();
-
-        result.setResourceState(res.getState());
-
-        String title = cms.readPropertyObject(res, CmsPropertyDefinition.PROPERTY_TITLE, false).getValue();
-        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(title)) {
-            result.setTitle(title);
-        } else {
-            result.setTitle(res.getName());
-        }
-        result.setSubTitle(cms.getSitePath(res));
-        String secure = cms.readPropertyObject(res, CmsPropertyDefinition.PROPERTY_SECURE, true).getValue();
-        if (Boolean.parseBoolean(secure)) {
-            result.setStateIcon(CmsListInfoBean.StateIcon.secure);
-        } else {
-            String export = cms.readPropertyObject(res, CmsPropertyDefinition.PROPERTY_EXPORT, true).getValue();
-            if (Boolean.parseBoolean(export)) {
-                result.setStateIcon(CmsListInfoBean.StateIcon.export);
-            } else {
-                result.setStateIcon(CmsListInfoBean.StateIcon.standard);
-            }
-        }
-        String resTypeName = OpenCms.getResourceManager().getResourceType(res.getTypeId()).getTypeName();
-        String key = OpenCms.getWorkplaceManager().getExplorerTypeSetting(resTypeName).getKey();
-        Locale currentLocale = cms.getRequestContext().getLocale();
-        CmsMessages messages = OpenCms.getWorkplaceManager().getMessages(currentLocale);
-        String resTypeNiceName = messages.key(key);
-        result.addAdditionalInfo(messages.key(org.opencms.workplace.commons.Messages.GUI_LABEL_TYPE_0), resTypeNiceName);
-        result.setResourceType(resTypeName);
-        return result;
+        return getPageInfo(cms, res);
     }
 
     /**
-     * Returns a bean to display the {@link org.opencms.gwt.client.ui.CmsListItemWidget} including the lock state.<p>
+     * Returns the preview info for the given resource.<p>
      * 
-     * @param resource the resource to get the page info for
+     * @param resource the resource
+     * @param locale the requested locale
      * 
-     * @return a bean to display the {@link org.opencms.gwt.client.ui.CmsListItemWidget}.<p>
-     * 
-     * @throws CmsLoaderException if the resource type could not be found
-     * @throws CmsException if something else goes wrong 
+     * @return the preview info
      */
-    private CmsListInfoBean getPageInfoWithLock(CmsResource resource) throws CmsLoaderException, CmsException {
+    private CmsPreviewInfo getPreviewInfo(CmsResource resource, Locale locale) {
 
-        CmsListInfoBean result = getPageInfo(resource);
-        CmsResourceUtil resourceUtil = new CmsResourceUtil(getCmsObject(), resource);
-        CmsLock lock = resourceUtil.getLock();
-        LockIcon icon = LockIcon.NONE;
-        String iconTitle = null;
-        CmsLockType lockType = lock.getType();
-        if (!lock.isOwnedBy(getCmsObject().getRequestContext().getCurrentUser())) {
-            if ((lockType == CmsLockType.EXCLUSIVE)
-                || (lockType == CmsLockType.INHERITED)
-                || (lockType == CmsLockType.TEMPORARY)) {
-                icon = LockIcon.CLOSED;
-            } else if ((lockType == CmsLockType.SHARED_EXCLUSIVE) || (lockType == CmsLockType.SHARED_INHERITED)) {
-                icon = LockIcon.SHARED_CLOSED;
+        CmsObject cms = getCmsObject();
+        String title = "";
+        try {
+            CmsProperty titleProperty = cms.readPropertyObject(resource, CmsPropertyDefinition.PROPERTY_TITLE, false);
+            title = titleProperty.getValue("");
+        } catch (CmsException e) {
+            LOG.warn(e.getLocalizedMessage(), e);
+        }
+        String noPreviewReason = getNoPreviewReason(cms, resource);
+        String previewContent = null;
+        int height = 0;
+        int width = 0;
+        LinkedHashMap<String, String> locales = getAvailableLocales(resource);
+        if (noPreviewReason != null) {
+            previewContent = "<div>" + noPreviewReason + "</div>";
+            return new CmsPreviewInfo(
+                "<div>" + noPreviewReason + "</div>",
+                null,
+                false,
+                title,
+                cms.getSitePath(resource),
+                locale.toString());
+        } else if (CmsResourceTypeImage.getStaticTypeId() == resource.getTypeId()) {
+            CmsImageScaler scaler = new CmsImageScaler(cms, resource);
+            previewContent = "<img src=\""
+                + OpenCms.getLinkManager().substituteLinkForUnknownTarget(cms, resource.getRootPath())
+                + "\" title=\""
+                + title
+                + "\" style=\"display:block\" />";
+            height = scaler.getHeight();
+            width = scaler.getWidth();
+        } else if (CmsResourceTypeXmlContent.isXmlContent(resource)) {
+            if (!locales.containsKey(locale.toString())) {
+                locale = CmsLocaleManager.getMainLocale(cms, resource);
             }
-        } else {
-            if ((lockType == CmsLockType.EXCLUSIVE)
-                || (lockType == CmsLockType.INHERITED)
-                || (lockType == CmsLockType.TEMPORARY)) {
-                icon = LockIcon.OPEN;
-            } else if ((lockType == CmsLockType.SHARED_EXCLUSIVE) || (lockType == CmsLockType.SHARED_INHERITED)) {
-                icon = LockIcon.SHARED_OPEN;
+            previewContent = CmsPreviewService.getPreviewContent(getRequest(), getResponse(), cms, resource, locale);
+
+        } else if (CmsResourceTypePlain.getStaticTypeId() == resource.getTypeId()) {
+            try {
+                previewContent = "<pre><code>" + new String(cms.readFile(resource).getContents()) + "</code></pre>";
+            } catch (CmsException e) {
+                LOG.warn(e.getLocalizedMessage(), e);
+                previewContent = "<div>"
+                    + Messages.get().getBundle().key(Messages.GUI_NO_PREVIEW_CAN_T_READ_CONTENT_0)
+                    + "</div>";
             }
         }
-        if (lock.getUserId() != null) {
-            iconTitle = Messages.get().getBundle().key(Messages.GUI_LOCKED_BY_1, resourceUtil.getLockedByName());
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(previewContent)) {
+            CmsPreviewInfo result = new CmsPreviewInfo(
+                previewContent,
+                null,
+                false,
+                title,
+                cms.getSitePath(resource),
+                locale.toString());
+            result.setHeight(height);
+            result.setWidth(width);
+            result.setLocales(locales);
+            return result;
         }
-        result.setLockIcon(icon);
-        result.setLockIconTitle(iconTitle);
-        if (icon != LockIcon.NONE) {
-            result.setTitle(result.getTitle() + " (" + iconTitle + ")");
+        if (CmsResourceTypeXmlContainerPage.isContainerPage(resource) || CmsResourceTypeXmlPage.isXmlPage(resource)) {
+            CmsPreviewInfo result = new CmsPreviewInfo(null, OpenCms.getLinkManager().substituteLinkForUnknownTarget(
+                cms,
+                resource.getRootPath())
+                + "?"
+                + CmsGwtConstants.PARAM_DISABLE_DIRECT_EDIT
+                + "=true"
+                + "&__locale="
+                + locale.toString(), false, title, cms.getSitePath(resource), locale.toString());
+            result.setLocales(locales);
+            return result;
         }
-        return result;
+        return new CmsPreviewInfo(null, OpenCms.getLinkManager().substituteLinkForUnknownTarget(
+            cms,
+            resource.getRootPath())
+            + "?"
+            + CmsGwtConstants.PARAM_DISABLE_DIRECT_EDIT
+            + "=true", true, title, cms.getSitePath(resource), locale.toString());
     }
 
     /**
@@ -843,13 +1549,27 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
 
         String originalSiteRoot = cms.getRequestContext().getSiteRoot();
         CmsPropertiesBean result = new CmsPropertiesBean();
-        CmsResource resource = cms.readResource(id);
+        CmsResource resource = cms.readResource(id, CmsResourceFilter.IGNORE_EXPIRATION);
+        boolean hasPermissions = cms.hasPermissions(
+            resource,
+            CmsPermissionSet.ACCESS_WRITE,
+            false,
+            CmsResourceFilter.IGNORE_EXPIRATION);
+        CmsLock lock = cms.getLock(resource);
+        boolean lockedByOtherUser = !lock.isUnlocked() && !lock.isOwnedBy(cms.getRequestContext().getCurrentUser());
+        result.setReadOnly(!hasPermissions || lockedByOtherUser);
         result.setFolder(resource.isFolder());
         result.setContainerPage(CmsResourceTypeXmlContainerPage.isContainerPage(resource));
         String sitePath = cms.getSitePath(resource);
         Map<String, CmsXmlContentProperty> propertyConfig = OpenCms.getADEManager().lookupConfiguration(
             cms,
             resource.getRootPath()).getPropertyConfigurationAsMap();
+        Map<String, CmsXmlContentProperty> defaultProperties = internalGetDefaultProperties(
+            Collections.singletonList(resource.getStructureId())).get(resource.getStructureId());
+        Map<String, CmsXmlContentProperty> mergedConfig = new LinkedHashMap<String, CmsXmlContentProperty>();
+        mergedConfig.putAll(defaultProperties);
+        mergedConfig.putAll(propertyConfig);
+        propertyConfig = mergedConfig;
         result.setPropertyDefinitions(new LinkedHashMap<String, CmsXmlContentProperty>(propertyConfig));
         try {
             cms.getRequestContext().setSiteRoot("");
@@ -892,4 +1612,5 @@ public class CmsVfsService extends CmsGwtService implements I_CmsVfsService {
                 CmsPropertyDefinition.PROPERTY_TITLE).getValue().equals(
                 properties.get(CmsPropertyDefinition.PROPERTY_NAVTEXT).getValue()));
     }
+
 }

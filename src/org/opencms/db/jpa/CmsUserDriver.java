@@ -40,6 +40,7 @@ import org.opencms.db.CmsVisitEntryFilter;
 import org.opencms.db.I_CmsProjectDriver;
 import org.opencms.db.I_CmsUserDriver;
 import org.opencms.db.generic.CmsUserQueryBuilder;
+import org.opencms.db.generic.Messages;
 import org.opencms.db.jpa.persistence.CmsDAOGroupUsers;
 import org.opencms.db.jpa.persistence.CmsDAOGroupUsers.CmsDAOGroupUsersPK;
 import org.opencms.db.jpa.persistence.CmsDAOGroups;
@@ -126,6 +127,9 @@ public class CmsUserDriver implements I_CmsUserDriver {
 
     /** Attribute WRITE USER_ADDINFO value update. */
     private static final String ATTRIBUTE_USERADDINFO_VALUE_UPDATE = "update";
+
+    /** Query key. */
+    private static final String C_ACCESS_READ_ENTRIES_0 = "C_ACCESS_READ_ENTRIES_0";
 
     /** Query key. */
     private static final String C_ACCESS_READ_ENTRIES_1 = "C_ACCESS_READ_ENTRIES_1";
@@ -338,7 +342,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             Number number = (Number)q.getSingleResult();
             userCount = number.intValue();
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
         return userCount;
     }
@@ -368,7 +372,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
 
             m_sqlManager.persist(dbc, pac);
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -415,7 +419,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
 
             group = new CmsGroup(groupId, parentId, groupFqn, description, flags);
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return group;
@@ -570,7 +574,8 @@ public class CmsUserDriver implements I_CmsUserDriver {
                         Messages.get().getBundle().key(Messages.INIT_ROOT_ORGUNIT_INITIALIZATION_FAILED_0),
                         exc);
                 }
-                throw new CmsInitException(Messages.get().container(Messages.ERR_INITIALIZING_USER_DRIVER_0), exc);
+                throw new CmsInitException(org.opencms.db.generic.Messages.get().container(
+                    org.opencms.db.generic.Messages.ERR_INITIALIZING_USER_DRIVER_0), exc);
             }
         }
     }
@@ -616,7 +621,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             u.setUserDateCreated((dateCreated == 0 ? System.currentTimeMillis() : dateCreated));
             m_sqlManager.persist(dbc, u);
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
         internalWriteUserInfos(dbc, id, additionalInfos);
         return readUser(dbc, id);
@@ -640,7 +645,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
 
                 m_sqlManager.persist(dbc, gu);
             } catch (PersistenceException e) {
-                throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+                throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
             }
         }
     }
@@ -679,7 +684,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 m_sqlManager.remove(dbc, g);
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -728,7 +733,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 m_sqlManager.remove(dbc, u);
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         // delete the additional infos
@@ -765,7 +770,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 m_sqlManager.remove(dbc, ud);
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -783,7 +788,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 m_sqlManager.remove(dbc, gu);
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -818,7 +823,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             }
 
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return result;
@@ -842,7 +847,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 result = true;
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return result;
@@ -898,7 +903,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 groups.add(internalCreateGroup(g));
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return groups;
@@ -994,7 +999,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 users.add(internalCreateUser(dbc, u));
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return users;
@@ -1123,14 +1128,16 @@ public class CmsUserDriver implements I_CmsUserDriver {
         List<CmsAccessControlEntry> aceList = new ArrayList<CmsAccessControlEntry>();
 
         try {
-            Query q = m_sqlManager.createQuery(dbc, project, C_ACCESS_READ_ENTRIES_1);
-
-            String resId = resource.toString();
-            q.setParameter(1, resId);
-
+            Query q;
+            if (resource.equals(CmsAccessControlEntry.PRINCIPAL_READALL_ID)) {
+                q = m_sqlManager.createQuery(dbc, project, C_ACCESS_READ_ENTRIES_0);
+            } else {
+                q = m_sqlManager.createQuery(dbc, project, C_ACCESS_READ_ENTRIES_1);
+                String resId = resource.toString();
+                q.setParameter(1, resId);
+            }
             @SuppressWarnings("unchecked")
             List<I_CmsDAOAccessControl> res = q.getResultList();
-
             // create new CmsAccessControlEntry and add to list
             for (I_CmsDAOAccessControl ac : res) {
                 CmsAccessControlEntry ace = internalCreateAce(ac);
@@ -1144,7 +1151,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             }
             return aceList;
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -1178,7 +1185,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             return ace;
 
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -1205,7 +1212,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 }
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return children;
@@ -1231,7 +1238,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 throw new CmsDbEntryNotFoundException(message);
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return group;
@@ -1264,7 +1271,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 throw new CmsDbEntryNotFoundException(message);
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return group;
@@ -1307,7 +1314,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 groups.add(internalCreateGroup(((CmsDAOGroups)o[0])));
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return groups;
@@ -1352,7 +1359,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
 
             return user;
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -1381,7 +1388,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 throw new CmsDbEntryNotFoundException(message);
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return user;
@@ -1416,7 +1423,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
 
             return user;
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -1474,7 +1481,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 }
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return infos;
@@ -1505,7 +1512,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 users.add(internalCreateUser(dbc, u));
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return users;
@@ -1526,7 +1533,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 m_sqlManager.remove(dbc, ac);
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -1557,7 +1564,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             }
 
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -1579,7 +1586,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             }
 
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -1681,7 +1688,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 users.add(internalCreateUser(dbc, daoUser));
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return users;
@@ -1721,7 +1728,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 u.setUserOu((orgUnit == null ? null : CmsOrganizationalUnit.SEPARATOR + orgUnit.getName()));
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -1767,7 +1774,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 return;
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -1791,7 +1798,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 }
 
             } catch (PersistenceException e) {
-                throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+                throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
             }
         } else {
             throw new CmsDbEntryNotFoundException(org.opencms.db.Messages.get().container(
@@ -1869,7 +1876,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 u.setUserPassword(pwd);
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -1891,7 +1898,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 q.setParameter(2, String.valueOf(user.getId().toString()));
                 q.executeUpdate();
             } catch (PersistenceException e) {
-                throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+                throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
             }
         } else {
             try {
@@ -1909,7 +1916,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                     u.setUserFlags(user.getFlags());
                 }
             } catch (PersistenceException e) {
-                throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+                throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
             }
         }
         internalWriteUserInfos(dbc, user.getId(), user.getAdditionalInfo());
@@ -1934,6 +1941,14 @@ public class CmsUserDriver implements I_CmsUserDriver {
         }
     }
 
+    /**
+     * Creates a query from the given parameters.<p>
+     * 
+     * @param queryString the query string
+     * @param queryParams the parameters
+     * 
+     * @return the query
+     */
     protected Query createQueryFromStringAndParams(String queryString, List<Object> queryParams) {
 
         return null;
@@ -2448,7 +2463,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             q.setParameter(2, key);
             q.executeUpdate();
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
     }
 
@@ -2511,16 +2526,12 @@ public class CmsUserDriver implements I_CmsUserDriver {
     throws CmsDataAccessException {
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug(Messages.get().getBundle().key(Messages.LOG_DBG_UPDATE_ROLEGROUP_2, role.getRoleName(), groupName));
+            LOG.debug(Messages.get().getBundle().key(Messages.LOG_DBG_UPDATE_ROLEGROUP_2, groupName, role.getRoleName()));
         }
 
         CmsGroup group = readGroup(dbc, groupName);
         if ((CmsRole.valueOf(group) == null) || !CmsRole.valueOf(group).equals(role)) {
             CmsGroup roleGroup = readGroup(dbc, role.getGroupName());
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug(Messages.get().getBundle().key(Messages.LOG_DBG_UPDATE_ROLEGROUP_1, roleGroup));
-            }
 
             // copy all users from the group to the role
             Iterator<CmsUser> it;
@@ -2639,7 +2650,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 // do nothing
             }
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         }
 
         return userInGroup;
@@ -2700,7 +2711,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             u.setDataType(value.getClass().getName());
             m_sqlManager.persist(dbc, u);
         } catch (PersistenceException e) {
-            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE, e), e);
+            throw new CmsDataAccessException(Messages.get().container(Messages.ERR_JPA_PERSITENCE_1, e), e);
         } catch (IOException e) {
             throw new CmsDbIoException(Messages.get().container(Messages.ERR_SERIALIZING_USER_DATA_1, userId), e);
         }

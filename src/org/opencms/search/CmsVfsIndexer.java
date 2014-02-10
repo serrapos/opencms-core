@@ -35,6 +35,7 @@ import org.opencms.file.CmsResourceFilter;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.report.I_CmsReport;
+import org.opencms.util.CmsUUID;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,7 +43,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
-import org.apache.lucene.document.Document;
 
 /**
  * An indexer indexing {@link CmsResource} based content from the OpenCms VFS.<p>
@@ -77,19 +77,18 @@ public class CmsVfsIndexer implements I_CmsIndexer {
         }
 
         // contains all resources already deleted to avoid multiple deleting in case of siblings
-        List<String> resourcesAlreadyDeleted = new ArrayList<String>(resourcesToDelete.size());
+        List<CmsUUID> resourcesAlreadyDeleted = new ArrayList<CmsUUID>(resourcesToDelete.size());
 
         Iterator<CmsPublishedResource> i = resourcesToDelete.iterator();
         while (i.hasNext()) {
             // iterate all resources in the given list of resources to delete
             CmsPublishedResource res = i.next();
-            String rootPath = res.getRootPath();
-            if (!resourcesAlreadyDeleted.contains(rootPath)) {
+            if (!resourcesAlreadyDeleted.contains(res.getStructureId())) {
                 // ensure siblings are only deleted once per update
-                resourcesAlreadyDeleted.add(rootPath);
-                if (!res.isFolder()) {
+                resourcesAlreadyDeleted.add(res.getStructureId());
+                if (!res.isFolder() && !CmsResource.isTemporaryFileName(res.getRootPath())) {
                     // now delete the resource from the index
-                    deleteResource(indexWriter, rootPath);
+                    deleteResource(indexWriter, res);
                 }
             }
         }
@@ -149,6 +148,16 @@ public class CmsVfsIndexer implements I_CmsIndexer {
             }
         }
         return result;
+    }
+
+    /**
+     * The default indexer is not able to resolve locale dependencies between documents.<p>
+     * 
+     * @see org.opencms.search.I_CmsIndexer#isLocaleDependenciesEnable()
+     */
+    public boolean isLocaleDependenciesEnable() {
+
+        return false;
     }
 
     /**
@@ -233,23 +242,26 @@ public class CmsVfsIndexer implements I_CmsIndexer {
         while (i.hasNext()) {
             CmsPublishedResource res = i.next();
             CmsResource resource = null;
-            try {
-                resource = m_cms.readResource(res.getRootPath(), CmsResourceFilter.IGNORE_EXPIRATION);
-            } catch (CmsException e) {
-                if (LOG.isWarnEnabled()) {
-                    LOG.warn(
-                        Messages.get().getBundle().key(
-                            Messages.LOG_UNABLE_TO_READ_RESOURCE_2,
-                            res.getRootPath(),
-                            m_index.getName()),
-                        e);
+            if (!CmsResource.isTemporaryFileName(res.getRootPath())) {
+                try {
+                    resource = m_cms.readResource(res.getRootPath(), CmsResourceFilter.IGNORE_EXPIRATION);
+                } catch (CmsException e) {
+                    if (LOG.isWarnEnabled()) {
+                        LOG.warn(
+                            Messages.get().getBundle().key(
+                                Messages.LOG_UNABLE_TO_READ_RESOURCE_2,
+                                res.getRootPath(),
+                                m_index.getName()),
+                            e);
+                    }
                 }
-            }
-            if (resource != null) {
-                if (!resourcesAlreadyUpdated.contains(resource.getRootPath())) {
-                    // ensure resources are only indexed once per update
-                    resourcesAlreadyUpdated.add(resource.getRootPath());
-                    updateResource(writer, threadManager, resource);
+
+                if (resource != null) {
+                    if (!resourcesAlreadyUpdated.contains(resource.getRootPath())) {
+                        // ensure resources are only indexed once per update
+                        resourcesAlreadyUpdated.add(resource.getRootPath());
+                        updateResource(writer, threadManager, resource);
+                    }
                 }
             }
         }
@@ -277,20 +289,23 @@ public class CmsVfsIndexer implements I_CmsIndexer {
      * Deletes a resource with the given index writer.<p>
      * 
      * @param indexWriter the index writer to resource the resource with
-     * @param rootPath the root path of the resource to delete
+     * @param resource the root path of the resource to delete
      */
-    protected void deleteResource(I_CmsIndexWriter indexWriter, String rootPath) {
+    protected void deleteResource(I_CmsIndexWriter indexWriter, CmsPublishedResource resource) {
 
         try {
             if (LOG.isInfoEnabled()) {
-                LOG.info(Messages.get().getBundle().key(Messages.LOG_DELETING_FROM_INDEX_1, rootPath));
+                LOG.info(Messages.get().getBundle().key(Messages.LOG_DELETING_FROM_INDEX_1, resource.getRootPath()));
             }
             // delete all documents with this term from the index
-            indexWriter.deleteDocuments(rootPath);
+            indexWriter.deleteDocument(resource);
         } catch (IOException e) {
             if (LOG.isWarnEnabled()) {
                 LOG.warn(
-                    Messages.get().getBundle().key(Messages.LOG_IO_INDEX_DOCUMENT_DELETE_2, rootPath, m_index.getName()),
+                    Messages.get().getBundle().key(
+                        Messages.LOG_IO_INDEX_DOCUMENT_DELETE_2,
+                        resource.getRootPath(),
+                        m_index.getName()),
                     e);
             }
         }
@@ -357,7 +372,7 @@ public class CmsVfsIndexer implements I_CmsIndexer {
      * @param rootPath the root path of the resource to update
      * @param doc the new document for the resource
      */
-    protected void updateResource(I_CmsIndexWriter indexWriter, String rootPath, Document doc) {
+    protected void updateResource(I_CmsIndexWriter indexWriter, String rootPath, I_CmsSearchDocument doc) {
 
         try {
             indexWriter.updateDocument(rootPath, doc);

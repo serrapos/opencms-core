@@ -86,7 +86,6 @@ public final class AllTests {
 
         suite.addTest(org.opencms.setup.AllTests.suite());
         suite.addTest(org.opencms.ade.configuration.AllTests.suite());
-        suite.addTest(org.opencms.ade.publish.AllTests.suite());
         suite.addTest(org.opencms.ade.sitemap.AllTests.suite());
         suite.addTest(org.opencms.cache.AllTests.suite());
         suite.addTest(org.opencms.configuration.AllTests.suite());
@@ -112,6 +111,7 @@ public final class AllTests {
         suite.addTest(org.opencms.search.AllTests.suite());
         suite.addTest(org.opencms.search.extractors.AllTests.suite());
         suite.addTest(org.opencms.search.gallery.AllTests.suite());
+        suite.addTest(org.opencms.search.solr.AllTests.suite());
         suite.addTest(org.opencms.security.AllTests.suite());
         suite.addTest(org.opencms.staticexport.AllTests.suite());
         suite.addTest(org.opencms.synchronize.AllTests.suite());
@@ -122,6 +122,7 @@ public final class AllTests {
         suite.addTest(org.opencms.xml.containerpage.AllTests.suite());
         suite.addTest(org.opencms.xml.content.AllTests.suite());
         suite.addTest(org.opencms.xml.page.AllTests.suite());
+        suite.addTest(org.opencms.repository.AllTests.suite());
 
         TestSetup wrapper = new TestSetup(suite) {
 

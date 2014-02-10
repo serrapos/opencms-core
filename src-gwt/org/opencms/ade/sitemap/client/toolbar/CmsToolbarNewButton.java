@@ -40,10 +40,11 @@ import org.opencms.gwt.client.ui.CmsConfirmDialog;
 import org.opencms.gwt.client.ui.CmsList;
 import org.opencms.gwt.client.ui.CmsListItemWidget;
 import org.opencms.gwt.client.ui.CmsPushButton;
-import org.opencms.gwt.client.ui.I_CmsButton;
 import org.opencms.gwt.client.ui.I_CmsButton.ButtonStyle;
 import org.opencms.gwt.client.ui.I_CmsConfirmDialogHandler;
 import org.opencms.gwt.client.ui.I_CmsListItem;
+import org.opencms.gwt.client.ui.css.I_CmsToolbarButtonLayoutBundle;
+import org.opencms.gwt.shared.CmsGwtConstants;
 import org.opencms.gwt.shared.CmsIconUtil;
 import org.opencms.gwt.shared.CmsListInfoBean;
 import org.opencms.util.CmsStringUtil;
@@ -85,7 +86,7 @@ public class CmsToolbarNewButton extends A_CmsToolbarListMenuButton {
 
         super(
             Messages.get().key(Messages.GUI_TOOLBAR_NEW_BUTTON_TITLE_0),
-            I_CmsButton.ButtonData.NEW.getIconClass(),
+            I_CmsToolbarButtonLayoutBundle.INSTANCE.toolbarButtonCss().toolbarAdd(),
             toolbar,
             controller);
     }
@@ -122,6 +123,7 @@ public class CmsToolbarNewButton extends A_CmsToolbarListMenuButton {
 
         m_functionList = new CmsList<I_CmsListItem>();
         m_functionList.add(makeRedirectItem());
+        m_functionList.add(makeNavigationLevelItem());
         for (CmsNewResourceInfo typeInfo : controller.getData().getResourceTypeInfos()) {
             if (!CmsStringUtil.isEmptyOrWhitespaceOnly(typeInfo.getCreateParameter())) {
                 CmsCreatableListItem item = makeDetailPageItem(typeInfo);
@@ -209,6 +211,27 @@ public class CmsToolbarNewButton extends A_CmsToolbarListMenuButton {
         }
         widget.setIcon(CmsIconUtil.getResourceIconClasses(iconTypeName, false));
         CmsCreatableListItem listItem = new CmsCreatableListItem(widget, typeInfo, NewEntryType.detailpage);
+<<<<<<< HEAD
+=======
+        listItem.initMoveHandle(CmsSitemapView.getInstance().getTree().getDnDHandler());
+        return listItem;
+    }
+
+    /**
+     * Creates a list item representing a redirect.<p>
+     * 
+     * @return the new list item 
+     */
+    private CmsCreatableListItem makeNavigationLevelItem() {
+
+        CmsNewResourceInfo typeInfo = getController().getData().getNewNavigationLevelElementInfo();
+        CmsListInfoBean info = new CmsListInfoBean();
+        info.setTitle(typeInfo.getTitle());
+        info.setSubTitle(typeInfo.getSubTitle());
+        CmsListItemWidget widget = new CmsListItemWidget(info);
+        widget.setIcon("cms_type_icon " + I_CmsSitemapLayoutBundle.INSTANCE.sitemapItemCss().navigationLevelIcon());
+        CmsCreatableListItem listItem = new CmsCreatableListItem(widget, typeInfo, NewEntryType.regular);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         listItem.initMoveHandle(CmsSitemapView.getInstance().getTree().getDnDHandler());
         return listItem;
     }
@@ -250,7 +273,7 @@ public class CmsToolbarNewButton extends A_CmsToolbarListMenuButton {
             });
             widget.addButtonToFront(button);
         }
-        widget.setIcon(CmsIconUtil.getResourceIconClasses("containerpage", false));
+        widget.setIcon(CmsIconUtil.getResourceIconClasses(CmsGwtConstants.TYPE_CONTAINERPAGE, false));
         CmsCreatableListItem listItem = new CmsCreatableListItem(widget, typeInfo, NewEntryType.regular);
         listItem.initMoveHandle(CmsSitemapView.getInstance().getTree().getDnDHandler(), true);
         return listItem;

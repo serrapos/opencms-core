@@ -27,6 +27,7 @@
 
 package org.opencms.workplace;
 
+import org.opencms.ade.galleries.shared.CmsGallerySearchScope;
 import org.opencms.configuration.CmsDefaultUserSettings;
 import org.opencms.db.CmsExportPoint;
 import org.opencms.db.CmsUserSettings;
@@ -54,6 +55,7 @@ import org.opencms.main.I_CmsEventListener;
 import org.opencms.main.OpenCms;
 import org.opencms.module.CmsModule;
 import org.opencms.module.CmsModuleManager;
+import org.opencms.relations.CmsCategoryService;
 import org.opencms.security.CmsOrganizationalUnit;
 import org.opencms.security.CmsPermissionSet;
 import org.opencms.security.CmsPermissionViolationException;
@@ -89,6 +91,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -117,11 +121,17 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
     /** The log object for this class. */
     private static final Log LOG = CmsLog.getLog(CmsWorkplaceManager.class);
 
+    /** Value of the acacia-unlock configuration option (may be null if not set). */
+    private String m_acaciaUnlock;
+
     /** The admin cms context. */
     private CmsObject m_adminCms;
 
     /** Indicates if auto-locking of resources is enabled or disabled. */
     private boolean m_autoLockResources;
+
+    /** The name of the local category folder(s). */
+    private String m_categoryFolder;
 
     /** The customized workplace foot. */
     private CmsWorkplaceCustomFoot m_customFoot;
@@ -147,6 +157,7 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
     /** The edit action handler. */
     private I_CmsEditorActionHandler m_editorAction;
 
+    /** The editor CSS handlers. */
     private List<I_CmsEditorCssHandler> m_editorCssHandlers;
 
     /** The workplace editor display options. */
@@ -188,11 +199,17 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
     /** The configured workplace galleries. */
     private Map<String, A_CmsAjaxGallery> m_galleries;
 
+    /** The configured gallery default scope. */
+    private String m_galleryDefaultScope;
+
     /** The group translation. */
     private I_CmsGroupNameTranslation m_groupNameTranslation;
 
     /** The configured group translation class name. */
     private String m_groupTranslationClass;
+
+    /** Keep-alive flag. */
+    private Boolean m_keepAlive;
 
     /** Contains all folders that should be labeled if siblings exist. */
     private List<String> m_labelSiteFolders;
@@ -218,8 +235,14 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
     /** The condition definitions for the resource types  which are triggered before opening the editor. */
     private List<I_CmsPreEditorActionDefinition> m_preEditorConditionDefinitions;
 
+    /** The repository folder handler. */
+    private I_CmsRepositoryFolderHandler m_repositoryFolderHandler;
+
     /** Indicates if the user management icon should be displayed in the workplace. */
     private boolean m_showUserGroupIcon;
+
+    /** Exclude patterns for synchronization. */
+    private ArrayList<Pattern> m_synchronizeExcludePatterns;
 
     /** The temporary file project used by the editors. */
     private CmsProject m_tempFileProject;
@@ -251,6 +274,7 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
         m_labelSiteFolders = new ArrayList<String>();
         m_localizedFolders = new ArrayList<String>();
         m_autoLockResources = true;
+        m_categoryFolder = CmsCategoryService.REPOSITORY_BASE_FOLDER;
         m_xmlContentAutoCorrect = true;
         m_showUserGroupIcon = true;
         m_dialogHandler = new HashMap<String, I_CmsDialogHandler>();
@@ -268,12 +292,13 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
         m_galleries = new HashMap<String, A_CmsAjaxGallery>();
         m_menuRules = new ArrayList<CmsMenuRule>();
         m_menuRulesMap = new HashMap<String, CmsMenuRule>();
-        m_messages = new HashMap<Locale, CmsWorkplaceMessages>();
+        flushMessageCache();
         m_multiContextMenu = new CmsExplorerContextMenu();
         m_multiContextMenu.setMultiMenu(true);
         m_preEditorConditionDefinitions = new ArrayList<I_CmsPreEditorActionDefinition>();
         m_editorCssHandlers = new ArrayList<I_CmsEditorCssHandler>();
         m_customFoot = new CmsWorkplaceCustomFoot();
+        m_synchronizeExcludePatterns = new ArrayList<Pattern>();
 
         // important to set this to null to avoid unnecessary overhead during configuration phase
         m_explorerTypeSettings = null;
@@ -329,9 +354,9 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
                     editorCssHandlerClassName));
             }
         } catch (Exception e) {
-            LOG.error(Messages.get().getBundle().key(
-                Messages.LOG_INVALID_EDITOR_CSSHANDLER_1,
-                editorCssHandlerClassName), e);
+            LOG.error(
+                Messages.get().getBundle().key(Messages.LOG_INVALID_EDITOR_CSSHANDLER_1, editorCssHandlerClassName),
+                e);
         }
     }
 
@@ -357,9 +382,9 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
                     editorCssHandlerClassName));
             }
         } catch (Exception e) {
-            LOG.error(Messages.get().getBundle().key(
-                Messages.LOG_INVALID_EDITOR_CSSHANDLER_1,
-                editorCssHandlerClassName), e);
+            LOG.error(
+                Messages.get().getBundle().key(Messages.LOG_INVALID_EDITOR_CSSHANDLER_1, editorCssHandlerClassName),
+                e);
         }
     }
 
@@ -500,9 +525,25 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
                     resourceTypeName));
             }
         } catch (Exception e) {
-            LOG.error(Messages.get().getBundle().key(
-                Messages.LOG_INVALID_EDITOR_PRE_ACTION_1,
-                preEditorConditionDefinitionClassName), e);
+            LOG.error(
+                Messages.get().getBundle().key(
+                    Messages.LOG_INVALID_EDITOR_PRE_ACTION_1,
+                    preEditorConditionDefinitionClassName),
+                e);
+        }
+    }
+
+    /**
+     * Adds a pattern to be excluded in VFS synchronization.<p>
+     * 
+     * @param pattern a java regex to applied on the file name
+     */
+    public void addSynchronizeExcludePattern(String pattern) {
+
+        try {
+            m_synchronizeExcludePatterns.add(Pattern.compile(pattern));
+        } catch (PatternSyntaxException e) {
+            LOG.error(Messages.get().getBundle().key(Messages.LOG_INVALID_SYNCHRONIZE_EXCLUDE_PATTERN_1, pattern), e);
         }
     }
 
@@ -525,8 +566,7 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
 
         switch (event.getType()) {
             case I_CmsEventListener.EVENT_CLEAR_CACHES:
-                // clear the cached message objects
-                m_messages = new HashMap<Locale, CmsWorkplaceMessages>();
+                flushMessageCache();
                 m_editorDisplayOptions.clearCache();
                 if (LOG.isDebugEnabled()) {
                     LOG.debug(Messages.get().getBundle().key(Messages.LOG_EVENT_CLEAR_CACHES_0));
@@ -627,6 +667,35 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
         }
 
         return temporaryFilename;
+    }
+
+    /**
+     * Flushes the cached workplace messages.<p>
+     */
+    public void flushMessageCache() {
+
+        // clear the cached message objects
+        m_messages = new HashMap<Locale, CmsWorkplaceMessages>();
+    }
+
+    /**
+     * Gets the value of the acacia-unlock configuration option (null if not set explicitly).<p>
+     * 
+     * @return the value of the acacia-unlock configuration option 
+     */
+    public String getAcaciaUnlock() {
+
+        return m_acaciaUnlock;
+    }
+
+    /**
+     * Returns the name of the local category folder(s).<p>
+     * 
+     * @return the name of the local category folder(s)
+     */
+    public String getCategoryFolder() {
+
+        return m_categoryFolder;
     }
 
     /**
@@ -845,6 +914,34 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
     public Map<String, A_CmsAjaxGallery> getGalleries() {
 
         return m_galleries;
+    }
+
+    /**
+     * Returns the gallery default scope.<p>
+     * 
+     * @return the gallery default scope 
+     */
+    public CmsGallerySearchScope getGalleryDefaultScope() {
+
+        CmsGallerySearchScope result = CmsGallerySearchScope.siteShared;
+        if (m_galleryDefaultScope != null) {
+            try {
+                result = CmsGallerySearchScope.valueOf(m_galleryDefaultScope);
+            } catch (Throwable t) {
+                // ignore 
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Gets the configured gallery default scope as a string.<p>
+     * 
+     * @return the gallery default scope as a string 
+     */
+    public String getGalleryDefaultScopeString() {
+
+        return m_galleryDefaultScope;
     }
 
     /**
@@ -1098,6 +1195,30 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
     }
 
     /**
+     * Returns the repository folder handler.<p>
+     * 
+     * @return the repository folder handler
+     */
+    public I_CmsRepositoryFolderHandler getRepositoryFolderHandler() {
+
+        if (m_repositoryFolderHandler == null) {
+            // handler has not been configured, use the default one
+            m_repositoryFolderHandler = new CmsRepositoryFolderHandler();
+        }
+        return m_repositoryFolderHandler;
+    }
+
+    /**
+     * Returns Regex patterns that should be excluded from synchronization.<p>
+     * 
+     * @return the exclude patterns
+     */
+    public ArrayList<Pattern> getSynchronizeExcludePatterns() {
+
+        return m_synchronizeExcludePatterns;
+    }
+
+    /**
      * Returns the id of the temporary file project required by the editors.<p>
      * 
      * @return the id of the temporary file project required by the editors
@@ -1122,6 +1243,34 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
             m_toolManager = new CmsToolManager();
         }
         return m_toolManager;
+    }
+
+    /**
+     * Gets the upload hook URI which should be opened for an upload to a given folder.<p>
+     * This method will return null if no upload hook should be used for the given upload folder.<p>
+     * 
+     * The API for this upload hook is as follows:
+     * 
+     * The upload hook will be called with the following parameters:
+     * 
+     * resources (required): a comma separated list of the structure ids of the uploaded resources
+     *                       if this is omitted 
+     * closelink (optional): a link which should be opened once the upload hook has finished whatever
+     *                       it is doing
+     * 
+     * @param cms the current CMS context 
+     * @param uploadFolder the folder for which the upload hook should be found
+     *  
+     * @return the URI of the upload hook or null 
+     */
+    public String getUploadHook(CmsObject cms, String uploadFolder) {
+
+        I_CmsDialogHandler handler = getDialogHandler(CmsDialogSelector.DIALOG_PROPERTY);
+        if ((handler != null) && (handler instanceof I_CmsPostUploadDialogHandler)) {
+            return ((I_CmsPostUploadDialogHandler)handler).getUploadHook(cms, uploadFolder);
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -1295,8 +1444,7 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
             // configures the tool manager
             getToolManager().configure(cms);
 
-            // throw away all cached message objects
-            m_messages = new HashMap<Locale, CmsWorkplaceMessages>();
+            flushMessageCache();
 
             // register this object as event listener
             OpenCms.addCmsEventListener(this, new int[] {I_CmsEventListener.EVENT_CLEAR_CACHES});
@@ -1327,6 +1475,36 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
     public boolean isEnableAdvancedPropertyTabs() {
 
         return m_enableAdvancedPropertyTabs;
+    }
+
+    /**
+     * Returns true if "keep alive" mode is active.
+     * 
+     * @return true if the session should be kept alive 
+     */
+    public boolean isKeepAlive() {
+
+        return isKeepAlive(true).booleanValue();
+    }
+
+    /**
+     * Returns true if the session should be kept alive.<p>
+     * 
+     * @param useDefault if true, the default value will be returned if the "keep alive" setting is not explicitly configured
+     *  
+     * @return True if the "keep alive" mode is active
+     */
+    public Boolean isKeepAlive(boolean useDefault) {
+
+        if (m_keepAlive != null) {
+            return m_keepAlive;
+        }
+        if (useDefault) {
+            return Boolean.TRUE;
+        } else {
+            return null;
+        }
+
     }
 
     /**
@@ -1376,6 +1554,17 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
     }
 
     /**
+     * Sets the value of the acacia-unlock configuration option.<p>
+     * 
+     * @param value the value of the acacia-unlock configuration option 
+     */
+    public void setAcaciaUnlock(String value) {
+
+        m_acaciaUnlock = value;
+
+    }
+
+    /**
      * Sets if the autolock resources feature is enabled.<p>
      * 
      * @param value <code>"true"</code> if the autolock resources feature is enabled, otherwise false
@@ -1387,6 +1576,16 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
             CmsLog.INIT.info(Messages.get().getBundle().key(
                 m_autoLockResources ? Messages.INIT_AUTO_LOCK_ENABLED_0 : Messages.INIT_AUTO_LOCK_DISABLED_0));
         }
+    }
+
+    /**
+     * Sets the name of the local category folder(s).<p>
+     * 
+     * @param categoryFolder the name of the local category folder(s)
+     */
+    public void setCategoryFolder(String categoryFolder) {
+
+        m_categoryFolder = categoryFolder;
     }
 
     /**
@@ -1583,6 +1782,21 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
         m_fileViewSettings.setFrozen(true);
     }
 
+    /** 
+     * Sets the gallery default scope.<p>
+     * 
+     * @param galleryDefaultScope the gallery default scope 
+     */
+    public void setGalleryDefaultScope(String galleryDefaultScope) {
+
+        m_galleryDefaultScope = galleryDefaultScope;
+        try {
+            CmsGallerySearchScope.valueOf(galleryDefaultScope);
+        } catch (Throwable t) {
+            LOG.warn(t.getLocalizedMessage(), t);
+        }
+    }
+
     /**
      * Sets the group translation class name.<p>
      * 
@@ -1591,6 +1805,16 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
     public void setGroupTranslationClass(String translationClassName) {
 
         m_groupTranslationClass = translationClassName;
+    }
+
+    /** 
+     * Sets the "keep alive" mode.<p>
+     * 
+     * @param keepAlive the keep-alive mode 
+     */
+    public void setKeepAlive(String keepAlive) {
+
+        m_keepAlive = Boolean.valueOf(keepAlive);
     }
 
     /**
@@ -1602,6 +1826,21 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
 
         multiContextMenu.setMultiMenu(true);
         m_multiContextMenu = multiContextMenu;
+    }
+
+    /**
+     * Sets the repository folder handler.<p>
+     * 
+     * @param clazz the repository folder handler
+     */
+    public void setRepositoryFolderHandler(I_CmsRepositoryFolderHandler clazz) {
+
+        m_repositoryFolderHandler = clazz;
+        if (CmsLog.INIT.isInfoEnabled()) {
+            CmsLog.INIT.info(org.opencms.configuration.Messages.get().getBundle().key(
+                org.opencms.configuration.Messages.INIT_REPOSITORY_FOLDER_1,
+                m_repositoryFolderHandler.getClass().getName()));
+        }
     }
 
     /**
@@ -1664,6 +1903,20 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
                 m_xmlContentAutoCorrect
                 ? Messages.INIT_XMLCONTENT_AUTOCORRECT_ENABLED_0
                 : Messages.INIT_XMLCONTENT_AUTOCORRECT_DISABLED_0));
+        }
+    }
+
+    /**
+     * Returns true if the Acacia editor in standalone mode should automatically unlock resources.<p>
+     * 
+     * @return true if resources should be automatically unlocked in standalone mode 
+     */
+    public boolean shouldAcaciaUnlock() {
+
+        if (m_acaciaUnlock == null) {
+            return true;
+        } else {
+            return Boolean.parseBoolean(m_acaciaUnlock);
         }
     }
 
@@ -1750,9 +2003,11 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
                 m_defaultAccess.createAccessControlList(CmsExplorerTypeAccess.PRINCIPAL_DEFAULT);
             } catch (CmsException e) {
                 if (CmsLog.INIT.isInfoEnabled()) {
-                    CmsLog.INIT.info(Messages.get().getBundle().key(
-                        Messages.INIT_ADD_TYPE_SETTING_FAILED_1,
-                        CmsExplorerTypeAccess.PRINCIPAL_DEFAULT), e);
+                    CmsLog.INIT.info(
+                        Messages.get().getBundle().key(
+                            Messages.INIT_ADD_TYPE_SETTING_FAILED_1,
+                            CmsExplorerTypeAccess.PRINCIPAL_DEFAULT),
+                        e);
                 }
             }
         }
@@ -1772,9 +2027,9 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
                 settings.getAccess().createAccessControlList(settings.getName());
             } catch (CmsException e) {
                 if (CmsLog.INIT.isInfoEnabled()) {
-                    CmsLog.INIT.info(Messages.get().getBundle().key(
-                        Messages.INIT_ADD_TYPE_SETTING_FAILED_1,
-                        settings.getName()), e);
+                    CmsLog.INIT.info(
+                        Messages.get().getBundle().key(Messages.INIT_ADD_TYPE_SETTING_FAILED_1, settings.getName()),
+                        e);
                 }
             }
         }
@@ -1861,9 +2116,9 @@ public final class CmsWorkplaceManager implements I_CmsLocaleHandler, I_CmsEvent
             viewFolders = cms.getSubFolders(CmsWorkplace.VFS_PATH_VIEWS);
         } catch (CmsException e) {
             if ((OpenCms.getRunLevel() > OpenCms.RUNLEVEL_2_INITIALIZING) && LOG.isErrorEnabled()) {
-                LOG.error(Messages.get().getBundle().key(
-                    Messages.LOG_WORKPLACE_INIT_NO_VIEWS_1,
-                    CmsWorkplace.VFS_PATH_VIEWS), e);
+                LOG.error(
+                    Messages.get().getBundle().key(Messages.LOG_WORKPLACE_INIT_NO_VIEWS_1, CmsWorkplace.VFS_PATH_VIEWS),
+                    e);
             }
             // can not throw exception here since then OpenCms would not even start in shell mode (runlevel 2)
             viewFolders = new ArrayList<CmsResource>();

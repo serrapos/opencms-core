@@ -103,7 +103,7 @@ public class CmsImagePreviewDialog extends A_CmsPreviewDialog<CmsImageInfoBean> 
     public void fillContent(CmsImageInfoBean infoBean) {
 
         // properties tab
-        m_propertiesTab.fillProperties(infoBean.getProperties());
+        m_propertiesTab.fillProperties(infoBean.getProperties(), infoBean.getNoEditReason());
         m_imageInfosTab.fillContent(infoBean);
         if (m_initialFill) {
             if (getGalleryMode() == GalleryMode.widget) {
@@ -130,8 +130,17 @@ public class CmsImagePreviewDialog extends A_CmsPreviewDialog<CmsImageInfoBean> 
         panel.addStyleName(I_CmsLayoutBundle.INSTANCE.previewDialogCss().imagePanel());
         m_previewImage = new Image();
         StringBuffer urlScaled = new StringBuffer(128);
+<<<<<<< HEAD
         urlScaled.append(CmsCoreProvider.get().link(infoBean.getResourcePath())).append("?").append(
             m_handler.getPreviewScaleParam(infoBean.getHeight(), infoBean.getWidth()));
+=======
+        String src = infoBean.getViewLink() != null ? infoBean.getViewLink() : CmsCoreProvider.get().link(
+            infoBean.getResourcePath());
+        urlScaled.append(src).append("?").append(
+            m_handler.getPreviewScaleParam(infoBean.getHeight(), infoBean.getWidth()));
+        // add time stamp to override image caching
+        urlScaled.append("&time=").append(System.currentTimeMillis());
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         m_previewImage.setUrl(urlScaled.toString());
         panel.add(m_previewImage);
         m_previewPanel.setWidget(panel);

@@ -27,6 +27,8 @@
 
 package org.opencms.ade.sitemap.client.hoverbar;
 
+import org.opencms.gwt.client.ui.contextmenu.A_CmsContextMenuItem;
+import org.opencms.gwt.client.ui.contextmenu.CmsContextMenuItem;
 import org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry;
 
 import java.util.List;
@@ -43,9 +45,6 @@ public abstract class A_CmsSitemapMenuEntry implements I_CmsContextMenuEntry, I_
 
     /** The hoverbar. */
     private CmsSitemapHoverbar m_hoverbar;
-
-    /** The image class. */
-    private String m_imageClass;
 
     /** Flag to indicate if this menu entry is active. */
     private boolean m_isActive;
@@ -68,17 +67,17 @@ public abstract class A_CmsSitemapMenuEntry implements I_CmsContextMenuEntry, I_
     }
 
     /**
-     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry#getImageClass()
+     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry#generateMenuItem()
      */
-    public String getImageClass() {
+    public A_CmsContextMenuItem generateMenuItem() {
 
-        return m_imageClass;
+        return new CmsContextMenuItem(this);
     }
 
     /**
-     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry#getImagePath()
+     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry#getIconClass()
      */
-    public String getImagePath() {
+    public String getIconClass() {
 
         return null;
     }
@@ -92,19 +91,19 @@ public abstract class A_CmsSitemapMenuEntry implements I_CmsContextMenuEntry, I_
     }
 
     /**
-     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry#getName()
-     */
-    public String getName() {
-
-        return null;
-    }
-
-    /**
      * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry#getLabel()
      */
     public String getLabel() {
 
         return m_label;
+    }
+
+    /**
+     * @see org.opencms.gwt.client.ui.contextmenu.I_CmsContextMenuEntry#getName()
+     */
+    public String getName() {
+
+        return null;
     }
 
     /**
@@ -180,16 +179,6 @@ public abstract class A_CmsSitemapMenuEntry implements I_CmsContextMenuEntry, I_
     public void setDisabledReason(String reason) {
 
         m_disabledReason = reason;
-    }
-
-    /**
-     * Sets the image class for the icon in front of the label.<p>
-     * 
-     * @param imageClass the image class
-     */
-    public void setImageClass(String imageClass) {
-
-        m_imageClass = imageClass;
     }
 
     /**

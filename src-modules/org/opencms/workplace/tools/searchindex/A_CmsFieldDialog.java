@@ -32,6 +32,8 @@ import org.opencms.jsp.CmsJspActionElement;
 import org.opencms.main.CmsIllegalStateException;
 import org.opencms.main.OpenCms;
 import org.opencms.search.CmsSearchManager;
+import org.opencms.search.fields.CmsLuceneField;
+import org.opencms.search.fields.CmsLuceneFieldConfiguration;
 import org.opencms.search.fields.CmsSearchField;
 import org.opencms.search.fields.CmsSearchFieldConfiguration;
 import org.opencms.workplace.CmsWidgetDialog;
@@ -49,7 +51,7 @@ import javax.servlet.jsp.PageContext;
 
 /**
  * 
- * Abstract widget dialog for all dialogs working with <code>{@link CmsSearchField}</code>.<p> 
+ * Abstract widget dialog for all dialogs working with <code>{@link CmsLuceneField}</code>.<p> 
  * 
  * @since 6.5.5
  */
@@ -76,7 +78,7 @@ public class A_CmsFieldDialog extends CmsWidgetDialog {
     public static final String PARAM_FIELDCONFIGURATION = "fieldconfiguration";
 
     /** The user object that is edited on this dialog. */
-    protected CmsSearchField m_field;
+    protected CmsLuceneField m_field;
 
     /** The user object that is edited on this dialog. */
     protected CmsSearchFieldConfiguration m_fieldconfiguration;
@@ -125,17 +127,17 @@ public class A_CmsFieldDialog extends CmsWidgetDialog {
     /**
      * @see org.opencms.workplace.CmsWidgetDialog#actionCommit()
      */
+    @Override
     public void actionCommit() {
 
-        List errors = new ArrayList();
+        List<Throwable> errors = new ArrayList<Throwable>();
 
         try {
 
             // if new create it first
             boolean found = false;
-            Iterator itFields = m_fieldconfiguration.getFields().iterator();
-            while (itFields.hasNext()) {
-                if (((CmsSearchField)itFields.next()).getName().equals(m_field.getName())) {
+            for (CmsSearchField field : m_fieldconfiguration.getFields()) {
+                if (field.getName().equals(m_field.getName())) {
                     found = true;
                 }
             }
@@ -198,6 +200,7 @@ public class A_CmsFieldDialog extends CmsWidgetDialog {
     /**
      * @see org.opencms.workplace.CmsWidgetDialog#defaultActionHtmlEnd()
      */
+    @Override
     protected String defaultActionHtmlEnd() {
 
         return "";
@@ -206,6 +209,7 @@ public class A_CmsFieldDialog extends CmsWidgetDialog {
     /**
      * @see org.opencms.workplace.CmsWidgetDialog#defineWidgets()
      */
+    @Override
     protected void defineWidgets() {
 
         initUserObject();
@@ -215,6 +219,7 @@ public class A_CmsFieldDialog extends CmsWidgetDialog {
     /**
      * @see org.opencms.workplace.CmsWidgetDialog#getPageArray()
      */
+    @Override
     protected String[] getPageArray() {
 
         return PAGES;
@@ -230,28 +235,28 @@ public class A_CmsFieldDialog extends CmsWidgetDialog {
             try {
                 m_fieldconfiguration = m_searchManager.getFieldConfiguration(getParamFieldconfiguration());
                 if (m_fieldconfiguration == null) {
-                    m_fieldconfiguration = new CmsSearchFieldConfiguration();
+                    m_fieldconfiguration = new CmsLuceneFieldConfiguration();
                 }
             } catch (Exception e) {
-                m_fieldconfiguration = new CmsSearchFieldConfiguration();
+                m_fieldconfiguration = new CmsLuceneFieldConfiguration();
             }
         }
 
         if (m_field == null) {
             try {
-                Iterator itFields = m_fieldconfiguration.getFields().iterator();
+                Iterator<CmsSearchField> itFields = m_fieldconfiguration.getFields().iterator();
                 while (itFields.hasNext()) {
-                    CmsSearchField curField = (CmsSearchField)itFields.next();
+                    CmsLuceneField curField = (CmsLuceneField)itFields.next();
                     if (curField.getName().equals(getParamField())) {
                         m_field = curField;
                         break;
                     }
                 }
                 if (m_field == null) {
-                    m_field = new CmsSearchField();
+                    m_field = new CmsLuceneField();
                 }
             } catch (Exception e) {
-                m_field = new CmsSearchField();
+                m_field = new CmsLuceneField();
             }
         }
     }
@@ -262,6 +267,7 @@ public class A_CmsFieldDialog extends CmsWidgetDialog {
      * 
      * @see org.opencms.workplace.CmsWorkplace#initWorkplaceMembers(org.opencms.jsp.CmsJspActionElement)
      */
+    @Override
     protected void initWorkplaceMembers(CmsJspActionElement jsp) {
 
         m_searchManager = OpenCms.getSearchManager();
@@ -271,6 +277,8 @@ public class A_CmsFieldDialog extends CmsWidgetDialog {
     /**
      * @see org.opencms.workplace.CmsWorkplace#initWorkplaceRequestValues(org.opencms.workplace.CmsWorkplaceSettings, javax.servlet.http.HttpServletRequest)
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Override
     protected void initWorkplaceRequestValues(CmsWorkplaceSettings settings, HttpServletRequest request) {
 
         // initialize parameters and dialog actions in super implementation
@@ -300,11 +308,12 @@ public class A_CmsFieldDialog extends CmsWidgetDialog {
     /**
      * @see org.opencms.workplace.CmsWidgetDialog#validateParamaters()
      */
+    @Override
     protected void validateParamaters() throws Exception {
 
         if (!isNewField()) {
             // test the needed parameters
-            if (getParamField() == null && getJsp().getRequest().getParameter("name.0") == null) {
+            if ((getParamField() == null) && (getJsp().getRequest().getParameter("name.0") == null)) {
                 throw new CmsIllegalStateException(Messages.get().container(
                     Messages.ERR_SEARCHINDEX_EDIT_MISSING_PARAM_1,
                     PARAM_FIELD));

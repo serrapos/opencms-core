@@ -35,6 +35,7 @@ import org.opencms.gwt.shared.CmsContextMenuEntryBean;
 import org.opencms.gwt.shared.CmsCoreData;
 import org.opencms.gwt.shared.CmsCoreData.AdeContext;
 import org.opencms.gwt.shared.CmsLockInfo;
+import org.opencms.gwt.shared.CmsResourceCategoryInfo;
 import org.opencms.gwt.shared.CmsReturnLinkInfo;
 import org.opencms.gwt.shared.CmsValidationQuery;
 import org.opencms.gwt.shared.CmsValidationResult;
@@ -55,12 +56,6 @@ import com.google.gwt.user.client.rpc.RemoteService;
  * @see org.opencms.gwt.shared.rpc.I_CmsCoreServiceAsync
  */
 public interface I_CmsCoreService extends RemoteService {
-
-    /** A constant that signals that we are in the container page context. */
-    String CONTEXT_CONTAINERPAGE = "containerpage";
-
-    /** A constant that signals that we are in the sitemap context. */
-    String CONTEXT_SITEMAP = "sitemap";
 
     /**
     * Creates a new UUID.<p>
@@ -95,6 +90,17 @@ public interface I_CmsCoreService extends RemoteService {
      * @throws CmsRpcException if something goes wrong 
      */
     List<CmsCategoryTreeEntry> getCategoriesForSitePath(String sitePath) throws CmsRpcException;
+
+    /**
+     * Returns the category information for the given resource.<p>
+     * 
+     * @param structureId the resource structure id
+     * 
+     * @return the category information
+     * 
+     * @throws CmsRpcException if something goes wrong
+     */
+    CmsResourceCategoryInfo getCategoryInfo(CmsUUID structureId) throws CmsRpcException;
 
     /**
      * Returns the context menu entries for the given URI.<p>
@@ -156,6 +162,18 @@ public interface I_CmsCoreService extends RemoteService {
     String getWorkplaceLink(CmsUUID structureId) throws CmsRpcException;
 
     /**
+     * Locks the given resource with a temporary lock if it exists.<p>
+     * If the resource does not exist yet, the closest existing ancestor folder will check if it is lockable.<p>
+     * 
+     * @param sitePath the site path of the resource to lock 
+     * 
+     * @return <code>null</code> if successful, an error message if not 
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    String lockIfExists(String sitePath) throws CmsRpcException;
+
+    /**
      * Locks the given resource with a temporary lock.<p>
      * 
      * @param structureId the structure id of the resource to lock 
@@ -214,11 +232,30 @@ public interface I_CmsCoreService extends RemoteService {
     void setAvailabilityInfo(String vfsPath, CmsAvailabilityInfoBean bean) throws CmsRpcException;
 
     /**
+     * Sets the categories of the given resource. Will remove all other categories.<p>
+     * 
+     * @param structureId the resource structure id
+     * @param categories the categories to set
+     * 
+     * @throws CmsRpcException if something goes wrong
+     */
+    void setResourceCategories(CmsUUID structureId, List<String> categories) throws CmsRpcException;
+
+    /**
+     * Sets the show editor help flag.<p>
+     * 
+     * @param showHelp the show help flag
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    void setShowEditorHelp(boolean showHelp) throws CmsRpcException;
+
+    /**
      * Writes the tool-bar visibility into the session cache.<p>
      * 
      * @param visible <code>true</code> if the tool-bar is visible
      * 
-     * @throws CmsRpcException
+     * @throws CmsRpcException if something goes wrong 
      */
     void setToolbarVisible(boolean visible) throws CmsRpcException;
 
@@ -232,6 +269,17 @@ public interface I_CmsCoreService extends RemoteService {
      * @throws CmsRpcException if something goes wrong 
      */
     String unlock(CmsUUID structureId) throws CmsRpcException;
+
+    /**
+     * Unlocks the given resource.<p>
+     * 
+     * @param sitePath the site path of the resource to unlock   
+     * 
+     * @return <code>null</code> if successful, an error message if not 
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    String unlock(String sitePath) throws CmsRpcException;
 
     /**
      * Performs a batch of validations and returns the results.<p>

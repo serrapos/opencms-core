@@ -28,6 +28,10 @@
 package org.opencms.ade.galleries.client;
 
 import org.opencms.ade.galleries.client.ui.CmsGalleryDialog;
+import org.opencms.ade.galleries.client.ui.CmsGalleryPopup;
+import org.opencms.ade.galleries.client.ui.CmsResultListItem;
+import org.opencms.ade.galleries.shared.CmsResultItemBean;
+import org.opencms.ade.galleries.shared.I_CmsGalleryConfiguration;
 import org.opencms.gwt.client.dnd.CmsDNDHandler;
 import org.opencms.gwt.client.ui.CmsTabbedPanel.CmsTabbedPanelStyle;
 import org.opencms.gwt.client.ui.I_CmsAutoHider;
@@ -54,23 +58,58 @@ public final class CmsGalleryFactory {
      */
     public static CmsGalleryDialog createDialog() {
 
-        CmsGalleryDialog galleryDialog = new CmsGalleryDialog(CmsTabbedPanelStyle.buttonTabs);
+        CmsGalleryDialog galleryDialog = new CmsGalleryDialog(new I_CmsGalleryHandler() {
+
+            public boolean filterDnd(CmsResultItemBean resultBean) {
+
+                // TODO: Auto-generated method stub
+                return true;
+            }
+
+            public I_CmsAutoHider getAutoHideParent() {
+
+                return null;
+            }
+
+            public CmsDNDHandler getDndHandler() {
+
+                return null;
+            }
+
+            public void processResultItem(CmsResultListItem item) {
+
+                // do nothing
+            }
+
+        }, CmsTabbedPanelStyle.buttonTabs);
         new CmsGalleryController(new CmsGalleryControllerHandler(galleryDialog));
         return galleryDialog;
     }
 
     /**
-     * Returns a gallery dialog object with drag and drop handler.<p>
+     * Creates a new gallery dialog.<p>
      * 
-     * @param dndHandler the reference to the drag and drop handler
-     * @param autoHideParent the auto-hide parent to this dialog if present
+     * @param galleryHandler the gallery handler 
      * 
-     * @return gallery dialog
+     * @return the gallery dialog instance 
      */
-    public static CmsGalleryDialog createDialog(CmsDNDHandler dndHandler, I_CmsAutoHider autoHideParent) {
+    public static CmsGalleryDialog createDialog(I_CmsGalleryHandler galleryHandler) {
 
-        CmsGalleryDialog galleryDialog = new CmsGalleryDialog(dndHandler, autoHideParent);
-        new CmsGalleryController(new CmsGalleryControllerHandler(galleryDialog));
-        return galleryDialog;
+        CmsGalleryDialog result = new CmsGalleryDialog(galleryHandler);
+        new CmsGalleryController(new CmsGalleryControllerHandler(result));
+        return result;
+    }
+
+    /**
+     * Creates a gallery widget pop-up.<p>
+     * 
+     * @param handler the widget handler, used to set the widgets value
+     * @param conf the gallery configuration
+     * 
+     * @return the generated pop-up
+     */
+    public static CmsGalleryPopup createGalleryPopup(I_CmsGalleryWidgetHandler handler, I_CmsGalleryConfiguration conf) {
+
+        return new CmsGalleryPopup(handler, conf);
     }
 }

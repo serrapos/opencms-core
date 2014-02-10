@@ -45,8 +45,10 @@ import org.opencms.util.CmsUUID;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 
@@ -59,7 +61,7 @@ import org.apache.commons.logging.Log;
  * file is updated, only the single instance for that configuration file is updated, whereas if a module configuration file
  * is changed, the configuration of all modules will be read again.<p>
  */
-class CmsConfigurationCache {
+class CmsConfigurationCache implements I_CmsGlobalConfigurationCache {
 
     /** The log instance for this class. */
     private static final Log LOG = CmsLog.getLog(CmsConfigurationCache.class);
@@ -106,6 +108,14 @@ class CmsConfigurationCache {
     }
 
     /**
+     * @see org.opencms.ade.configuration.I_CmsGlobalConfigurationCache#clear()
+     */
+    public void clear() {
+
+        initialize();
+    }
+
+    /**
      * Looks up the root path for a given structure id.<p>
      *
      * This is used for correcting the paths of cached resource objects.<p>
@@ -124,6 +134,100 @@ class CmsConfigurationCache {
         CmsResource res = m_cms.readResource(structureId);
         m_pathCache.put(structureId, res.getRootPath());
         return res.getRootPath();
+    }
+
+    /**
+     * Initializes the cache by reading in all the configuration files.<p>
+     */
+    public synchronized void initialize() {
+
+        m_siteConfigurations.clear();
+        if (m_cms.existsResource("/")) {
+            try {
+                List<CmsResource> configFileCandidates = m_cms.readResources(
+                    "/",
+                    CmsResourceFilter.DEFAULT.addRequireType(m_configType.getTypeId()));
+                for (CmsResource candidate : configFileCandidates) {
+                    if (isSitemapConfiguration(candidate.getRootPath(), candidate.getTypeId())) {
+                        update(candidate);
+                    }
+                }
+            } catch (Exception e) {
+                LOG.error(e.getLocalizedMessage(), e);
+            }
+        }
+        refreshModuleConfiguration();
+        try {
+            initializeFolderTypes();
+        } catch (Exception e) {
+            LOG.error(e.getLocalizedMessage(), e);
+        }
+
+    }
+
+    /**
+     * Removes a published resource from the cache.<p>
+     * 
+     * @param res the published resource 
+     */
+    public void remove(CmsPublishedResource res) {
+
+        remove(res.getStructureId(), res.getRootPath(), res.getType());
+    }
+
+    /**
+     * Removes a resource from the cache.<p>
+     * 
+     * @param res the resource to remove 
+     */
+    public void remove(CmsResource res) {
+
+        remove(res.getStructureId(), res.getRootPath(), res.getTypeId());
+    }
+
+    /**
+     * Updates the cache entry for the given published resource.<p>
+     * 
+     * @param res a published resource
+     */
+    public void update(CmsPublishedResource res) {
+
+        try {
+            update(res.getStructureId(), res.getRootPath(), res.getType(), res.getState());
+        } catch (CmsRuntimeException e) {
+            // may happen during import of org.opencms.ade.configuration module
+            LOG.warn(e.getLocalizedMessage(), e);
+        }
+    }
+
+    /** 
+     * Updates the cache entry for the given resource.<p>
+     * 
+     * @param res the resource for which the cache entry should be updated
+     */
+    public void update(CmsResource res) {
+
+        try {
+            update(res.getStructureId(), res.getRootPath(), res.getTypeId(), res.getState());
+        } catch (CmsRuntimeException e) {
+            // may happen during import of org.opencms.ade.configuration module
+            LOG.warn(e.getLocalizedMessage(), e);
+        }
+    }
+
+    /**
+     * Gets all detail page info beans which are defined anywhere in the configuration.<p>
+     * 
+     * @return the list of detail page info beans 
+     */
+    protected synchronized List<CmsDetailPageInfo> getAllDetailPages() {
+
+        readRemainingConfigurations();
+        List<CmsDetailPageInfo> result = new ArrayList<CmsDetailPageInfo>();
+        for (CmsADEConfigData configData : m_siteConfigurations.values()) {
+            result.addAll(configData.getAllDetailPages(true));
+        }
+        return result;
     }
 
     /** 
@@ -161,6 +265,24 @@ class CmsConfigurationCache {
     }
 
     /**
+     * Gets the set of type names for which detail pages are configured in any sitemap configuration.<p>
+     * 
+     * @return the set of type names with configured detail pages  
+     */
+    protected synchronized Set<String> getDetailPageTypes() {
+
+        readRemainingConfigurations();
+        Set<String> result = new HashSet<String>();
+        for (CmsADEConfigData configData : m_siteConfigurations.values()) {
+            List<CmsDetailPageInfo> detailPageInfos = configData.getAllDetailPages(false);
+            for (CmsDetailPageInfo info : detailPageInfos) {
+                result.add(info.getType());
+            }
+        }
+        return result;
+    }
+
+    /**
      * Gets the merged module configuration.<p>
      * @return the merged module configuration instance
      */
@@ -170,7 +292,7 @@ class CmsConfigurationCache {
     }
 
     /**
-     * Helper method to retrieve the parent folder type.<p>
+     * Helper method to retrieve the parent folder type or <code>null</code> if none available.<p>
      * 
      * @param rootPath the path of a resource 
      * @return the parent folder content type 
@@ -183,9 +305,7 @@ class CmsConfigurationCache {
             return null;
         }
         String type = m_folderTypes.get(parent);
-        if (type == null) {
-            return null;
-        }
+        // type may be null
         return type;
     }
 
@@ -224,33 +344,6 @@ class CmsConfigurationCache {
     }
 
     /**
-     * Initializes the cache by reading in all the configuration files.<p>
-     */
-    protected synchronized void initialize() {
-
-        m_siteConfigurations.clear();
-        try {
-            List<CmsResource> configFileCandidates = m_cms.readResources(
-                "/",
-                CmsResourceFilter.DEFAULT.addRequireType(m_configType.getTypeId()));
-            for (CmsResource candidate : configFileCandidates) {
-                if (isSitemapConfiguration(candidate.getRootPath(), candidate.getTypeId())) {
-                    update(candidate);
-                }
-            }
-        } catch (Exception e) {
-            LOG.error(e.getLocalizedMessage(), e);
-        }
-        refreshModuleConfiguration();
-        try {
-            initializeFolderTypes();
-        } catch (Exception e) {
-            LOG.error(e.getLocalizedMessage(), e);
-        }
-
-    }
-
-    /**
      * Initializes the cached folder types.<p>
      * 
      * @throws CmsException if something goes wrong 
@@ -259,15 +352,76 @@ class CmsConfigurationCache {
 
         LOG.info("Computing folder types for detail pages...");
         m_folderTypes.clear();
+        // do this first, since folder types from modules should be overwritten by folder types from sitemaps 
+        if (m_moduleConfiguration != null) {
+            Map<String, String> folderTypes = m_moduleConfiguration.getFolderTypes();
+            m_folderTypes.putAll(folderTypes);
+        }
+
         List<CmsADEConfigData> configDataObjects = new ArrayList<CmsADEConfigData>(m_siteConfigurations.values());
         for (CmsADEConfigData configData : configDataObjects) {
             Map<String, String> folderTypes = configData.getFolderTypes();
             m_folderTypes.putAll(folderTypes);
         }
-        if (m_moduleConfiguration != null) {
-            Map<String, String> folderTypes = m_moduleConfiguration.getFolderTypes();
-            m_folderTypes.putAll(folderTypes);
+    }
+
+    /**
+     * Checks whether the given resource is configured as a detail page.<p>
+     * 
+     * @param cms the current CMS context  
+     * @param resource the resource to test 
+     * 
+     * @return true if the resource is configured as a detail page 
+     */
+    protected synchronized boolean isDetailPage(CmsObject cms, CmsResource resource) {
+
+        readRemainingConfigurations();
+        CmsResource folder;
+        if (resource.isFile()) {
+            if (!CmsResourceTypeXmlContainerPage.isContainerPage(resource)) {
+                return false;
+            }
+            try {
+                folder = m_cms.readResource(CmsResource.getParentFolder(resource.getRootPath()));
+            } catch (CmsException e) {
+                LOG.error(e.getLocalizedMessage(), e);
+                return false;
+            }
+        } else {
+            folder = resource;
         }
+        List<CmsDetailPageInfo> allDetailPages = new ArrayList<CmsDetailPageInfo>();
+        // First collect all detail page infos 
+        for (CmsADEConfigData configData : m_siteConfigurations.values()) {
+            List<CmsDetailPageInfo> detailPageInfos = configData.getAllDetailPages();
+            allDetailPages.addAll(detailPageInfos);
+        }
+        // First pass: check if the structure id or path directly match one of the configured detail pages.
+        for (CmsDetailPageInfo info : allDetailPages) {
+            if (folder.getStructureId().equals(info.getId())
+                || folder.getRootPath().equals(info.getUri())
+                || resource.getStructureId().equals(info.getId())
+                || resource.getRootPath().equals(info.getUri())) {
+                return true;
+            }
+        }
+        // Second pass: configured detail pages may be actual container pages rather than folders 
+        String normalizedFolderRootPath = CmsStringUtil.joinPaths(folder.getRootPath(), "/");
+        for (CmsDetailPageInfo info : allDetailPages) {
+            String parentPath = CmsResource.getParentFolder(info.getUri());
+            String normalizedParentPath = CmsStringUtil.joinPaths(parentPath, "/");
+            if (normalizedParentPath.equals(normalizedFolderRootPath)) {
+                try {
+                    CmsResource infoResource = m_cms.readResource(info.getId());
+                    if (infoResource.isFile()) {
+                        return true;
+                    }
+                } catch (CmsException e) {
+                    LOG.warn(e.getLocalizedMessage(), e);
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -371,29 +525,13 @@ class CmsConfigurationCache {
     protected synchronized void refreshModuleConfiguration() {
 
         LOG.info("Refreshing module configuration.");
-        CmsConfigurationReader reader = new CmsConfigurationReader(m_cms);
-        m_moduleConfiguration = reader.readModuleConfigurations();
+        if (m_cms.existsResource("/")) {
+            CmsConfigurationReader reader = new CmsConfigurationReader(m_cms);
+            m_moduleConfiguration = reader.readModuleConfigurations();
+        } else {
+            m_moduleConfiguration = new CmsADEConfigData();
+        }
         m_moduleConfiguration.initialize(m_cms);
-    }
-
-    /**
-     * Removes a published resource from the cache.<p>
-     * 
-     * @param res the published resource 
-     */
-    protected void remove(CmsPublishedResource res) {
-
-        remove(res.getStructureId(), res.getRootPath(), res.getType());
-    }
-
-    /**
-     * Removes a resource from the cache.<p>
-     * 
-     * @param res the resource to remove 
-     */
-    protected void remove(CmsResource res) {
-
-        remove(res.getStructureId(), res.getRootPath(), res.getTypeId());
     }
 
     /**
@@ -430,36 +568,6 @@ class CmsConfigurationCache {
     }
 
     /**
-     * Updates the cache entry for the given published resource.<p>
-     * 
-     * @param res a published resource
-     */
-    protected void update(CmsPublishedResource res) {
-
-        try {
-            update(res.getStructureId(), res.getRootPath(), res.getType(), res.getState());
-        } catch (CmsRuntimeException e) {
-            // may happen during import of org.opencms.ade.configuration module
-            LOG.warn(e.getLocalizedMessage(), e);
-        }
-    }
-
-    /** 
-     * Updates the cache entry for the given resource.<p>
-     * 
-     * @param res the resource for which the cache entry should be updated
-     */
-    protected void update(CmsResource res) {
-
-        try {
-            update(res.getStructureId(), res.getRootPath(), res.getTypeId(), res.getState());
-        } catch (CmsRuntimeException e) {
-            // may happen during import of org.opencms.ade.configuration module
-            LOG.warn(e.getLocalizedMessage(), e);
-        }
-    }
-
-    /**
      * Updates the cache entry for the given resource data.<p>
      * 
      * @param structureId the structure id of the resource  
@@ -478,8 +586,7 @@ class CmsConfigurationCache {
         } catch (CmsException e) {
             LOG.error(e.getLocalizedMessage(), e);
         }
-        synchronized (m_pathCache) {
-            m_pathCache.remove(structureId);
+        if (m_pathCache.containsKey(structureId)) {
             m_pathCache.put(structureId, rootPath);
         }
         if (isSitemapConfiguration(rootPath, type)) {

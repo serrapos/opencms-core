@@ -3,18 +3,23 @@
 <export>
 	<info>
 		<creator>Admin</creator>
-		<opencms_version>8.0.0</opencms_version>
+		<opencms_version>9.0.0</opencms_version>
 		<createdate>Mon, 30 May 2011 08:07:38 GMT</createdate>
 		<infoproject>Offline</infoproject>
 		<export_version>7</export_version>
 	</info>
 	<module>
 		<name>org.opencms.jquery</name>
-		<nicename><![CDATA[OpenCms 8 JQuery library]]></nicename>
+		<nicename><![CDATA[OpenCms 9 jQuery library]]></nicename>
 		<group>OpenCms frontend</group>
 		<class/>
+<<<<<<< HEAD
 		<description><![CDATA[This modules includes the JQuery javascript libraries as well as several plugins used by OpenCms]]></description>
 		<version>8.0.4</version>
+=======
+		<description><![CDATA[This modules includes the jQuery javascript libraries as well as several plugins used by OpenCms]]></description>
+		<version>9.0.1</version>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 		<authorname><![CDATA[Alkacon Software GmbH]]></authorname>
 		<authoremail><![CDATA[info@alkacon.com]]></authoremail>
 		<datecreated/>
@@ -2021,7 +2026,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[Jquery Dimensions 1.2.0]]></value>
+					<value><![CDATA[jQuery Dimensions - v1.2.0]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2041,7 +2046,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery FlyDom 3.1.1]]></value>
+					<value><![CDATA[jQuery FlyDom - v3.1.1]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2058,7 +2063,12 @@
 			<datecreated>Fri, 25 Apr 2008 10:00:16 GMT</datecreated>
 			<usercreated>Admin</usercreated>
 			<flags>0</flags>
-			<properties/>
+			<properties>
+				<property>
+					<name>Title</name>
+					<value><![CDATA[jQuery hint]]></value>
+				</property>
+			</properties>
 			<relations/>
 			<accesscontrol/>
 		</file>
@@ -2076,7 +2086,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery 1.3.2]]></value>
+					<value><![CDATA[jQuery - v1.8.0]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2096,7 +2106,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery Pagination 1.2]]></value>
+					<value><![CDATA[jQuery Pagination - v1.2]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2116,7 +2126,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery UI 1.7.2]]></value>
+					<value><![CDATA[jQuery UI - v1.8.23]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2136,7 +2146,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[Thickbox 3.1]]></value>
+					<value><![CDATA[jQuery Thickbox - v3.1]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2174,7 +2184,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[Jquery Dimensions 1.2.0]]></value>
+					<value><![CDATA[jQuery Dimensions - v1.2.0]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2194,7 +2204,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery FlyDom 3.1.1]]></value>
+					<value><![CDATA[jQuery FlyDom - v3.1.1]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2214,7 +2224,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery FlyDom 3.1.1]]></value>
+					<value><![CDATA[jQuery hint]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2234,7 +2244,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery 1.3.2]]></value>
+					<value><![CDATA[jQuery - v1.8.0]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2254,7 +2264,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery Pagination 1.2]]></value>
+					<value><![CDATA[jQuery Pagination - v1.2]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2274,7 +2284,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery UI 1.7.2]]></value>
+					<value><![CDATA[jQuery UI - v1.8.23]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -2294,7 +2304,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[Thickbox 3.1]]></value>
+					<value><![CDATA[jQuery Thickbox - v3.1]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4221,7 +4231,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[Jquery Dimensions 1.2.0]]></value>
+					<value><![CDATA[jQuery Dimensions - v1.2.0]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4240,7 +4250,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery FlyDom 3.1.1]]></value>
+					<value><![CDATA[jQuery FlyDom - v3.1.1]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4256,7 +4266,12 @@
 			<datecreated>Fri, 25 Apr 2008 10:00:16 GMT</datecreated>
 			<usercreated>Admin</usercreated>
 			<flags>0</flags>
-			<properties/>
+			<properties>
+				<property>
+					<name>Title</name>
+					<value><![CDATA[jQuery hint]]></value>
+				</property>
+			</properties>
 			<relations/>
 			<accesscontrol/>
 		</file>
@@ -4273,7 +4288,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery 1.3.2]]></value>
+					<value><![CDATA[jQuery - v1.8.0]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4292,7 +4307,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery Pagination 1.2]]></value>
+					<value><![CDATA[jQuery Pagination - v1.2]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4311,7 +4326,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery UI 1.7.2]]></value>
+					<value><![CDATA[jQuery UI - v1.8.23]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4330,7 +4345,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[Thickbox 3.1]]></value>
+					<value><![CDATA[jQuery Thickbox - v3.1]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4367,7 +4382,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[Jquery Dimensions 1.2.0]]></value>
+					<value><![CDATA[jQquery Dimensions - v1.2.0]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4386,7 +4401,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery FlyDom 3.1.1]]></value>
+					<value><![CDATA[jQuery FlyDom - v3.1.1]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4405,7 +4420,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery FlyDom 3.1.1]]></value>
+					<value><![CDATA[jQuery hint]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4424,7 +4439,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery 1.3.2]]></value>
+					<value><![CDATA[jQuery - v1.8.0]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4443,7 +4458,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery Pagination 1.2]]></value>
+					<value><![CDATA[jQuery Pagination - v1.2]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4462,7 +4477,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[JQuery UI 1.7.2]]></value>
+					<value><![CDATA[jQuery UI - v1.8.23]]></value>
 				</property>
 			</properties>
 			<relations/>
@@ -4481,7 +4496,7 @@
 			<properties>
 				<property>
 					<name>Title</name>
-					<value><![CDATA[Thickbox 3.1]]></value>
+					<value><![CDATA[jQuery Thickbox - v3.1]]></value>
 				</property>
 			</properties>
 			<relations/>

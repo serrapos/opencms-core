@@ -27,6 +27,8 @@
 
 package org.opencms.gwt.client.ui;
 
+import com.alkacon.geranium.client.I_DescendantResizeHandler;
+
 import org.opencms.gwt.client.ui.css.I_CmsLayoutBundle;
 import org.opencms.gwt.client.util.CmsDomUtil;
 import org.opencms.util.CmsStringUtil;
@@ -46,6 +48,9 @@ import com.google.gwt.event.logical.shared.BeforeSelectionHandler;
 import com.google.gwt.event.logical.shared.SelectionHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.DeckLayoutPanel;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.LayoutPanel;
 import com.google.gwt.user.client.ui.TabLayoutPanel;
 import com.google.gwt.user.client.ui.Widget;
 
@@ -62,7 +67,7 @@ import com.google.gwt.user.client.ui.Widget;
  * @since 8.0.0
  * 
  */
-public class CmsTabbedPanel<E extends Widget> extends Composite {
+public class CmsTabbedPanel<E extends Widget> extends Composite implements I_DescendantResizeHandler, Iterable<E> {
 
     /** Enumeration with layout keys. */
     public enum CmsTabbedPanelStyle {
@@ -90,6 +95,8 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
          * Constructor.<p>
          * 
          * @param barHeight the height of the bar
+         * @param styleClass the tab style class
+         * @param tabColorClass the tab color
          */
         private CmsTabbedPanelStyle(int barHeight, String styleClass, String tabColorClass) {
 
@@ -129,13 +136,69 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
         }
     }
 
+    /**
+     * Extending the TabLayoutPanel class to allow height adjustments to the tab bar.<p>
+     */
+    protected class TabPanel extends TabLayoutPanel {
+
+        /** The tab content panel. */
+        private DeckLayoutPanel m_contentPanel;
+
+        /** The tab bar. */
+        private FlowPanel m_tabBar;
+
+        /** 
+         * Constructor.<p>
+         * 
+         * @param barHeight the tab bar height
+         * @param barUnit the height unit
+         */
+        public TabPanel(double barHeight, Unit barUnit) {
+
+            super(barHeight, barUnit);
+            LayoutPanel tabLayout = (LayoutPanel)getWidget();
+            // Find the tab bar, which is the first flow panel in the LayoutPanel
+            for (int i = 0; i < tabLayout.getWidgetCount(); ++i) {
+                Widget widget = tabLayout.getWidget(i);
+                if (widget instanceof FlowPanel) {
+                    m_tabBar = (FlowPanel)widget;
+                    break; // tab bar found
+                }
+            }
+
+            for (int i = 0; i < tabLayout.getWidgetCount(); ++i) {
+                Widget widget = tabLayout.getWidget(i);
+                if (widget instanceof DeckLayoutPanel) {
+                    m_contentPanel = (DeckLayoutPanel)widget;
+                    break; // tab bar found
+                }
+            }
+        }
+
+        /**
+         * Checks the tab bar for necessary height adjustments.<p>
+         */
+        protected void checkTabOverflow() {
+
+            int height = m_tabBar.getOffsetHeight();
+            m_contentPanel.getElement().getParentElement().getStyle().setTop(height, Unit.PX);
+        }
+    }
+
+    /** The TabLayoutPanel widget. */
+    TabPanel m_tabPanel;
+
+    /** Auto resize mode. */
+    private boolean m_autoResize;
+
+    /** Offset which is added to the measured tab content height to resize the panel. */
+    private int m_autoResizeHeightDelta;
+
     /** Stores the indexes and the title of disabled tabs. */
     private Map<Integer, String> m_disabledTabIndexes = new HashMap<Integer, String>();
 
+    /** The tab panel style. */
     private CmsTabbedPanelStyle m_panelStyle;
-
-    /** The TabLayoutPanel widget. */
-    private TabLayoutPanel m_tabPanel;
 
     /** A map from ids to tabs. */
     private Map<String, E> m_tabsById = new HashMap<String, E>();
@@ -155,7 +218,7 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
      */
     public CmsTabbedPanel(CmsTabbedPanelStyle tabbedPanelStyle) {
 
-        m_tabPanel = new TabLayoutPanel(tabbedPanelStyle.getBarHeight(), Unit.PX);
+        m_tabPanel = new TabPanel(tabbedPanelStyle.getBarHeight(), Unit.PX);
         m_panelStyle = tabbedPanelStyle;
 
         // All composites must call initWidget() in their constructors.
@@ -171,7 +234,7 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
             tabBarDivs.get(0).getParentElement().setClassName(
                 I_CmsLayoutBundle.INSTANCE.tabbedPanelCss().cmsTabLayoutPanelTabBar()
                     + " "
-                    + I_CmsLayoutBundle.INSTANCE.generalCss().cornerAll());
+                    + I_CmsLayoutBundle.INSTANCE.generalCss().cornerTop());
             if (m_panelStyle.getTabColorClass() != null) {
                 tabBarDivs.get(0).getParentElement().addClassName(m_panelStyle.getTabColorClass());
             }
@@ -191,6 +254,13 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
             public void onAttachOrDetach(AttachEvent event) {
 
                 setOverflowVisibleToContent();
+                Scheduler.get().scheduleDeferred(new ScheduledCommand() {
+
+                    public void execute() {
+
+                        m_tabPanel.checkTabOverflow();
+                    }
+                });
             }
         });
     }
@@ -206,7 +276,7 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
     public void add(E tabContent, String tabName) {
 
         tabContent.addStyleName(I_CmsLayoutBundle.INSTANCE.generalCss().cornerAll());
-        m_tabPanel.add(tabContent, tabName);
+        m_tabPanel.add(tabContent, CmsDomUtil.stripHtml(tabName));
 
         Element tabRootEl = m_tabPanel.getElement();
         // set an additional css class for the parent element of the .gwt-TabLayoutPanelTabs element
@@ -230,6 +300,7 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
                 e.addClassName(I_CmsLayoutBundle.INSTANCE.tabbedPanelCss().cornerRight());
             }
         }
+        m_tabPanel.checkTabOverflow();
     }
 
     /**
@@ -280,7 +351,7 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
     public void addWithLeftMargin(E tabContent, String tabName) {
 
         tabContent.addStyleName(I_CmsLayoutBundle.INSTANCE.generalCss().cornerAll());
-        m_tabPanel.add(tabContent, tabName);
+        m_tabPanel.add(tabContent, CmsDomUtil.stripHtml(tabName));
 
         int tabIndex = m_tabPanel.getWidgetIndex(tabContent);
         Element tabElement = getTabElement(tabIndex);
@@ -291,6 +362,7 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
                 tabElement.addClassName(I_CmsLayoutBundle.INSTANCE.tabbedPanelCss().borderAll());
             }
         }
+        m_tabPanel.checkTabOverflow();
     }
 
     /**
@@ -405,6 +477,7 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
     public void insert(E tabContent, String tabName, int beforeIndex) {
 
         m_tabPanel.insert(tabContent, tabName, beforeIndex);
+        m_tabPanel.checkTabOverflow();
     }
 
     /**
@@ -431,6 +504,21 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
     }
 
     /**
+     * @see com.alkacon.geranium.client.I_DescendantResizeHandler#onResizeDescendant()
+     */
+    public void onResizeDescendant() {
+
+        if (m_autoResize) {
+            Widget w = m_tabPanel.getWidget(getSelectedIndex());
+            if (w instanceof CmsTabContentWrapper) {
+                w = ((CmsTabContentWrapper)w).getWidget();
+            }
+            int h = w.getOffsetHeight() + m_autoResizeHeightDelta;
+            setHeight(h + "px");
+        }
+    }
+
+    /**
      * Removes the tab with the given index.<p>
      * 
      * @param tabIndex the index of the tab which should be removed 
@@ -438,6 +526,7 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
     public void removeTab(int tabIndex) {
 
         m_tabPanel.remove(tabIndex);
+        m_tabPanel.checkTabOverflow();
     }
 
     /**
@@ -488,6 +577,26 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
     public void selectTab(int tabIndex, boolean fireEvent) {
 
         m_tabPanel.selectTab(tabIndex, fireEvent);
+    }
+
+    /**
+     * Enables or disables auto-resizing.<p>
+     * 
+     * @param autoResize the auto resize flag value 
+     */
+    public void setAutoResize(boolean autoResize) {
+
+        m_autoResize = autoResize;
+    }
+
+    /**
+     * Sets a value which is added to the height of a tab content to change the tabbed panel height.<p>
+     * 
+     * @param heightDelta the height difference 
+     */
+    public void setAutoResizeHeightDelta(int heightDelta) {
+
+        m_autoResizeHeightDelta = heightDelta;
     }
 
     /**
@@ -549,6 +658,7 @@ public class CmsTabbedPanel<E extends Widget> extends Composite {
         for (Element e : tabContentDivs) {
             e.getParentElement().getStyle().setOverflow(Overflow.VISIBLE);
         }
+
     }
 
     /**

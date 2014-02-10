@@ -29,8 +29,8 @@ package org.opencms.search.galleries;
 
 import org.opencms.ade.galleries.shared.CmsGallerySearchScope;
 import org.opencms.file.CmsObject;
-import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsResource;
+import org.opencms.file.CmsResourceFilter;
 import org.opencms.file.types.CmsResourceTypeXmlContainerPage;
 import org.opencms.file.types.CmsResourceTypeXmlContent;
 import org.opencms.file.types.CmsResourceTypeXmlPage;
@@ -39,29 +39,48 @@ import org.opencms.main.CmsException;
 import org.opencms.main.CmsIllegalArgumentException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
+import org.opencms.search.CmsLuceneDocument;
 import org.opencms.search.CmsSearchException;
 import org.opencms.search.CmsSearchIndex;
 import org.opencms.search.CmsSearchParameters;
+import org.opencms.search.I_CmsSearchDocument;
 import org.opencms.search.Messages;
 import org.opencms.search.documents.I_CmsDocumentFactory;
 import org.opencms.search.documents.I_CmsTermHighlighter;
+import org.opencms.search.fields.CmsSearchField;
+import org.opencms.search.fields.CmsSearchFieldConfiguration;
+import org.opencms.util.CmsStringUtil;
 import org.opencms.util.CmsUUID;
+import org.opencms.xml.containerpage.CmsXmlDynamicFunctionHandler;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.logging.Log;
 import org.apache.lucene.document.Document;
+<<<<<<< HEAD
 import org.apache.lucene.queryParser.QueryParser;
+=======
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.BooleanFilter;
+import org.apache.lucene.queries.FilterClause;
+import org.apache.lucene.queries.TermsFilter;
+import org.apache.lucene.queryparser.classic.QueryParser;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanFilter;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.FilterClause;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+<<<<<<< HEAD
 import org.apache.lucene.search.TermsFilter;
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 import org.apache.lucene.search.TopDocs;
 
 /**
@@ -71,6 +90,12 @@ import org.apache.lucene.search.TopDocs;
  */
 public class CmsGallerySearchIndex extends CmsSearchIndex {
 
+<<<<<<< HEAD
+=======
+    /** The system folder. */
+    public static final String FOLDER_SYSTEM = "/system/";
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     /** The system galleries path. */
     public static final String FOLDER_SYSTEM_GALLERIES = "/system/galleries/";
 
@@ -85,6 +110,9 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
 
     /** The gallery document type name for xml-pages. */
     public static final String TYPE_XMLPAGE_GALLERIES = "xmlpage-galleries";
+
+    /** The search.exclude property values considered when searching for page editor gallery. */
+    private static final List<String> EXCLUDE_PROPERTY_VALUES = Arrays.asList(new String[] {"all", "gallery"});
 
     /** The log object for this class. */
     private static final Log LOG = CmsLog.getLog(CmsGallerySearchIndex.class);
@@ -119,6 +147,50 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
     }
 
     /**
+<<<<<<< HEAD
+     * Returns the Lucene document with the given structure id from the index.<p>
+=======
+     * Computes the search root folders for the given search parameters based on the search scope.<p>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
+     * 
+     * @param cms the current CMS context 
+     * @param params the current search parameters 
+     * 
+<<<<<<< HEAD
+     * @return the Lucene document with the given root path from the index
+     * 
+     * @deprecated Use {@link #getDocument(String, String)} instead and provide {@link CmsGallerySearchFieldMapping#FIELD_RESOURCE_STRUCTURE_ID} as field to search in
+     */
+    @Deprecated
+    public Document getDocument(CmsUUID structureId) {
+=======
+     * @return the search root folders based on the search scope 
+     */
+    public List<String> computeScopeFolders(CmsObject cms, CmsGallerySearchParameters params) {
+
+        String subsite = null;
+        if (params.getReferencePath() != null) {
+            subsite = OpenCms.getADEManager().getSubSiteRoot(
+                cms,
+                cms.getRequestContext().addSiteRoot(params.getReferencePath()));
+            if (subsite != null) {
+                subsite = cms.getRequestContext().removeSiteRoot(subsite);
+            } else if (LOG.isWarnEnabled()) {
+                LOG.warn(Messages.get().getBundle().key(
+                    Messages.LOG_GALLERIES_COULD_NOT_EVALUATE_SUBSITE_1,
+                    params.getReferencePath()));
+            }
+        } else if (LOG.isWarnEnabled()) {
+            LOG.warn(Messages.get().getBundle().key(Messages.LOG_GALLERIES_NO_REFERENCE_PATH_PROVIDED_0));
+        }
+        List<String> scopeFolders = getSearchRootsForScope(
+            params.getScope(),
+            cms.getRequestContext().getSiteRoot(),
+            subsite);
+        return scopeFolders;
+    }
+
+    /**
      * Returns the Lucene document with the given structure id from the index.<p>
      * 
      * @param structureId the structure id of the document to retrieve  
@@ -128,7 +200,8 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
      * @deprecated Use {@link #getDocument(String, String)} instead and provide {@link CmsGallerySearchFieldMapping#FIELD_RESOURCE_STRUCTURE_ID} as field to search in
      */
     @Deprecated
-    public Document getDocument(CmsUUID structureId) {
+    public I_CmsSearchDocument getDocument(CmsUUID structureId) {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
         return getDocument(CmsGallerySearchFieldMapping.FIELD_RESOURCE_STRUCTURE_ID, structureId.toString());
     }
@@ -139,7 +212,7 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
     @Override
     public I_CmsDocumentFactory getDocumentFactory(CmsResource res) {
 
-        if ((res != null) && (m_sources != null)) {
+        if ((res != null) && (getSources() != null)) {
             // the result can only be null or the type configured for the resource
             if (CmsResourceTypeXmlContent.isXmlContent(res) || CmsResourceTypeXmlContainerPage.isContainerPage(res)) {
                 return OpenCms.getSearchManager().getDocumentFactory(TYPE_XMLCONTENT_GALLERIES, null);
@@ -181,10 +254,15 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
      * Gets the search roots to use for the given site/subsite parameters.<p>
      *  
      * @param scope the search scope
+<<<<<<< HEAD
+=======
+     * @param siteParam the current site 
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * @param subSiteParam the current subsite
      *  
      * @return the list of search roots for that option 
      */
+<<<<<<< HEAD
     public List<String> getSearchRootsForScope(CmsGallerySearchScope scope, String subSiteParam) {
 
         List<String> result = new ArrayList<String>();
@@ -193,6 +271,24 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
         }
         if (scope.isIncludeSubSite() && (subSiteParam != null)) {
             result.add(subSiteParam);
+=======
+    public List<String> getSearchRootsForScope(CmsGallerySearchScope scope, String siteParam, String subSiteParam) {
+
+        List<String> result = new ArrayList<String>();
+        if (scope == CmsGallerySearchScope.everything) {
+            result.add("/");
+            return result;
+        }
+        if (scope.isIncludeSite()) {
+            result.add(siteParam);
+        }
+        if (scope.isIncludeSubSite()) {
+            if (subSiteParam == null) {
+                result.add(siteParam);
+            } else {
+                result.add(CmsStringUtil.joinPaths(siteParam, subSiteParam));
+            }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         }
         if (scope.isIncludeShared()) {
             String sharedFolder = OpenCms.getSiteManager().getSharedFolder();
@@ -200,10 +296,13 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
                 result.add(sharedFolder);
             }
         }
+<<<<<<< HEAD
         if (scope == CmsGallerySearchScope.siteShared) {
             result.add(FOLDER_SYTEM_MODULES);
             result.add(FOLDER_SYSTEM_GALLERIES);
         }
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         return result;
     }
 
@@ -246,6 +345,7 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
             if (params.getGalleries() != null) {
                 folders.addAll(params.getGalleries());
             }
+<<<<<<< HEAD
             filter = appendPathFilter(searchCms, filter, folders);
 
             String subsite = null;
@@ -259,6 +359,14 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
             }
             List<String> scopeFolders = getSearchRootsForScope(params.getScope(), subsite);
             filter = appendPathFilter(searchCms, filter, scopeFolders);
+=======
+
+            if (!folders.isEmpty()) {
+                // appendPathFilter has some annoying default behavior for empty folder lists which conflicts with 
+                // the scope filter logic below
+                filter = appendPathFilter(searchCms, filter, folders);
+            }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
             // append category filter
             filter = appendCategoryFilter(searchCms, filter, params.getCategories());
@@ -266,6 +374,32 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
             filter = appendContainerTypeFilter(searchCms, filter, params.getContainerTypes());
             // append resource type filter
             filter = appendResourceTypeFilter(searchCms, filter, params.getResourceTypes());
+
+            // only append scope filter if no no folders or galleries given
+            if (folders.isEmpty()) {
+                if ((params.getResourceTypes() != null)
+                    && params.getResourceTypes().contains(CmsXmlDynamicFunctionHandler.TYPE_FUNCTION)) {
+                    Filter functionTypeFilter = getTermQueryFilter(
+                        CmsSearchField.FIELD_TYPE,
+                        CmsXmlDynamicFunctionHandler.TYPE_FUNCTION);
+                    List<String> searchRootsForOtherTypes = computeScopeFolders(cms, params);
+                    List<String> searchRootsForFunctions = new ArrayList<String>(searchRootsForOtherTypes);
+                    searchRootsForFunctions.add(CmsGallerySearchIndex.FOLDER_SYTEM_MODULES);
+
+                    // build a filter with two cases joined by OR:
+                    // CASE 1: document is a dynamic function => use search roots together with /system/modules
+                    // CASE 2: document is not a dynamic  function => use search roots as-is 
+
+                    BooleanFilter scopeFilter = filterOr(
+                        filterAnd(functionTypeFilter, createPathFilter(searchRootsForFunctions)),
+                        filterAnd(filterNot(functionTypeFilter), createPathFilter(searchRootsForOtherTypes)));
+                    filter.add(scopeFilter, Occur.MUST);
+                } else {
+                    List<String> scopeFolders = computeScopeFolders(cms, params);
+                    filter = appendPathFilter(searchCms, filter, scopeFolders);
+                }
+            }
+
             // append locale filter
             filter = appendLocaleFilter(searchCms, filter, params.getLocale());
             // append date last modified filter            
@@ -278,6 +412,8 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
                 filter,
                 params.getDateCreatedRange().getStartTime(),
                 params.getDateCreatedRange().getEndTime());
+            // append ignore search exclude filter
+            filter = appendIgnoreSearchExclude(filter, params.isIgnoreSearchExclude());
 
             // the search query to use, will be constructed in the next lines 
             Query query = null;
@@ -314,8 +450,12 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
             }
 
             // perform the search operation          
+<<<<<<< HEAD
             searcher.setDefaultFieldSortScoring(true, true);
             hits = searcher.search(query, filter, getMaxHits(), params.getSort());
+=======
+            hits = searcher.search(query, filter, getMaxHits(), params.getSort(), true, true);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
             if (hits != null) {
                 int hitCount = hits.totalHits > hits.scoreDocs.length ? hits.scoreDocs.length : hits.totalHits;
@@ -341,8 +481,14 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
                 int visibleHitCount = hitCount;
                 for (int i = 0, cnt = 0; (i < hitCount) && (cnt < end); i++) {
                     try {
+<<<<<<< HEAD
                         doc = searcher.doc(hits.scoreDocs[i].doc);
                         if (hasReadPermission(searchCms, doc)) {
+=======
+                        doc = getSearcher().doc(hits.scoreDocs[i].doc);
+                        I_CmsSearchDocument searchDoc = new CmsLuceneDocument(doc);
+                        if (hasReadPermission(searchCms, searchDoc)) {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
                             // user has read permission
                             if (cnt >= start) {
                                 // do not use the resource to obtain the raw content, read it from the lucene document!
@@ -416,6 +562,24 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
     }
 
     /**
+     * Appends the ignore search exclude property filter.<p>
+     * 
+     * @param filter the filter to extend
+     * @param ignoreSearchExclude <code>true</code> if the search exclude property should be ignored
+     * 
+     * @return the extended filter clause
+     */
+    protected BooleanFilter appendIgnoreSearchExclude(BooleanFilter filter, boolean ignoreSearchExclude) {
+
+        if (!ignoreSearchExclude) {
+            filter.add(new FilterClause(getMultiTermQueryFilter(
+                CmsSearchField.FIELD_SEARCH_EXCLUDE,
+                EXCLUDE_PROPERTY_VALUES), BooleanClause.Occur.MUST_NOT));
+        }
+        return filter;
+    }
+
+    /**
      * Appends the locale filter to the given filter clause that matches the given locale.<p>
      * 
      * In case the provided List is null or empty, the original filter is left unchanged.<p>
@@ -433,7 +597,7 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
         if (locale != null) {
             // add query categories (if required)
             filter.add(new FilterClause(
-                getTermQueryFilter(CmsGallerySearchFieldMapping.FIELD_RESOURCE_LOCALES, locale),
+                getTermQueryFilter(CmsSearchField.FIELD_RESOURCE_LOCALES, locale),
                 BooleanClause.Occur.MUST));
         }
 
@@ -457,6 +621,7 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
     protected BooleanFilter appendPathFilter(CmsObject cms, BooleanFilter filter, List<String> roots) {
 
         // complete the search root
+<<<<<<< HEAD
         TermsFilter pathFilter = new TermsFilter();
         String sharedFolder = OpenCms.getSiteManager().getSharedFolder();
         if ((roots != null) && (roots.size() > 0)) {
@@ -469,54 +634,54 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
                     searchRoot = cms.getRequestContext().addSiteRoot(roots.get(i));
                 }
                 extendPathFilter(pathFilter, searchRoot);
+=======
+        List<Term> terms = new ArrayList<Term>();
+        if ((roots != null) && (roots.size() > 0)) {
+            // add the all configured search roots with will request context
+            for (int i = 0; i < roots.size(); i++) {
+                extendPathFilter(terms, roots.get(i));
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
             }
         } else {
             // use the current site root as the search root
-            extendPathFilter(pathFilter, cms.getRequestContext().getSiteRoot());
+            extendPathFilter(terms, cms.getRequestContext().getSiteRoot());
             // also add the shared folder (v 8.0)
+<<<<<<< HEAD
             extendPathFilter(pathFilter, OpenCms.getSiteManager().getSharedFolder());
             extendPathFilter(pathFilter, FOLDER_SYTEM_MODULES);
             extendPathFilter(pathFilter, FOLDER_SYSTEM_GALLERIES);
+=======
+            extendPathFilter(terms, OpenCms.getSiteManager().getSharedFolder());
+            extendPathFilter(terms, FOLDER_SYTEM_MODULES);
+            extendPathFilter(terms, FOLDER_SYSTEM_GALLERIES);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         }
 
         // add the calculated path filter for the root path
-        filter.add(new FilterClause(pathFilter, BooleanClause.Occur.MUST));
+        filter.add(new FilterClause(new TermsFilter(terms), BooleanClause.Occur.MUST));
         return filter;
+    }
+
+    /**
+     * Creates a search filter for the given search root paths.<p>
+     * 
+     * @param roots the search root paths
+     *  
+     * @return the filter which filters for the given search roots 
+     */
+    protected TermsFilter createPathFilter(Collection<String> roots) {
+
+        // complete the search root
+        List<Term> terms = new ArrayList<Term>();
+        for (String root : roots) {
+            extendPathFilter(terms, root);
+        }
+        return new TermsFilter(terms);
     }
 
     /**
      * Checks if the provided resource should be excluded from this search index.<p> 
      *
-     * With the introduction of the gallery search index in OpenCms 8, the meaning 
-     * of the VFS property <code>search.exclude</code> that controls
-     * if a resource is included in a search index has been extended.<p>
-     *
-     * The following uses cases can be covered with the property:<p>
-     *
-     * <dl>
-     * <dt>Case A: Exclude from all indexes</dt>
-     *      <dd>Applies at least to ADE resource type copy templates.<br>
-     *      Set <code>search.exclude=all</code>
-     *      </dd>
-     *      
-     * <dt>Case B: Include in all indexes</dt>
-     *      <dd>Applies to most resources e.g. news articles etc.<br>
-     *      Set <code>search.exclude=false</code> - or anything else but <code>all|true|gallery</code>.
-     *      This is also the default in case the property is not set at all.
-     *      </dd>
-     *      
-     * <dt>Case D: Include in gallery index, but exclude in standard index</dt>
-     *      <dd>Applies to content like articles that are displayed only in container pages,
-     *          also applies to "list generating" resource types like those that contain settings for a collector.<br>
-     *      Set <code>search.exclude=true</code> - This is the behavior before OpenCms v8.
-     *      </dd>
-     *       
-     * <dt>Case C: Exclude from gallery index, but include in standard index</dt>
-     *      <dd>Use case so far unknown, but implemented anyway.<br>
-     *      Set <code>search.exclude=gallery</code>.
-     *      </dd> 
-     * </dl>
-     * 
      * @param cms the OpenCms context used for building the search index
      * @param resource the resource to index
      * 
@@ -529,22 +694,7 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
             // don't index  folders or temporary files for galleries, but pretty much everything else
             return true;
         }
-        boolean excludeFromIndex = false;
-        try {
-            // do property lookup with folder search
-            String propValue = cms.readPropertyObject(resource, CmsPropertyDefinition.PROPERTY_SEARCH_EXCLUDE, true).getValue();
-            if (propValue != null) {
-                propValue = propValue.trim();
-                // property value was neither "true" nor null, must check for "all"
-                excludeFromIndex = PROPERTY_SEARCH_EXCLUDE_VALUE_ALL.equalsIgnoreCase(propValue)
-                    || PROPERTY_SEARCH_EXCLUDE_VALUE_GALLERY.equalsIgnoreCase(propValue);
-            }
-        } catch (CmsException e) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug(Messages.get().getBundle().key(Messages.LOG_UNABLE_TO_READ_PROPERTY_1, resource.getRootPath()));
-            }
-        }
-        return excludeFromIndex;
+        return false;
     }
 
     /**
@@ -561,14 +711,90 @@ public class CmsGallerySearchIndex extends CmsSearchIndex {
         for (String fieldName : fields) {
             result.add(fieldName);
             if (locale != null) {
-                result.add(CmsGallerySearchFieldConfiguration.getLocaleExtendedName(fieldName, locale));
+                result.add(CmsSearchFieldConfiguration.getLocaleExtendedName(fieldName, locale));
             } else {
                 for (Locale l : OpenCms.getLocaleManager().getAvailableLocales()) {
-                    result.add(CmsGallerySearchFieldConfiguration.getLocaleExtendedName(fieldName, l));
+                    result.add(CmsSearchFieldConfiguration.getLocaleExtendedName(fieldName, l));
                 }
             }
         }
         return result;
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * We are overriding getResource since the default implementation uses the path to read the resource,
+     * which doesn't work for resources in a different site.<p>
+     * 
+     * @see org.opencms.search.CmsSearchIndex#getResource(org.opencms.file.CmsObject, org.opencms.search.I_CmsSearchDocument)
+     */
+    @Override
+    protected CmsResource getResource(CmsObject cms, I_CmsSearchDocument doc) {
+
+        String fieldStructureId = doc.getFieldValueAsString(CmsGallerySearchFieldMapping.FIELD_RESOURCE_STRUCTURE_ID);
+        CmsUUID structureId = new CmsUUID(fieldStructureId);
+        // check if the resource exits in the VFS, 
+        // this will implicitly check read permission and if the resource was deleted
+        //String contextPath = cms.getRequestContext().removeSiteRoot(doc.getPath());
+
+        CmsResourceFilter filter = CmsResourceFilter.DEFAULT;
+        if (isRequireViewPermission()) {
+            filter = CmsResourceFilter.DEFAULT_ONLY_VISIBLE;
+        }
+        try {
+            return cms.readResource(structureId, filter);
+        } catch (CmsException e) {
+            // Do nothing 
+        }
+        return null;
+    }
+
+    /**
+     * Creates a filter which represents the "AND" operation on two other filters.<p>
+     * 
+     * @param f1 the first filter 
+     * @param f2 the second filter 
+     * 
+     * @return the "AND" operation on the two filters 
+     */
+    private BooleanFilter filterAnd(Filter f1, Filter f2) {
+
+        BooleanFilter filter = new BooleanFilter();
+        filter.add(f1, Occur.MUST);
+        filter.add(f2, Occur.MUST);
+        return filter;
+    }
+
+    /**
+     * Creates a boolean filter for the negation of another filter.<p>
+     * 
+     * @param f1 the filter to negate
+     *  
+     * @return the negated filter 
+     */
+    private BooleanFilter filterNot(Filter f1) {
+
+        BooleanFilter filter = new BooleanFilter();
+        filter.add(f1, Occur.MUST_NOT);
+        return filter;
+    }
+
+    /** 
+     * Creates a boolean filter for the "OR" operation on two other filters.<p>
+     * 
+     * @param f1 the first filter 
+     * @param f2 the second filter
+     *  
+     * @return the composite filter 
+     */
+    private BooleanFilter filterOr(Filter f1, Filter f2) {
+
+        BooleanFilter filter = new BooleanFilter();
+        filter.add(f1, Occur.SHOULD);
+        filter.add(f2, Occur.SHOULD);
+        return filter;
+    }
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 }

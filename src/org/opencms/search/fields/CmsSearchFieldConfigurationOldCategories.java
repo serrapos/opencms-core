@@ -31,6 +31,7 @@ import org.opencms.file.CmsObject;
 import org.opencms.file.CmsProperty;
 import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsResource;
+import org.opencms.search.I_CmsSearchDocument;
 import org.opencms.search.extractors.I_CmsExtractionResult;
 import org.opencms.util.CmsStringUtil;
 
@@ -38,7 +39,7 @@ import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.StringField;
 
 /**
  * Describes a field configuration using the old (pre 8.0) logic for categories that depend on properties.<p>
@@ -47,7 +48,7 @@ import org.apache.lucene.document.Fieldable;
  * 
  * @since 8.0.0 
  */
-public class CmsSearchFieldConfigurationOldCategories extends CmsSearchFieldConfiguration {
+public class CmsSearchFieldConfigurationOldCategories extends CmsLuceneFieldConfiguration {
 
     /**
      * Default constructor.<p>
@@ -68,32 +69,31 @@ public class CmsSearchFieldConfigurationOldCategories extends CmsSearchFieldConf
      * @param propertiesSearched the list of all searched properties of the resource  
      * 
      * @return the document extended by resource category information
+     * 
+     * @see org.opencms.search.fields.CmsSearchFieldConfiguration#appendCategories(org.opencms.search.I_CmsSearchDocument, org.opencms.file.CmsObject, org.opencms.file.CmsResource, org.opencms.search.extractors.I_CmsExtractionResult, java.util.List, java.util.List)
      */
     @Override
-    protected Document appendCategories(
-        Document document,
+    protected I_CmsSearchDocument appendCategories(
+        I_CmsSearchDocument document,
         CmsObject cms,
         CmsResource resource,
         I_CmsExtractionResult extractionResult,
         List<CmsProperty> properties,
         List<CmsProperty> propertiesSearched) {
 
-        Fieldable field;
-        String value;
+        Document doc = (Document)document.getDocument();
 
         // add the category of the file (this is searched so the value can also be attached on a folder)
-        value = CmsProperty.get(CmsPropertyDefinition.PROPERTY_SEARCH_CATEGORY, propertiesSearched).getValue();
+        String value = CmsProperty.get(CmsPropertyDefinition.PROPERTY_SEARCH_CATEGORY, propertiesSearched).getValue();
         if (CmsStringUtil.isNotEmpty(value)) {
             // all categories are internally stored lower case
             value = value.trim().toLowerCase();
             if (value.length() > 0) {
-                field = new Field(CmsSearchField.FIELD_CATEGORY, value, Field.Store.YES, Field.Index.NOT_ANALYZED);
-                field.setBoost(0);
-                document.add(field);
+                Field field = new StringField(CmsSearchField.FIELD_CATEGORY, value, Field.Store.YES);
+                // field.setBoost(0);
+                doc.add(field);
             }
-
         }
-
         return document;
     }
 }

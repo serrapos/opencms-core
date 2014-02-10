@@ -68,12 +68,21 @@ public class CmsClientSitemapEntry implements IsSerializable {
         /** An entry of type leaf doesn't have any children. */
         leaf,
 
+        /** A folder without default file, linking to it's first child entry. */
+        navigationLevel,
+
         /** A redirect entry. */
         redirect,
 
         /** An entry of type sub-sitemap is a reference to a sub-sitemap. */
         subSitemap
     }
+
+    /** NavInfo property value to mark hidden navigation entries. */
+    public static final String HIDDEN_NAVIGATION_ENTRY = "ignoreInDefaultNav";
+
+    /** The entry aliases. */
+    private List<String> m_aliases;
 
     /** The cached export name. */
     private String m_cachedExportName;
@@ -128,6 +137,9 @@ public class CmsClientSitemapEntry implements IsSerializable {
 
     /** True if this entry has been just created, and its name hasn't been directly changed. */
     private boolean m_new;
+
+    /** The no edit reason. */
+    private String m_noEditReason;
 
     /** The properties for the entry itself. */
     private Map<String, CmsClientProperty> m_ownProperties = new HashMap<String, CmsClientProperty>();
@@ -186,6 +198,16 @@ public class CmsClientSitemapEntry implements IsSerializable {
         entry.updateSitePath(CmsStringUtil.joinPaths(m_sitePath, entry.getName()), controller);
         entry.setFolderDefaultPage(entry.isLeafType() && getVfsPath().equals(entry.getVfsPath()));
         m_subEntries.add(entry);
+    }
+
+    /**
+     * Returns the aliases.<p>
+     *
+     * @return the aliases
+     */
+    public List<String> getAliases() {
+
+        return m_aliases;
     }
 
     /**
@@ -306,6 +328,16 @@ public class CmsClientSitemapEntry implements IsSerializable {
     public String getName() {
 
         return m_name;
+    }
+
+    /**
+     * Returns the no edit reason.<p>
+     *
+     * @return the no edit reason
+     */
+    public String getNoEditReason() {
+
+        return m_noEditReason;
     }
 
     /**
@@ -486,7 +518,8 @@ public class CmsClientSitemapEntry implements IsSerializable {
      */
     public boolean isEditable() {
 
-        return !hasForeignFolderLock()
+        return CmsStringUtil.isEmptyOrWhitespaceOnly(m_noEditReason)
+            && !hasForeignFolderLock()
             && !hasBlockingLockedChildren()
             && (((getLock() == null) || (getLock().getLockOwner() == null)) || getLock().isOwnedByUser());
     }
@@ -508,7 +541,18 @@ public class CmsClientSitemapEntry implements IsSerializable {
      */
     public boolean isFolderType() {
 
-        return EntryType.folder == m_entryType;
+        return (EntryType.folder == m_entryType) || (EntryType.navigationLevel == m_entryType);
+    }
+
+    /**
+     * Returns if this is a hidden navigation entry.<p>
+     *
+     * @return <code>true</code> if this is a hidden navigation entry
+     */
+    public boolean isHiddenNavigationEntry() {
+
+        CmsClientProperty property = m_ownProperties.get(CmsClientProperty.PROPERTY_NAVINFO);
+        return (property != null) && HIDDEN_NAVIGATION_ENTRY.equals(property.getEffectiveValue());
     }
 
     /**
@@ -529,6 +573,16 @@ public class CmsClientSitemapEntry implements IsSerializable {
     public boolean isLeafType() {
 
         return (EntryType.leaf == m_entryType) || (EntryType.redirect == m_entryType);
+    }
+
+    /**
+     * Returns if this entry is of type folder.<p>
+     * 
+     * @return <code>true</code> if this entry is of type folder
+     */
+    public boolean isNavigationLevelType() {
+
+        return EntryType.navigationLevel == m_entryType;
     }
 
     /**
@@ -623,6 +677,16 @@ public class CmsClientSitemapEntry implements IsSerializable {
     }
 
     /**
+     * Sets the aliases.<p>
+     *
+     * @param aliases the aliases to set
+     */
+    public void setAliases(List<String> aliases) {
+
+        m_aliases = aliases;
+    }
+
+    /**
      * Sets if the entry resource has blocking locked children that can not be locked by the current user.<p>
      * 
      * @param hasBlockingLockedChildren <code>true</code> if the entry resource has blocking locked children
@@ -640,6 +704,26 @@ public class CmsClientSitemapEntry implements IsSerializable {
     public void setChildrenLoadedInitially(boolean childrenLoaded) {
 
         m_childrenLoadedInitially = childrenLoaded;
+    }
+
+    /**
+     * Sets the expiration date.<p>
+     *
+     * @param dateExpired the expiration date to set
+     */
+    public void setDateExpired(String dateExpired) {
+
+        m_dateExpired = dateExpired;
+    }
+
+    /**
+     * Sets the release date.<p>
+     *
+     * @param dateReleased the release date to set
+     */
+    public void setDateReleased(String dateReleased) {
+
+        m_dateReleased = dateReleased;
     }
 
     /** 
@@ -786,10 +870,27 @@ public class CmsClientSitemapEntry implements IsSerializable {
      * Sets the "new" flag of the client sitemap entry.<p>
      *
      * @param isNew the new new
+<<<<<<< HEAD
      */
     public void setNew(boolean isNew) {
 
         m_new = isNew;
+=======
+     */
+    public void setNew(boolean isNew) {
+
+        m_new = isNew;
+    }
+
+    /**
+     * Sets the no edit reason.<p>
+     *
+     * @param noEditReason the no edit reason to set
+     */
+    public void setNoEditReason(String noEditReason) {
+
+        m_noEditReason = noEditReason;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
@@ -997,8 +1098,15 @@ public class CmsClientSitemapEntry implements IsSerializable {
         setDateExpired(source.getDateExpired());
         setDateReleased(source.getDateReleased());
         setResleasedAndNotExpired(source.isResleasedAndNotExpired());
+<<<<<<< HEAD
         setRedirectTarget(source.getRedirectTarget());
         setResourceState(source.getResourceState());
+=======
+        setAliases(source.getAliases());
+        setRedirectTarget(source.getRedirectTarget());
+        setResourceState(source.getResourceState());
+        setNoEditReason(source.getNoEditReason());
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**

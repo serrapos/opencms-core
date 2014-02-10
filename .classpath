@@ -6,6 +6,7 @@
 	<classpathentry kind="src" path="src-modules"/>
 	<classpathentry kind="src" path="src-setup"/>
 	<classpathentry excluding="META-INF/|data/|ehcache.xml" kind="src" path="test"/>
+<<<<<<< HEAD
 	<classpathentry exported="true" kind="lib" path="lib/compile/ant-contrib-1.0b1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/compile/ant-opencms-1.2.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/compile/ant.jar"/>
@@ -91,5 +92,10 @@
 	<classpathentry kind="lib" path="lib/compile/gwt-dev-2.4.0.jar"/>
 	<classpathentry kind="lib" path="lib/compile/gwt-servlet-deps-2.4.0.jar"/>
 	<classpathentry kind="lib" path="lib/compile/gwt-user-2.4.0.jar"/>
+=======
+	<classpathentry exported="true" kind="con" path="org.springsource.ide.eclipse.gradle.classpathcontainer"/>
+	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="com.google.gwt.eclipse.core.GWT_CONTAINER"/>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -28,12 +28,15 @@
 package org.opencms.widgets;
 
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsResource;
 import org.opencms.i18n.CmsEncoder;
 import org.opencms.i18n.CmsLocaleManager;
 import org.opencms.i18n.CmsMessages;
 import org.opencms.util.CmsMacroResolver;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.util.I_CmsMacroResolver;
+import org.opencms.xml.content.I_CmsXmlContentHandler.DisplayType;
+import org.opencms.xml.types.A_CmsXmlContentValue;
 import org.opencms.xml.types.I_CmsXmlContentValue;
 
 import java.util.Iterator;
@@ -58,7 +61,7 @@ import java.util.regex.Pattern;
  * 
  * @since 6.5.4
  */
-public class CmsLocalizationWidget extends A_CmsWidget {
+public class CmsLocalizationWidget extends A_CmsWidget implements I_CmsADEWidget {
 
     /** The option for the localized key name. */
     public static final String OPTION_KEY = "key=";
@@ -107,6 +110,36 @@ public class CmsLocalizationWidget extends A_CmsWidget {
     }
 
     /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getConfiguration(org.opencms.file.CmsObject, org.opencms.xml.types.A_CmsXmlContentValue, org.opencms.i18n.CmsMessages, org.opencms.file.CmsResource, java.util.Locale)
+     */
+    public String getConfiguration(
+        CmsObject cms,
+        A_CmsXmlContentValue schemaType,
+        CmsMessages messages,
+        CmsResource resource,
+        Locale contentLocale) {
+
+        initConfiguration(cms, schemaType);
+        return m_messages.key(m_bundleKey);
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getCssResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getCssResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getDefaultDisplayType()
+     */
+    public DisplayType getDefaultDisplayType() {
+
+        return DisplayType.wide;
+    }
+
+    /**
      * @see org.opencms.widgets.I_CmsWidget#getDialogWidget(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog, org.opencms.widgets.I_CmsWidgetParameter)
      */
     public String getDialogWidget(CmsObject cms, I_CmsWidgetDialog widgetDialog, I_CmsWidgetParameter param) {
@@ -130,28 +163,44 @@ public class CmsLocalizationWidget extends A_CmsWidget {
         result.append("\" value=\"");
 
         // determine value to show in editor
-        String value = m_messages.key(m_bundleKey);
-        if ((CmsStringUtil.isNotEmptyOrWhitespaceOnly(param.getStringValue(cms)) && !value.equals(param.getStringValue(cms)))
-            || value.startsWith(CmsMessages.UNKNOWN_KEY_EXTENSION)) {
-            // saved value is provided and different from localized value in bundle or no value found in bundle, use it
-            value = param.getStringValue(cms);
-            // replace OpenCms macro syntax with message bundle arguments
-            Matcher matcher = PATTERN_MACRO.matcher(value);
-            while (matcher.matches()) {
-                int startIndex = matcher.start(1);
-                int endIndex = matcher.end(3);
-                String number = matcher.group(2);
-                value = value.substring(0, startIndex) + "{" + number + "}" + value.substring(endIndex);
-                matcher = PATTERN_MACRO.matcher(value);
-            }
-
-        }
-
+        String value = getValue(cms, param);
         result.append(CmsEncoder.escapeXml(value));
         result.append("\">");
         result.append("</td>");
 
         return result.toString();
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getInitCall()
+     */
+    public String getInitCall() {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getJavaScriptResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getJavaScriptResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    public String getWidgetName() {
+
+        return CmsLocalizationWidget.class.getName();
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#isInternal()
+     */
+    public boolean isInternal() {
+
+        return true;
     }
 
     /**
@@ -202,6 +251,49 @@ public class CmsLocalizationWidget extends A_CmsWidget {
      * Initializes the localized bundle to get the value from, the optional key name and the optional locale.<p>
      * 
      * @param cms an initialized instance of a CmsObject
+     * @param schemaType the widget parameter to generate the widget for
+     */
+    protected void initConfiguration(CmsObject cms, A_CmsXmlContentValue schemaType) {
+
+        // set the default bundle key
+        m_bundleKey = schemaType.getName();
+        // set the default locale for XML contents
+        m_locale = cms.getRequestContext().getLocale();
+        try {
+            I_CmsXmlContentValue value = schemaType;
+            m_locale = value.getLocale();
+        } catch (Exception e) {
+            // ignore, this is no XML content
+        }
+
+        // check the message bundle
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(getConfiguration())) {
+            //initialize messages, the optional bundle key name and the optional locale from configuration String
+            String bundleName = "";
+            List<String> configs = CmsStringUtil.splitAsList(getConfiguration(), '|');
+            Iterator<String> i = configs.iterator();
+            while (i.hasNext()) {
+                String config = i.next();
+                if (config.startsWith(OPTION_KEY)) {
+                    m_bundleKey = config.substring(OPTION_KEY.length());
+                } else if (config.startsWith(OPTION_LOCALE)) {
+                    m_locale = CmsLocaleManager.getLocale(config.substring(OPTION_LOCALE.length()));
+                } else {
+                    bundleName = config;
+                }
+            }
+            // create messages object
+            m_messages = new CmsMessages(bundleName, m_locale);
+        } else {
+            // initialize empty messages object to avoid NPE
+            m_messages = new CmsMessages("", m_locale);
+        }
+    }
+
+    /**
+     * Initializes the localized bundle to get the value from, the optional key name and the optional locale.<p>
+     * 
+     * @param cms an initialized instance of a CmsObject
      * @param param the widget parameter to generate the widget for
      */
     protected void initConfiguration(CmsObject cms, I_CmsWidgetParameter param) {
@@ -240,4 +332,33 @@ public class CmsLocalizationWidget extends A_CmsWidget {
             m_messages = new CmsMessages("", m_locale);
         }
     }
+
+    /**
+     * Determine value to show in editor.<p>
+     * @param cms an initialized instance of a CmsObject
+     * @param param the widget parameter to generate the widget for
+     * 
+     * @return value to show in editor
+     */
+    private String getValue(CmsObject cms, I_CmsWidgetParameter param) {
+
+        String value = m_messages.key(m_bundleKey);
+        if ((CmsStringUtil.isNotEmptyOrWhitespaceOnly(param.getStringValue(cms)) && !value.equals(param.getStringValue(cms)))
+            || value.startsWith(CmsMessages.UNKNOWN_KEY_EXTENSION)) {
+            // saved value is provided and different from localized value in bundle or no value found in bundle, use it
+            value = param.getStringValue(cms);
+            // replace OpenCms macro syntax with message bundle arguments
+            Matcher matcher = PATTERN_MACRO.matcher(value);
+            while (matcher.matches()) {
+                int startIndex = matcher.start(1);
+                int endIndex = matcher.end(3);
+                String number = matcher.group(2);
+                value = value.substring(0, startIndex) + "{" + number + "}" + value.substring(endIndex);
+                matcher = PATTERN_MACRO.matcher(value);
+            }
+
+        }
+        return value;
+    }
+
 }

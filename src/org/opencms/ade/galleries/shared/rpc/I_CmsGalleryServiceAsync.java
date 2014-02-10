@@ -27,12 +27,17 @@
 
 package org.opencms.ade.galleries.shared.rpc;
 
+import org.opencms.ade.galleries.shared.CmsGalleryConfiguration;
 import org.opencms.ade.galleries.shared.CmsGalleryDataBean;
 import org.opencms.ade.galleries.shared.CmsGalleryFolderBean;
 import org.opencms.ade.galleries.shared.CmsGallerySearchBean;
+import org.opencms.ade.galleries.shared.CmsResultItemBean;
+import org.opencms.ade.galleries.shared.CmsSitemapEntryBean;
 import org.opencms.ade.galleries.shared.CmsVfsEntryBean;
+import org.opencms.util.CmsUUID;
 
 import java.util.List;
+import java.util.Set;
 
 import com.google.gwt.user.client.rpc.AsyncCallback;
 
@@ -56,6 +61,13 @@ public interface I_CmsGalleryServiceAsync {
     void deleteResource(String resourcePath, AsyncCallback<Void> callback);
 
     /**
+     * Loads the gallery configuration for the adeView mode.<p>
+     * 
+     * @param callback the callback for the result 
+     */
+    void getAdeViewModeConfiguration(AsyncCallback<CmsGalleryConfiguration> callback);
+
+    /**
      * Returns the available galleries depending on the given resource types.<p>
      * 
      * @param resourceTypes the resource types
@@ -64,11 +76,21 @@ public interface I_CmsGalleryServiceAsync {
     void getGalleries(List<String> resourceTypes, AsyncCallback<List<CmsGalleryFolderBean>> callback);
 
     /**
-     * Returns the initial data for the given gallery mode.<p>
+     * Returns the resource info for a single resource.<p>
      * 
+     * @param path the resource path
+     * @param locale the content locale
      * @param callback the callback
      */
-    void getInitialSettings(AsyncCallback<CmsGalleryDataBean> callback);
+    void getInfoForResource(String path, String locale, AsyncCallback<CmsResultItemBean> callback);
+
+    /**
+     * Returns the initial data for the given gallery mode.<p>
+     * 
+     * @param conf the gallery configuration
+     * @param callback the callback
+     */
+    void getInitialSettings(CmsGalleryConfiguration conf, AsyncCallback<CmsGalleryDataBean> callback);
 
     /**
      * Performs an initial search based on the given data bean and the available parameters of the request.<p>
@@ -87,10 +109,50 @@ public interface I_CmsGalleryServiceAsync {
     void getSearch(CmsGallerySearchBean searchObj, AsyncCallback<CmsGallerySearchBean> callback);
 
     /**
+     * Returns the sub entries to the given sitemap path.<p>
+     * 
+     * @param rootPath the root path 
+     * @param isRoot <code>true</code> if the requested entry is the root entry
+     * @param callback the asynchronous callback 
+     */
+    void getSubEntries(String rootPath, boolean isRoot, AsyncCallback<List<CmsSitemapEntryBean>> callback);
+
+    /**
      * Gets the sub-folders of a folder.<p>
      * 
      * @param path the path of a folder
      * @param callback the asynchronous callback 
      */
     void getSubFolders(String path, AsyncCallback<List<CmsVfsEntryBean>> callback);
+
+    /**
+     * Loads the root VFS entry bean for the given site root.<p>
+     * 
+     * @param path the site root  
+     * @param resultCallback the callback for the result 
+     * */
+    void loadVfsEntryBean(String path, AsyncCallback<CmsVfsEntryBean> resultCallback);
+
+    /**
+     * Saves the tree open state.<p>
+     * 
+     * @param treeName the tree name 
+     * @param treeToken the tree token 
+     * @param siteRoot the site root 
+     * @param openItems the open items 
+     * @param callback the result callback 
+     */
+    void saveTreeOpenState(
+        String treeName,
+        String treeToken,
+        String siteRoot,
+        Set<CmsUUID> openItems,
+        AsyncCallback<Void> callback);
+
+    /**
+     * Updates the offline indices.<p>
+     * 
+     * @param callback  the callback
+     */
+    void updateIndex(AsyncCallback<Void> callback);
 }

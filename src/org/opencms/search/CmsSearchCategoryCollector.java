@@ -39,7 +39,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Scorer;
@@ -101,6 +101,9 @@ public class CmsSearchCategoryCollector extends Collector {
     /** The internal map of the categories found. */
     private Map<String, CmsCategroyCount> m_categories;
 
+    /** The index of the document reader. */
+    private int m_docBase;
+
     /** The index searcher used. */
     private IndexSearcher m_searcher;
 
@@ -112,6 +115,7 @@ public class CmsSearchCategoryCollector extends Collector {
     public CmsSearchCategoryCollector(IndexSearcher searcher) {
 
         super();
+        m_docBase = 0;
         m_searcher = searcher;
         m_categories = new HashMap<String, CmsCategroyCount>();
     }
@@ -156,13 +160,16 @@ public class CmsSearchCategoryCollector extends Collector {
     public void collect(int id) {
 
         String category = null;
+        int rebasedId = m_docBase + id;
         try {
-            Document doc = m_searcher.doc(id);
+            Document doc = m_searcher.doc(rebasedId);
             category = doc.get(CmsSearchField.FIELD_CATEGORY);
         } catch (IOException e) {
             // category will be null
             if (LOG.isDebugEnabled()) {
-                LOG.debug(Messages.get().getBundle().key(Messages.LOG_READ_CATEGORY_FAILED_1, new Integer(id)), e);
+                LOG.debug(
+                    Messages.get().getBundle().key(Messages.LOG_READ_CATEGORY_FAILED_1, new Integer(rebasedId)),
+                    e);
             }
 
         }
@@ -196,12 +203,12 @@ public class CmsSearchCategoryCollector extends Collector {
     }
 
     /**
-     * @see org.apache.lucene.search.Collector#setNextReader(org.apache.lucene.index.IndexReader, int)
+     * @see org.apache.lucene.search.Collector#setNextReader(org.apache.lucene.index.AtomicReaderContext)
      */
     @Override
-    public void setNextReader(IndexReader reader, int docBase) {
+    public void setNextReader(AtomicReaderContext ctx) {
 
-        // ignored, we just count hits 
+        m_docBase = ctx.docBase;
     }
 
     /**

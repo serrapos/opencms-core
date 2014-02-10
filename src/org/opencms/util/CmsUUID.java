@@ -35,7 +35,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 
 import org.apache.commons.logging.Log;
 
@@ -61,7 +60,7 @@ import org.safehaus.uuid.UUIDGenerator;
  * 
  * @since 6.0.0 
  */
-public final class CmsUUID extends Object implements Serializable, Cloneable, Comparable<CmsUUID>, Externalizable {
+public final class CmsUUID extends Object implements Cloneable, Comparable<CmsUUID>, Externalizable {
 
     /** A regular expression for matching UUIDs. */
     public static final String UUID_REGEX = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
@@ -98,7 +97,7 @@ public final class CmsUUID extends Object implements Serializable, Cloneable, Co
             // if no ethernet address is available, generate a dummy
             // this is required because otherwise we can't ever de-serialize a CmsUUID outside of OpenCms, 
             // since the empty constructor is called when the de-serialization takes place
-            init(getDummyEthernetAddress());
+            init(CmsStringUtil.getEthernetAddress());
         }
         m_uuid = UUIDGenerator.getInstance().generateTimeBasedUUID(m_ethernetAddress);
     }

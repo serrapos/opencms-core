@@ -1,15 +1,15 @@
 <xsd:complexType name="OpenCmsVfsImage">
     <xsd:sequence>
-        <xsd:element name="link" type="OpenCmsReference" minOccurs="0" maxOccurs="1" />
-        <xsd:element name="description" type="OpenCmsString" minOccurs="0" maxOccurs="1" />
-        <xsd:element name="format" type="OpenCmsString" minOccurs="0" maxOccurs="1" />
-        <xsd:element name="scale" type="OpenCmsString" minOccurs="0" maxOccurs="1" />
+        <xsd:element name="link" type="OpenCmsImageReference" minOccurs="0" />
+        <xsd:element name="description" type="xsd:string" minOccurs="0" />
+        <xsd:element name="format" type="xsd:string" minOccurs="0" />
+        <xsd:element name="scale" type="xsd:string" minOccurs="0" />
     </xsd:sequence>
     <xsd:attribute name="name" type="xsd:string" use="optional" />
     <xsd:attribute name="enabled" type="xsd:boolean" use="optional" />
 </xsd:complexType>
 
-<xsd:complexType name="OpenCmsReference">
+<xsd:complexType name="OpenCmsImageReference">
 	<xsd:sequence>
 		<xsd:element name="target" type="xsd:string" />
 		<xsd:element name="uuid" type="xsd:string" minOccurs="0" />
@@ -17,10 +17,10 @@
 		<xsd:element name="query" type="xsd:string" minOccurs="0" />
 	</xsd:sequence>
     <xsd:attribute name="internal" type="xsd:boolean" use="optional" />	
-	<xsd:attribute name="type" type="OpenCmsDefaultAppinfoRelationType" use="optional" />
+	<xsd:attribute name="type" type="OpenCmsImageAppinfoRelationType" use="optional" />
 </xsd:complexType>
 
-<xsd:simpleType name="OpenCmsDefaultAppinfoRelationType">
+<xsd:simpleType name="OpenCmsImageAppinfoRelationType">
 	<xsd:restriction base="xsd:string">
 		<xsd:pattern value="attachment|ATTACHMENT|reference|REFERENCE|weak|WEAK|strong|STRONG" />
 	</xsd:restriction>

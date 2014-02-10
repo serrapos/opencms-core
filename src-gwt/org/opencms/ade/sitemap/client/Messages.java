@@ -37,6 +37,111 @@ import org.opencms.gwt.client.util.CmsMessages;
 public final class Messages {
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIAS_EDITING_NOT_PERMITTED_0 = "GUI_ALIAS_EDITING_NOT_PERMITTED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIAS_FIELD_SEPARATOR_0 = "GUI_ALIAS_FIELD_SEPARATOR_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_BUTTON_CANCEL_0 = "GUI_ALIASES_BUTTON_CANCEL_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_BUTTON_DELETE_0 = "GUI_ALIASES_BUTTON_DELETE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_BUTTON_DOWNLOAD_0 = "GUI_ALIASES_BUTTON_DOWNLOAD_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_BUTTON_IMPORT_0 = "GUI_ALIASES_BUTTON_IMPORT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_BUTTON_NEW_0 = "GUI_ALIASES_BUTTON_NEW_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_BUTTON_SAVE_0 = "GUI_ALIASES_BUTTON_SAVE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_BUTTON_SELECT_FILE_0 = "GUI_ALIASES_BUTTON_SELECT_FILE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_BUTTON_UPLOAD_0 = "GUI_ALIASES_BUTTON_UPLOAD_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_COLUMN_ALIAS_0 = "GUI_ALIASES_COLUMN_ALIAS_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_COLUMN_ERROR_0 = "GUI_ALIASES_COLUMN_ERROR_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_COLUMN_MODE_0 = "GUI_ALIASES_COLUMN_MODE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_COLUMN_PATH_0 = "GUI_ALIASES_COLUMN_PATH_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_COLUMN_PATTERN_0 = "GUI_ALIASES_COLUMN_PATTERN_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_COLUMN_REPLACEMENT_0 = "GUI_ALIASES_COLUMN_REPLACEMENT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_COLUMN_SELECT_0 = "GUI_ALIASES_COLUMN_SELECT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_CONTEXT_MENU_EDIT_0 = "GUI_ALIASES_CONTEXT_MENU_EDIT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_COUNT_1 = "GUI_ALIASES_COUNT_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_IMPORT_EMPTY_0 = "GUI_ALIASES_IMPORT_EMPTY_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_IMPORT_LINE_2 = "GUI_ALIASES_IMPORT_LINE_2";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_LEGEND_NEW_REWRITE_0 = "GUI_ALIASES_LEGEND_NEW_REWRITE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_LEGEND_REWRITE_TABLE_0 = "GUI_ALIASES_LEGEND_REWRITE_TABLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_MODE_PAGE_0 = "GUI_ALIASES_MODE_PAGE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_MODE_PERMANENT_0 = "GUI_ALIASES_MODE_PERMANENT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_MODE_REDIRECT_0 = "GUI_ALIASES_MODE_REDIRECT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_NEW_BOX_LEGEND_0 = "GUI_ALIASES_NEW_BOX_LEGEND_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_PASSTHROUGH_0 = "GUI_ALIASES_PASSTHROUGH_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_STATUS_ERROR_0 = "GUI_ALIASES_STATUS_ERROR_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_STATUS_OK_0 = "GUI_ALIASES_STATUS_OK_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_TABLE_BOX_LEGEND_0 = "GUI_ALIASES_TABLE_BOX_LEGEND_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_TABLE_LOCKED_1 = "GUI_ALIASES_TABLE_LOCKED_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_TABLE_LOCKED_TITLE_0 = "GUI_ALIASES_TABLE_LOCKED_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_TITLE_EDITOR_0 = "GUI_ALIASES_TITLE_EDITOR_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_ALIASES_TITLE_IMPORT_0 = "GUI_ALIASES_TITLE_IMPORT_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_BLOCKING_LOCKED_CHILDREN_0 = "GUI_BLOCKING_LOCKED_CHILDREN_0";
 
     /** Message constant for key in the resource bundle. */
@@ -121,6 +226,9 @@ public final class Messages {
     public static final String GUI_EDITOR_TITLE_0 = "GUI_EDITOR_TITLE_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_ERROR_ON_SITEMAP_LOAD_0 = "GUI_ERROR_ON_SITEMAP_LOAD_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_FUNCTION_PAGE_TITLE_1 = "GUI_FUNCTION_PAGE_TITLE_1";
 
     /** Message constant for key in the resource bundle. */
@@ -145,6 +253,12 @@ public final class Messages {
     public static final String GUI_HOVERBAR_GOTO_SUB_0 = "GUI_HOVERBAR_GOTO_SUB_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_HOVERBAR_HIDE_0 = "GUI_HOVERBAR_HIDE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_HOVERBAR_LOCK_REPORT_0 = "GUI_HOVERBAR_LOCK_REPORT_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_HOVERBAR_MAKE_DEFAULT_0 = "GUI_HOVERBAR_MAKE_DEFAULT_0";
 
     /** Message constant for key in the resource bundle. */
@@ -164,6 +278,12 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_HOVERBAR_REMOVE_0 = "GUI_HOVERBAR_REMOVE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_HOVERBAR_RESOURCE_INFO_0 = "GUI_HOVERBAR_RESOURCE_INFO_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_HOVERBAR_SHOW_0 = "GUI_HOVERBAR_SHOW_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_HOVERBAR_SHOW_IN_NAV_0 = "GUI_HOVERBAR_SHOW_IN_NAV_0";
@@ -217,9 +337,12 @@ public final class Messages {
     public static final String GUI_NAVIGATION_LEVEL_UNKOWN_TARGET_0 = "GUI_NAVIGATION_LEVEL_UNKOWN_TARGET_0";
 
     /** Message constant for key in the resource bundle. */
+<<<<<<< HEAD
     public static final String GUI_NEW_ENTRY_NAME_0 = "GUI_NEW_ENTRY_NAME_0";
 
     /** Message constant for key in the resource bundle. */
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     public static final String GUI_NEW_ENTRY_TITLE_0 = "GUI_NEW_ENTRY_TITLE_0";
 
     /** Message constant for key in the resource bundle. */
@@ -287,6 +410,12 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_SITEMAP_TOO_DEEP_TITLE_0 = "GUI_SITEMAP_TOO_DEEP_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SITEMAP_TYPE_CHOICE_TEXT_0 = "GUI_SITEMAP_TYPE_CHOICE_TEXT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SITEMAP_TYPE_CHOICE_TITLE_0 = "GUI_SITEMAP_TYPE_CHOICE_TITLE_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_SPECIAL_TAB_DESCRIPTION_0 = "GUI_SPECIAL_TAB_DESCRIPTION_0";

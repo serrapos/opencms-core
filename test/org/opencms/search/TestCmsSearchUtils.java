@@ -128,7 +128,9 @@ public class TestCmsSearchUtils extends TestCase {
         assertEquals("/", CmsSearchFieldConfiguration.getParentFolderTokens("/"));
         assertEquals("/ /sites/", CmsSearchFieldConfiguration.getParentFolderTokens("/sites/"));
         assertEquals("/", CmsSearchFieldConfiguration.getParentFolderTokens("/sites"));
-        assertEquals("/ /sites/ /sites/default/", CmsSearchFieldConfiguration.getParentFolderTokens("/sites/default/"));
+        assertEquals(
+            "/ /sites/ /sites/default/",
+            CmsSearchFieldConfiguration.getParentFolderTokens("/sites/default/"));
         assertEquals("/ /sites/", CmsSearchFieldConfiguration.getParentFolderTokens("/sites/default"));
     }
 }

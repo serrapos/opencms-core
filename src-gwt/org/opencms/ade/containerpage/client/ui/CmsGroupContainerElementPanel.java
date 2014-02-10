@@ -27,7 +27,9 @@
 
 package org.opencms.ade.containerpage.client.ui;
 
+import org.opencms.ade.containerpage.client.CmsContainerpageController;
 import org.opencms.ade.containerpage.client.ui.css.I_CmsLayoutBundle;
+import org.opencms.ade.containerpage.shared.CmsContainerElement;
 import org.opencms.gwt.client.dnd.CmsDNDHandler.Orientation;
 import org.opencms.gwt.client.dnd.I_CmsDraggable;
 import org.opencms.gwt.client.ui.CmsHighlightingBorder;
@@ -64,6 +66,9 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
     /** The index of the current placeholder position. */
     private int m_placeholderIndex = -1;
 
+    /** The resource type name. */
+    private String m_resourceType;
+
     /**
      * Constructor.<p>
      * 
@@ -71,9 +76,11 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
      * @param parent the drag parent
      * @param clientId the client id
      * @param sitePath the element site-path
+     * @param resourceType the resource type name
      * @param noEditReason the no edit reason, if empty, editing is allowed
      * @param hasSettings should be true if the element has settings which can be edited 
      * @param hasViewPermission indicates if the current user has view permissions on the element resource
+     * @param hasWritePermission indicates if the current user has write permissions on the element resource
      * @param releasedAndNotExpired <code>true</code> if the element resource is currently released and not expired
      */
     public CmsGroupContainerElementPanel(
@@ -81,13 +88,25 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
         I_CmsDropContainer parent,
         String clientId,
         String sitePath,
+        String resourceType,
         String noEditReason,
         boolean hasSettings,
         boolean hasViewPermission,
+        boolean hasWritePermission,
         boolean releasedAndNotExpired) {
 
-        super(element, parent, clientId, sitePath, noEditReason, hasSettings, hasViewPermission, releasedAndNotExpired);
-
+        super(
+            element,
+            parent,
+            clientId,
+            sitePath,
+            noEditReason,
+            hasSettings,
+            hasViewPermission,
+            hasWritePermission,
+            releasedAndNotExpired,
+            true);
+        m_resourceType = resourceType;
     }
 
     /**
@@ -118,20 +137,25 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
 
     }
 
+    /** The cached highlighting position. */
+    private CmsPositionBean m_ownPosition;
+
     /**
      * @see org.opencms.gwt.client.dnd.I_CmsDropTarget#checkPosition(int, int, Orientation)
      */
     public boolean checkPosition(int x, int y, Orientation orientation) {
 
-        switch (orientation) {
-            case HORIZONTAL:
-                return CmsDomUtil.checkPositionInside(getElement(), x, -1);
-            case VERTICAL:
-                return CmsDomUtil.checkPositionInside(getElement(), -1, y);
-            case ALL:
-            default:
-                return CmsDomUtil.checkPositionInside(getElement(), x, y);
+        // ignore orientation
+        int scrollTop = getElement().getOwnerDocument().getScrollTop();
+        // use cached position
+        int relativeTop = (y + scrollTop) - m_ownPosition.getTop();
+        if ((relativeTop > 0) && (m_ownPosition.getHeight() > relativeTop)) {
+            // cursor is inside the height of the element, check horizontal position
+            int scrollLeft = getElement().getOwnerDocument().getScrollLeft();
+            int relativeLeft = (x + scrollLeft) - m_ownPosition.getLeft();
+            return (relativeLeft > 0) && (m_ownPosition.getWidth() > relativeLeft);
         }
+        return false;
     }
 
     /**
@@ -182,7 +206,10 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
     public void highlightContainer() {
 
         getElement().addClassName(I_CmsLayoutBundle.INSTANCE.dragdropCss().dragging());
-
+        // remove any remaining highlighting
+        if (m_highlighting != null) {
+            m_highlighting.removeFromParent();
+        }
         // adding the 'clearFix' style to all targets containing floated elements
         // in some layouts this may lead to inappropriate clearing after the target, 
         // but it is still necessary as it forces the target to enclose it's floated content 
@@ -191,10 +218,26 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
                 CmsDomUtil.StyleValue.none.toString())) {
             getElement().addClassName(I_CmsLayoutBundle.INSTANCE.dragdropCss().clearFix());
         }
-        m_highlighting = new CmsHighlightingBorder(
-            CmsPositionBean.getInnerDimensions(getElement()),
-            CmsHighlightingBorder.BorderColor.red);
+        // cache the position info, to be used during drag and drop
+        m_ownPosition = CmsPositionBean.getInnerDimensions(getElement(), 3, false);
+        if (m_editingPlaceholder != null) {
+            m_editingPlaceholder.getStyle().setHeight(m_ownPosition.getHeight() + 10, Unit.PX);
+        }
+        if (m_editingMarker != null) {
+            m_editingMarker.getStyle().setHeight(m_ownPosition.getHeight() + 4, Unit.PX);
+            m_editingMarker.getStyle().setWidth(m_ownPosition.getWidth() + 4, Unit.PX);
+        }
+        m_highlighting = new CmsHighlightingBorder(m_ownPosition, CmsHighlightingBorder.BorderColor.red);
         RootPanel.get().add(m_highlighting);
+    }
+
+    /**
+     * @see org.opencms.ade.containerpage.client.ui.CmsContainerPageElementPanel#initInlineEditor(org.opencms.ade.containerpage.client.CmsContainerpageController)
+     */
+    @Override
+    public void initInlineEditor(CmsContainerpageController controller) {
+
+        // don to anything
     }
 
     /**
@@ -202,8 +245,17 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
      */
     public void insertPlaceholder(Element placeholder, int x, int y, Orientation orientation) {
 
+        m_placeholderIndex = -1;
         m_placeholder = placeholder;
         repositionPlaceholder(x, y, orientation);
+    }
+
+    /**
+     * @see org.opencms.ade.containerpage.client.ui.I_CmsDropContainer#isDetailOnly()
+     */
+    public boolean isDetailOnly() {
+
+        return false;
     }
 
     /**
@@ -212,6 +264,26 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
     public boolean isDetailView() {
 
         return false;
+    }
+
+    /**
+     * Returns if this element represents a group container.<p>
+     * 
+     * @return <code>true</code> if this element represents a group container
+     */
+    public boolean isGroupContainer() {
+
+        return CmsContainerElement.GROUP_CONTAINER_TYPE_NAME.equals(m_resourceType);
+    }
+
+    /**
+     * Returns if this element represents an inherit container.<p>
+     * 
+     * @return <code>true</code> if this element represents an inherit container
+     */
+    public boolean isInheritContainer() {
+
+        return CmsContainerElement.INHERIT_CONTAINER_TYPE_NAME.equals(m_resourceType);
     }
 
     /**
@@ -228,15 +300,17 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
      */
     public void refreshHighlighting() {
 
-        CmsPositionBean position = CmsPositionBean.getInnerDimensions(getElement());
+        m_ownPosition = CmsPositionBean.getInnerDimensions(getElement(), 3, false);
         if (m_editingPlaceholder != null) {
-            m_editingPlaceholder.getStyle().setHeight(position.getHeight() + 10, Unit.PX);
+            m_editingPlaceholder.getStyle().setHeight(m_ownPosition.getHeight() + 10, Unit.PX);
         }
         if (m_editingMarker != null) {
-            m_editingMarker.getStyle().setHeight(position.getHeight() + 4, Unit.PX);
-            m_editingMarker.getStyle().setWidth(position.getWidth() + 4, Unit.PX);
+            m_editingMarker.getStyle().setHeight(m_ownPosition.getHeight() + 4, Unit.PX);
+            m_editingMarker.getStyle().setWidth(m_ownPosition.getWidth() + 4, Unit.PX);
         }
-        m_highlighting.setPosition(position);
+        if (m_highlighting != null) {
+            m_highlighting.setPosition(m_ownPosition);
+        }
     }
 
     /**
@@ -272,6 +346,7 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
      */
     public void repositionPlaceholder(int x, int y, Orientation orientation) {
 
+        int oldIndex = m_placeholderIndex;
         switch (orientation) {
             case HORIZONTAL:
                 m_placeholderIndex = CmsDomUtil.positionElementInside(
@@ -298,6 +373,9 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
                     x,
                     y);
                 break;
+        }
+        if (oldIndex != m_placeholderIndex) {
+            m_ownPosition = CmsPositionBean.getInnerDimensions(getElement(), 3, false);
         }
     }
 
@@ -346,4 +424,16 @@ public class CmsGroupContainerElementPanel extends CmsContainerPageElementPanel 
         }
     }
 
+    /**
+     * @see org.opencms.ade.containerpage.client.ui.CmsContainerPageElementPanel#updateOptionBarPosition()
+     */
+    @Override
+    public void updateOptionBarPosition() {
+
+        for (Widget widget : this) {
+            if (widget instanceof CmsContainerPageElementPanel) {
+                ((CmsContainerPageElementPanel)widget).updateOptionBarPosition();
+            }
+        }
+    }
 }

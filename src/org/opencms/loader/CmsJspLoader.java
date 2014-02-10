@@ -43,6 +43,7 @@ import org.opencms.flex.CmsFlexResponse;
 import org.opencms.i18n.CmsEncoder;
 import org.opencms.i18n.CmsMessageContainer;
 import org.opencms.jsp.util.CmsJspLinkMacroResolver;
+import org.opencms.jsp.util.CmsJspStandardContextBean;
 import org.opencms.main.CmsEvent;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
@@ -170,16 +171,23 @@ public class CmsJspLoader implements I_CmsResourceLoader, I_CmsFlexCacheEnabledL
     /** The maximum age for delivered contents in the clients cache. */
     private static long m_clientCacheMaxAge;
 
+    /** Read write locks for jsp files. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, ReentrantReadWriteLock> m_fileLocks = new LRUMap(10000);
+
     /** The directory to store the generated JSP pages in (absolute path). */
     private static String m_jspRepository;
 
     /** The directory to store the generated JSP pages in (relative path in web application). */
     private static String m_jspWebAppRepository;
 
+<<<<<<< HEAD
     /** Read write locks for jsp files. */
     @SuppressWarnings("unchecked")
     private static Map<String, ReentrantReadWriteLock> m_fileLocks = new LRUMap(10000);
 
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     /** The CmsFlexCache used to store generated cache entries in. */
     private CmsFlexCache m_cache;
 
@@ -189,10 +197,17 @@ public class CmsJspLoader implements I_CmsResourceLoader, I_CmsFlexCacheEnabledL
     /** Flag to indicate if error pages are marked as "committed". */
     private boolean m_errorPagesAreNotCommitted;
 
+<<<<<<< HEAD
     /** The cached offline JSPs. */
     private Map<String, Boolean> m_offlineJsps;
 
     /** The cached online JSPs. */
+=======
+    /** The offline JSPs. */
+    private Map<String, Boolean> m_offlineJsps;
+
+    /** The online JSPs. */
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     private Map<String, Boolean> m_onlineJsps;
 
     /** A map from taglib names to their URIs. */
@@ -216,6 +231,7 @@ public class CmsJspLoader implements I_CmsResourceLoader, I_CmsFlexCacheEnabledL
     }
 
     /**
+<<<<<<< HEAD
      * Returns the absolute path in the "real" file system for the JSP repository
      * toplevel directory.<p>
      *
@@ -227,6 +243,8 @@ public class CmsJspLoader implements I_CmsResourceLoader, I_CmsFlexCacheEnabledL
     }
 
     /**
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * @see org.opencms.configuration.I_CmsConfigurationParameterHandler#addConfigurationParameter(java.lang.String, java.lang.String)
      */
     public void addConfigurationParameter(String paramName, String paramValue) {
@@ -341,6 +359,17 @@ public class CmsJspLoader implements I_CmsResourceLoader, I_CmsFlexCacheEnabledL
 
         // return the configuration in an immutable form
         return m_configuration;
+    }
+
+    /**
+     * Returns the absolute path in the "real" file system for the JSP repository
+     * toplevel directory.<p>
+     *
+     * @return The full path to the JSP repository
+     */
+    public String getJspRepository() {
+
+        return m_jspRepository;
     }
 
     /**
@@ -509,8 +538,9 @@ public class CmsJspLoader implements I_CmsResourceLoader, I_CmsFlexCacheEnabledL
 
             // get the Flex controller
             CmsFlexController controller = getController(cms, file, req, res, streaming, true);
-
             if (bypass || controller.isForwardMode()) {
+                // initialize the standard contex bean to be available for all requests
+                CmsJspStandardContextBean.getInstance(controller.getCurrentRequest());
                 // once in forward mode, always in forward mode (for this request)
                 controller.setForwardMode(true);
                 // bypass Flex cache for this page, update the JSP first if necessary            
@@ -602,6 +632,29 @@ public class CmsJspLoader implements I_CmsResourceLoader, I_CmsFlexCacheEnabledL
         }
     }
 
+    /** 
+     * Removes a JSP from an offline project from the RFS.<p>
+     * 
+     * @param resource the offline JSP resource to remove from the RFS 
+     * 
+     * @throws CmsLoaderException if accessing the loader fails 
+     */
+    public void removeOfflineJspFromRepository(CmsResource resource) throws CmsLoaderException {
+
+        String jspName = getJspRfsPath(resource, false);
+        Set<String> pathSet = new HashSet<String>();
+        pathSet.add(resource.getRootPath());
+        ReentrantReadWriteLock lock = getFileLock(jspName);
+        lock.writeLock().lock();
+        try {
+            removeFromCache(pathSet, false);
+            File jspFile = new File(jspName);
+            jspFile.delete();
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     /**
      * @see org.opencms.loader.I_CmsResourceLoader#service(org.opencms.file.CmsObject, org.opencms.file.CmsResource, javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
@@ -613,6 +666,8 @@ public class CmsJspLoader implements I_CmsResourceLoader, I_CmsFlexCacheEnabledL
         String target = updateJsp(resource, controller, new HashSet<String>(8));
         // important: Indicate that all output must be buffered
         controller.getCurrentResponse().setOnlyBuffering(true);
+         // initialize the standard contex bean to be available for all requests
+        CmsJspStandardContextBean.getInstance(controller.getCurrentRequest());
         // dispatch to external file
         controller.getCurrentRequest().getRequestDispatcherToExternal(cms.getSitePath(resource), target).include(
             req,
@@ -897,7 +952,6 @@ public class CmsJspLoader implements I_CmsResourceLoader, I_CmsFlexCacheEnabledL
         // get request / response wrappers
         CmsFlexRequest f_req = controller.getCurrentRequest();
         CmsFlexResponse f_res = controller.getCurrentResponse();
-
         try {
             f_req.getRequestDispatcher(controller.getCmsObject().getSitePath(controller.getCmsResource())).include(
                 f_req,
@@ -1631,4 +1685,35 @@ public class CmsJspLoader implements I_CmsResourceLoader, I_CmsFlexCacheEnabledL
             return m_fileLocks.get(jspVfsName);
         }
     }
+<<<<<<< HEAD
+=======
+
+    /**
+     * Returns the RFS path for a JSP resource.<p>
+     * 
+     * This does not check whether there actually exists a file at the returned path.
+     * 
+     * @param resource the JSP resource 
+     * @param online true if the path for the online project should be returned
+     *  
+     * @return the RFS path for the JSP
+     *  
+     * @throws CmsLoaderException if accessing the resource loader fails 
+     */
+    private String getJspRfsPath(CmsResource resource, boolean online) throws CmsLoaderException {
+
+        String jspVfsName = resource.getRootPath();
+        String extension;
+        int loaderId = OpenCms.getResourceManager().getResourceType(resource.getTypeId()).getLoaderId();
+        if ((loaderId == CmsJspLoader.RESOURCE_LOADER_ID) && (!jspVfsName.endsWith(JSP_EXTENSION))) {
+            // this is a true JSP resource that does not end with ".jsp"
+            extension = JSP_EXTENSION;
+        } else {
+            // not a JSP resource or already ends with ".jsp"
+            extension = "";
+        }
+        String jspPath = CmsFileUtil.getRepositoryName(m_jspRepository, jspVfsName + extension, online);
+        return jspPath;
+    }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 }

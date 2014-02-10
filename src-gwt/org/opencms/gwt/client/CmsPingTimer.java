@@ -30,6 +30,7 @@ package org.opencms.gwt.client;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.RepeatingCommand;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.rpc.StatusCodeException;
 
 /**
  * A timer which sends an RPC call regularly to keep the session alive.<p>
@@ -39,24 +40,51 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 public class CmsPingTimer {
 
     /**
+     * The interval for the RPC calls.<p>
+     */
+    public static final int PING_INTERVAL = 1000 * 60 * 5;
+
+    /**
      * The static instance.<p>
      */
     private static CmsPingTimer INSTANCE;
 
+    /** Flag indicating if the ping timer should keep running. */
+    private static boolean m_keepRunning;
+
     /**
-     * The interval for the RPC calls.<p>
+     * Aborts the ping timer.<p>
      */
-    public static final int PING_INTERVAL = 1000 * 60 * 5;
+    public static void abort() {
+
+        m_keepRunning = false;
+    }
 
     /**
      * Starts the timer.<p>
      */
     public static void start() {
 
-        if (INSTANCE == null) {
-            INSTANCE = new CmsPingTimer();
-            INSTANCE.run();
+        if (!CmsCoreProvider.get().isKeepAlive()) {
+            return;
         }
+
+        if (INSTANCE == null) {
+            m_keepRunning = true;
+            CmsPingTimer timer = new CmsPingTimer();
+            timer.run();
+            INSTANCE = timer;
+        }
+    }
+
+    /**
+     * Returns if the ping timer should keep running.<p>
+     * 
+     * @return <code>true</code>  if the ping timer should keep running
+     */
+    protected static boolean shouldKeepRunning() {
+
+        return m_keepRunning;
     }
 
     /**
@@ -68,22 +96,28 @@ public class CmsPingTimer {
 
             public boolean execute() {
 
-                CmsCoreProvider.getService().ping(new AsyncCallback<Void>() {
+                if (CmsPingTimer.shouldKeepRunning()) {
+                    CmsCoreProvider.getService().ping(new AsyncCallback<Void>() {
 
-                    public void onFailure(Throwable caught) {
+                        public void onFailure(Throwable caught) {
 
-                        // do nothing
+                            // in case of a status code exception abort, indicates the session is no longer valid
+                            if ((caught instanceof StatusCodeException)
+                                && (((StatusCodeException)caught).getStatusCode() == 500)) {
+                                CmsPingTimer.abort();
+                            }
+                        }
 
-                    }
+                        public void onSuccess(Void result) {
 
-                    public void onSuccess(Void result) {
-
-                        //do nothing
-                    }
-                });
-
-                return true;
+                            //do nothing
+                        }
+                    });
+                    return true;
+                }
+                return false;
             }
-        }, PING_INTERVAL);
+        },
+            PING_INTERVAL);
     }
 }

@@ -27,7 +27,17 @@
 
 package org.opencms.ade.publish.client;
 
+import org.opencms.ade.publish.shared.CmsPublishData;
 import org.opencms.gwt.client.A_CmsEntryPoint;
+import org.opencms.gwt.client.CmsCoreProvider;
+import org.opencms.gwt.client.rpc.CmsRpcPrefetcher;
+import org.opencms.gwt.client.ui.CmsErrorDialog;
+import org.opencms.gwt.client.util.CmsJsUtil;
+
+import com.google.gwt.event.logical.shared.CloseEvent;
+import com.google.gwt.event.logical.shared.CloseHandler;
+import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.ui.PopupPanel;
 
 /**
  * The entry point for the publish module.
@@ -43,6 +53,42 @@ public class CmsPublishEntryPoint extends A_CmsEntryPoint {
     public void onModuleLoad() {
 
         super.onModuleLoad();
+<<<<<<< HEAD
         I_CmsPublishLayoutBundle.INSTANCE.publishCss().ensureInjected();
+=======
+        CmsPublishData initData = null;
+        try {
+            initData = (CmsPublishData)CmsRpcPrefetcher.getSerializedObjectFromDictionary(
+                CmsPublishDialog.getService(),
+                CmsPublishData.DICT_NAME);
+            String closeLink = initData.getCloseLink();
+            if (closeLink == null) {
+                closeLink = CmsCoreProvider.get().getDefaultWorkplaceLink();
+            }
+            final String constCloseLink = closeLink;
+            CloseHandler<PopupPanel> closeHandler = new CloseHandler<PopupPanel>() {
+
+                public void onClose(CloseEvent<PopupPanel> event) {
+
+                    CmsPublishDialog dialog = (CmsPublishDialog)(event.getTarget());
+                    if (dialog.hasSucceeded() || dialog.hasFailed()) {
+                        CmsPublishConfirmationDialog confirmation = new CmsPublishConfirmationDialog(
+                            dialog,
+                            constCloseLink);
+                        confirmation.center();
+                    } else {
+                        // 'cancel' case 
+                        CmsJsUtil.closeWindow();
+                        // in case the window isn't successfully closed, go to the workplace 
+                        Window.Location.assign(constCloseLink);
+                    }
+                }
+            };
+
+            CmsPublishDialog.showPublishDialog(initData, closeHandler);
+        } catch (Exception e) {
+            CmsErrorDialog.handleException(e);
+        }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 }

@@ -32,18 +32,25 @@ import org.opencms.ade.galleries.client.CmsGalleriesTabHandler;
 import org.opencms.ade.galleries.client.CmsGalleryController;
 import org.opencms.ade.galleries.client.CmsResultsTabHandler;
 import org.opencms.ade.galleries.client.CmsSearchTabHandler;
+import org.opencms.ade.galleries.client.CmsSitemapTabHandler;
 import org.opencms.ade.galleries.client.CmsTypesTabHandler;
 import org.opencms.ade.galleries.client.CmsVfsTabHandler;
+import org.opencms.ade.galleries.client.I_CmsGalleryHandler;
+import org.opencms.ade.galleries.client.I_CmsGalleryWidgetHandler;
 import org.opencms.ade.galleries.client.Messages;
 import org.opencms.ade.galleries.client.ui.css.I_CmsLayoutBundle;
+import org.opencms.ade.galleries.shared.CmsGalleryFolderBean;
 import org.opencms.ade.galleries.shared.CmsGallerySearchBean;
 import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants;
 import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants.GalleryTabId;
 import org.opencms.gwt.client.dnd.CmsDNDHandler;
+import org.opencms.gwt.client.ui.CmsDialogNotificationWidget;
+import org.opencms.gwt.client.ui.CmsNotification;
 import org.opencms.gwt.client.ui.CmsPushButton;
 import org.opencms.gwt.client.ui.CmsTabbedPanel;
 import org.opencms.gwt.client.ui.CmsTabbedPanel.CmsTabbedPanelStyle;
 import org.opencms.gwt.client.ui.I_CmsAutoHider;
+import org.opencms.gwt.client.ui.I_CmsNotificationWidget;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -67,6 +74,7 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.HasText;
+import com.google.gwt.user.client.ui.RootPanel;
 
 /**
  * Provides the method for the gallery dialog.<p>
@@ -106,6 +114,15 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
     /** The galleries tab. */
     private CmsGalleriesTab m_galleriesTab;
 
+    /** The gallery handler. */
+    private I_CmsGalleryHandler m_galleryHandler;
+
+    /** The image format names. */
+    private String m_imageFormatNames;
+
+    /** The image formats. */
+    private String m_imageFormats;
+
     /** The flag for the initails search. */
     private boolean m_isInitialSearch;
 
@@ -121,34 +138,40 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
     /** The show preview button. */
     private CmsPushButton m_showPreview;
 
+    /** The sitemap tab. */
+    private CmsSitemapTab m_sitemapTab;
+
     /** The types tab. */
     private CmsTypesTab m_typesTab;
+
+    /** The use formats flag. */
+    private boolean m_useFormats;
 
     /** The VFS folder tab. */
     private CmsVfsTab m_vfsTab;
 
-    /**
-     * The constructor.<p> 
-     * 
-     * @param dndHandler the reference to the dnd manager
-     * @param autoHideParent the auto-hide parent to this dialog if present
-     */
-    public CmsGalleryDialog(CmsDNDHandler dndHandler, I_CmsAutoHider autoHideParent) {
+    /** The widget handler. */
+    private I_CmsGalleryWidgetHandler m_widgetHandler;
 
-        this(CmsTabbedPanelStyle.buttonTabs);
-        m_dndHandler = dndHandler;
-        m_autoHideParent = autoHideParent;
+    /**
+     * The constructor.<p>
+     * 
+     * @param galleryHandler the gallery handler 
+     */
+    public CmsGalleryDialog(I_CmsGalleryHandler galleryHandler) {
+
+        this(galleryHandler, CmsTabbedPanelStyle.buttonTabs);
     }
 
     /**
      * The default constructor for the gallery dialog.<p>
-     *  
+     * 
+     * @param galleryHandler the gallery handler   
      * @param style the style for the panel
      */
-    public CmsGalleryDialog(CmsTabbedPanelStyle style) {
+    public CmsGalleryDialog(I_CmsGalleryHandler galleryHandler, CmsTabbedPanelStyle style) {
 
         initCss();
-
         m_isInitialSearch = false;
         // parent widget
         m_parentPanel = new FlowPanel();
@@ -175,21 +198,12 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
         m_parentPanel.add(m_showPreview);
         // All composites must call initWidget() in their constructors.
         initWidget(m_parentPanel);
+        ensureNotifications();
         addResizeHandler(this);
-    }
+        m_dndHandler = galleryHandler.getDndHandler();
+        m_autoHideParent = galleryHandler.getAutoHideParent();
+        m_galleryHandler = galleryHandler;
 
-    /**
-     * Ensures all style sheets are loaded.<p>
-     */
-    private void initCss() {
-
-        I_CmsLayoutBundle.INSTANCE.galleryDialogCss().ensureInjected();
-        I_CmsLayoutBundle.INSTANCE.galleryResultItemCss().ensureInjected();
-        I_CmsLayoutBundle.INSTANCE.listTreeCss().ensureInjected();
-        I_CmsLayoutBundle.INSTANCE.previewDialogCss().ensureInjected();
-        I_CmsLayoutBundle.INSTANCE.croppingDialogCss().ensureInjected();
-        I_CmsLayoutBundle.INSTANCE.imageEditorFormCss().ensureInjected();
-        I_CmsLayoutBundle.INSTANCE.imageAdvancedFormCss().ensureInjected();
     }
 
     /**
@@ -234,6 +248,9 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
      */
     public void fillResultTab(CmsGallerySearchBean searchObj) {
 
+        if (m_resultsTab == null) {
+            return;
+        }
         List<CmsSearchParamPanel> paramPanels = null;
         if (!searchObj.isEmpty()) {
             enableSearchTab();
@@ -241,10 +258,7 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
             Iterator<A_CmsTab> it = m_tabbedPanel.iterator();
             while (it.hasNext()) {
                 A_CmsTab tab = it.next();
-                CmsSearchParamPanel panel = tab.getParamPanel(searchObj);
-                if (panel != null) {
-                    paramPanels.add(panel);
-                }
+                paramPanels.addAll(tab.getParamPanels(searchObj));
             }
             m_resultsTab.fillContent(searchObj, paramPanels);
         }
@@ -253,12 +267,13 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
     /**
      * Fill the tabs with the content provided from the info bean. <p>
      * 
-     * @param tabIds the tabs to show 
      * @param controller the reference to the gallery controller
      */
-    public void fillTabs(GalleryTabId[] tabIds, CmsGalleryController controller) {
+    public void fillTabs(CmsGalleryController controller) {
 
         m_controller = controller;
+        GalleryTabId[] tabIds = m_controller.getTabIds();
+
         int i;
         for (i = 0; i < tabIds.length; i++) {
             switch (tabIds[i]) {
@@ -268,6 +283,10 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
                     m_tabbedPanel.add(m_typesTab, Messages.get().key(Messages.GUI_TAB_TITLE_TYPES_0));
                     break;
                 case cms_tab_galleries:
+                    List<CmsGalleryFolderBean> availableGalleries = controller.getAvailableGalleries();
+                    if ((availableGalleries != null) && availableGalleries.isEmpty()) {
+                        continue;
+                    }
                     m_galleriesTab = new CmsGalleriesTab(new CmsGalleriesTabHandler(controller));
                     m_galleriesTab.setTabTextAccessor(getTabTextAccessor(i));
                     m_tabbedPanel.add(m_galleriesTab, Messages.get().key(Messages.GUI_TAB_TITLE_GALLERIES_0));
@@ -283,25 +302,38 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
                         m_autoHideParent,
                         m_controller.getStartLocale(),
                         m_controller.getAvailableLocales(),
-                        m_controller.getSearchScope());
+                        m_controller.getSearchScope(),
+                        m_controller.getDefaultScope());
                     m_searchTab.enableExpiredResourcesSearch(controller.getDialogMode() == I_CmsGalleryProviderConstants.GalleryMode.ade);
                     m_searchTab.setTabTextAccessor(getTabTextAccessor(i));
                     m_tabbedPanel.add(m_searchTab, Messages.get().key(Messages.GUI_TAB_TITLE_SEARCH_0));
                     break;
                 case cms_tab_vfstree:
-                    m_vfsTab = new CmsVfsTab(new CmsVfsTabHandler(controller));
+                    CmsVfsTabHandler vfsTabHandler = new CmsVfsTabHandler(controller);
+                    m_vfsTab = new CmsVfsTab(vfsTabHandler, controller.isIncludeFiles());
+                    vfsTabHandler.setTab(m_vfsTab);
                     m_vfsTab.setTabTextAccessor(getTabTextAccessor(i));
                     m_tabbedPanel.add(m_vfsTab, Messages.get().key(Messages.GUI_TAB_TITLE_VFS_0));
+                    break;
+                case cms_tab_sitemap:
+                    CmsSitemapTabHandler sitemapTabHandler = new CmsSitemapTabHandler(controller);
+                    m_sitemapTab = new CmsSitemapTab(sitemapTabHandler);
+                    m_sitemapTab.setTabTextAccessor(getTabTextAccessor(i));
+                    m_tabbedPanel.add(m_sitemapTab, "Sitemap");
+                    break;
+                case cms_tab_results:
+                    m_resultsTab = new CmsResultsTab(
+                        new CmsResultsTabHandler(controller),
+                        m_dndHandler,
+                        m_galleryHandler);
+                    m_resultsTab.setTabTextAccessor(getTabTextAccessor(i));
+                    m_tabbedPanel.addWithLeftMargin(m_resultsTab, Messages.get().key(Messages.GUI_TAB_TITLE_RESULTS_0));
+                    disableSearchTab();
                     break;
                 default:
                     break;
             }
         }
-        m_resultsTab = new CmsResultsTab(new CmsResultsTabHandler(controller), m_dndHandler);
-        m_resultsTab.setTabTextAccessor(getTabTextAccessor(i));
-        m_tabbedPanel.addWithLeftMargin(m_resultsTab, Messages.get().key(Messages.GUI_TAB_TITLE_RESULTS_0));
-        disableSearchTab();
-
         m_tabbedPanel.addBeforeSelectionHandler(this);
         m_tabbedPanel.addSelectionHandler(this);
     }
@@ -357,6 +389,26 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
     }
 
     /**
+     * Returns the image format names.<p>
+     *
+     * @return the image format names
+     */
+    public String getImageFormatNames() {
+
+        return m_imageFormatNames;
+    }
+
+    /**
+     * Returns the image formats.<p>
+     *
+     * @return the image formats
+     */
+    public String getImageFormats() {
+
+        return m_imageFormats;
+    }
+
+    /**
      * Returns the parent panel of the dialog.<p>
      *
      * @return the parent
@@ -387,6 +439,33 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
     }
 
     /**
+     * Returns the sitemap tab.<p>
+     *
+     * @return the sitemap tab
+     */
+    public CmsSitemapTab getSitemapTab() {
+
+        return m_sitemapTab;
+    }
+
+    /**
+     * Gets the tab with a given tab id, or null if the dialog has no such tab.<p>
+     * 
+     * @param tabId the tab id to look for 
+     * 
+     * @return the tab with the given tab id, or null 
+     */
+    public A_CmsTab getTab(GalleryTabId tabId) {
+
+        for (A_CmsTab tab : m_tabbedPanel) {
+            if (tabId == GalleryTabId.valueOf(tab.getTabId())) {
+                return tab;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Returns the types tab widget.<p>
      * 
      * @return the types widget
@@ -407,6 +486,16 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
     }
 
     /**
+     * Returns the widget handler.<p>
+     * 
+     * @return the widget handler
+     */
+    public I_CmsGalleryWidgetHandler getWidgetHandler() {
+
+        return m_widgetHandler;
+    }
+
+    /**
      * Hides or shows the show-preview-button.<p>
      * 
      * @param hide <code>true</code> to hide the button
@@ -414,6 +503,26 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
     public void hideShowPreviewButton(boolean hide) {
 
         m_showPreview.setVisible(!hide);
+    }
+
+    /**
+     * Returns if the gallery is used as a native widget.<p>
+     * 
+     * @return <code>true</code> if the gallery is used as a native widget
+     */
+    public boolean isNativeWidget() {
+
+        return m_widgetHandler != null;
+    }
+
+    /**
+     * Returns the use formats flag.<p>
+     *
+     * @return the use formats flag
+     */
+    public boolean isUseFormats() {
+
+        return m_useFormats;
     }
 
     /**
@@ -468,13 +577,9 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
      */
     public void selectTab(GalleryTabId tabId, boolean fireEvent) {
 
-        Iterator<A_CmsTab> it = m_tabbedPanel.iterator();
-        while (it.hasNext()) {
-            A_CmsTab tab = it.next();
-            if (tabId == GalleryTabId.valueOf(tab.getTabId())) {
-                m_tabbedPanel.selectTab(tab, fireEvent);
-                break;
-            }
+        A_CmsTab tab = getTab(tabId);
+        if (tab != null) {
+            m_tabbedPanel.selectTab(tab, fireEvent);
         }
     }
 
@@ -506,6 +611,26 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
     }
 
     /**
+     * Sets the image format names.<p>
+     *
+     * @param imageFormatNames the image format names to set
+     */
+    public void setImageFormatNames(String imageFormatNames) {
+
+        m_imageFormatNames = imageFormatNames;
+    }
+
+    /**
+     * Sets the image formats.<p>
+     *
+     * @param imageFormats the image formats to set
+     */
+    public void setImageFormats(String imageFormats) {
+
+        m_imageFormats = imageFormats;
+    }
+
+    /**
      * Sets the on attach command.<p>
      *
      * @param onAttachCommand the on attach command to set
@@ -513,6 +638,49 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
     public void setOnAttachCommand(Command onAttachCommand) {
 
         m_onAttachCommand = onAttachCommand;
+    }
+
+    /**
+     * Sets the use formats flag.<p>
+     *
+     * @param useFormats the use formats flag to set
+     */
+    public void setUseFormats(boolean useFormats) {
+
+        m_useFormats = useFormats;
+    }
+
+    /**
+     * Sets the widget handler.<p>
+     * 
+     * @param widgetHandler the widget handler
+     */
+    public void setWidgetHandler(I_CmsGalleryWidgetHandler widgetHandler) {
+
+        m_widgetHandler = widgetHandler;
+    }
+
+    /**
+     * Updates variable ui-element dimensions, execute after dialog has been attached and it's content is displayed.<p>
+     */
+    public void updateSizes() {
+
+        if (m_resultsTab != null) {
+            m_resultsTab.updateListSize();
+        }
+    }
+
+    /**
+     * Make sure a notification widget is installed.<p>
+     */
+    protected void ensureNotifications() {
+
+        I_CmsNotificationWidget oldWidget = CmsNotification.get().getWidget();
+        if (oldWidget == null) {
+            CmsDialogNotificationWidget newWidget = new CmsDialogNotificationWidget();
+            CmsNotification.get().setWidget(newWidget);
+            RootPanel.get().add(newWidget);
+        }
     }
 
     /**
@@ -567,10 +735,16 @@ implements BeforeSelectionHandler<Integer>, SelectionHandler<Integer>, ResizeHan
     }
 
     /**
-     * Updates variable ui-element dimensions, execute after dialog has been attached and it's content is displayed.<p>
+     * Ensures all style sheets are loaded.<p>
      */
-    protected void updateSizes() {
+    private void initCss() {
 
-        m_resultsTab.updateListSize();
+        I_CmsLayoutBundle.INSTANCE.galleryDialogCss().ensureInjected();
+        I_CmsLayoutBundle.INSTANCE.galleryResultItemCss().ensureInjected();
+        I_CmsLayoutBundle.INSTANCE.listTreeCss().ensureInjected();
+        I_CmsLayoutBundle.INSTANCE.previewDialogCss().ensureInjected();
+        I_CmsLayoutBundle.INSTANCE.croppingDialogCss().ensureInjected();
+        I_CmsLayoutBundle.INSTANCE.imageEditorFormCss().ensureInjected();
+        I_CmsLayoutBundle.INSTANCE.imageAdvancedFormCss().ensureInjected();
     }
 }

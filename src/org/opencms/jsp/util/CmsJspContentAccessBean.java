@@ -27,6 +27,7 @@
 
 package org.opencms.jsp.util;
 
+import org.opencms.ade.contenteditor.CmsContentService;
 import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsResource;
@@ -34,6 +35,7 @@ import org.opencms.file.types.CmsResourceTypeXmlPage;
 import org.opencms.i18n.CmsLocaleManager;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsRuntimeException;
+import org.opencms.main.OpenCms;
 import org.opencms.util.CmsCollectionsGenericWrapper;
 import org.opencms.util.CmsConstantMap;
 import org.opencms.util.CmsUUID;
@@ -146,6 +148,29 @@ public class CmsJspContentAccessBean {
     }
 
     /**
+     * Provides a Map which lets the user access the RDFA tags for all values in the selected locale in an XML content, 
+     * the input is assumed to be a String that represents a Locale.<p>
+     */
+    public class CmsLocaleRdfaTransformer implements Transformer {
+
+        /**
+         * @see org.apache.commons.collections.Transformer#transform(java.lang.Object)
+         */
+        public Object transform(Object input) {
+
+            Locale locale = CmsLocaleManager.getLocale(String.valueOf(input));
+            Map<String, String> result;
+            if (getRawContent().hasLocale(locale)) {
+                result = CmsCollectionsGenericWrapper.createLazyMap(new CmsRdfaTransformer(locale));
+            } else {
+                // return a map that always returns an empty string
+                result = CmsConstantMap.CONSTANT_EMPTY_STRING_MAP;
+            }
+            return result;
+        }
+    }
+
+    /**
      * Provides a Map which lets the user access sub value Lists from the selected locale in an XML content, 
      * the input is assumed to be a String that represents a Locale.<p>
      */
@@ -208,6 +233,38 @@ public class CmsJspContentAccessBean {
                 result = CONSTANT_NULL_VALUE_WRAPPER_MAP;
             }
             return result;
+        }
+    }
+
+    /**
+     * Provides a Map which lets the user access the RDFA tag for a value in an XML content, 
+     * the input is assumed to be a String that represents an xpath in the XML content.<p>
+     */
+    public class CmsRdfaTransformer implements Transformer {
+
+        /** The selected locale. */
+        private Locale m_selectedLocale;
+
+        /**
+         * Constructor with a locale.<p>
+         * 
+         * @param locale the locale to use
+         */
+        public CmsRdfaTransformer(Locale locale) {
+
+            m_selectedLocale = locale;
+        }
+
+        /**
+         * @see org.apache.commons.collections.Transformer#transform(java.lang.Object)
+         */
+        public Object transform(Object input) {
+
+            if ((getCmsObject() != null) && !getCmsObject().getRequestContext().getCurrentProject().isOnlineProject()) {
+                return CmsContentService.getRdfaAttributes(getRawContent(), m_selectedLocale, String.valueOf(input));
+            } else {
+                return "";
+            }
         }
     }
 
@@ -328,11 +385,17 @@ public class CmsJspContentAccessBean {
     /** The lazy initialized map for the "has locale value" check. */
     private Map<String, Map<String, Boolean>> m_hasLocaleValue;
 
-    /** The selected locale for accessing entries from the XML content. */
+    /** The locale used for accessing entries from the XML content, this may be a fallback default locale. */
     private Locale m_locale;
+
+    /** The original locale requested for accessing entries from the XML content. */
+    private Locale m_requestedLocale;
 
     /** The lazy initialized with the locale names. */
     private Map<String, List<String>> m_localeNames;
+
+    /** Lazy initialized map of RDFA maps by locale. */
+    private Map<String, Map<String, String>> m_localeRdfa;
 
     /** The lazy initialized with the locale sub value lists. */
     private Map<String, Map<String, List<CmsJspContentAccessValueWrapper>>> m_localeSubValueList;
@@ -522,7 +585,7 @@ public class CmsJspContentAccessBean {
      */
     public Map<String, Boolean> getHasValue() {
 
-        return getHasLocaleValue().get(m_locale);
+        return getHasLocaleValue().get(getLocale());
     }
 
     /**
@@ -545,12 +608,16 @@ public class CmsJspContentAccessBean {
     }
 
     /**
-     * Returns the Locale this bean was initialized with.<p>
+     * Returns the Locale this bean is using for content access, this may be a default fall back Locale.<p>
      *
-     * @return the locale  this bean was initialized with
+     * @return the Locale this bean is using for content access, this may be a default fall back Locale
      */
     public Locale getLocale() {
 
+        // check the content if the locale has not been set yet
+        if (m_locale == null) {
+            getRawContent();
+        }
         return m_locale;
     }
 
@@ -579,6 +646,19 @@ public class CmsJspContentAccessBean {
             m_localeNames = CmsCollectionsGenericWrapper.createLazyMap(new CmsLocaleNamesTransformer());
         }
         return m_localeNames;
+    }
+
+    /**
+     * Returns the map of RDFA maps by locale.<p>
+     *  
+     * @return the map of RDFA maps by locale
+     */
+    public Map<String, Map<String, String>> getLocaleRdfa() {
+
+        if (m_localeRdfa == null) {
+            m_localeRdfa = CmsCollectionsGenericWrapper.createLazyMap(new CmsLocaleRdfaTransformer());
+        }
+        return m_localeRdfa;
     }
 
     /**
@@ -681,7 +761,7 @@ public class CmsJspContentAccessBean {
      */
     public List<String> getNames() {
 
-        return getLocaleNames().get(m_locale);
+        return getLocaleNames().get(getLocale());
     }
 
     /**
@@ -711,7 +791,35 @@ public class CmsJspContentAccessBean {
                     m_resource.getRootPath()), e);
             }
         }
+
+        // make sure a valid locale is used
+        if (m_locale == null) {
+            m_locale = m_requestedLocale;
+            // check if the requested locale is available
+            if (!m_content.hasLocale(m_locale)) {
+                Iterator<Locale> it = OpenCms.getLocaleManager().getDefaultLocales().iterator();
+                while (it.hasNext()) {
+                    Locale locale = it.next();
+                    if (m_content.hasLocale(locale)) {
+                        // found a matching locale
+                        m_locale = locale;
+                        break;
+                    }
+                }
+            }
+        }
+
         return m_content;
+    }
+
+    /**
+     * Returns RDFA by value name map.<p>
+     * 
+     * @return RDFA by value name map
+     */
+    public Map<String, String> getRdfa() {
+
+        return getLocaleRdfa().get(getLocale());
     }
 
     /**
@@ -735,7 +843,7 @@ public class CmsJspContentAccessBean {
      */
     public Map<String, List<CmsJspContentAccessValueWrapper>> getSubValueList() {
 
-        return getLocaleSubValueList().get(m_locale);
+        return getLocaleSubValueList().get(getLocale());
     }
 
     /**
@@ -755,7 +863,7 @@ public class CmsJspContentAccessBean {
      */
     public Map<String, CmsJspContentAccessValueWrapper> getValue() {
 
-        return getLocaleValue().get(m_locale);
+        return getLocaleValue().get(getLocale());
     }
 
     /**
@@ -778,7 +886,7 @@ public class CmsJspContentAccessBean {
      */
     public Map<String, List<CmsJspContentAccessValueWrapper>> getValueList() {
 
-        return getLocaleValueList().get(m_locale);
+        return getLocaleValueList().get(getLocale());
     }
 
     /**
@@ -804,7 +912,7 @@ public class CmsJspContentAccessBean {
     public void init(CmsObject cms, Locale locale, I_CmsXmlDocument content, CmsResource resource) {
 
         m_cms = cms;
-        m_locale = locale;
+        m_requestedLocale = locale;
         m_content = content;
         m_resource = resource;
     }

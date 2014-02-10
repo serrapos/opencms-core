@@ -28,7 +28,9 @@
 package org.opencms.i18n;
 
 import org.opencms.gwt.I_CmsClientMessageBundle;
+import org.opencms.test.OpenCmsTestCase;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -54,15 +56,22 @@ public final class TestCmsModuleMessageBundles extends TestCmsMessageBundles {
      * @see org.opencms.i18n.TestCmsMessageBundles#getTestClientMessageBundles()
      */
     @Override
-    protected I_CmsClientMessageBundle[] getTestClientMessageBundles() throws Exception {
+    protected List<I_CmsClientMessageBundle> getTestClientMessageBundles() throws Exception {
 
-        return new I_CmsClientMessageBundle[] {
-            org.opencms.ade.containerpage.ClientMessages.get(),
-            org.opencms.ade.galleries.ClientMessages.get(),
-            org.opencms.ade.publish.ClientMessages.get(),
-            org.opencms.ade.upload.ClientMessages.get(),
-            org.opencms.ade.sitemap.ClientMessages.get(),
-            org.opencms.gwt.ClientMessages.get()};
+        List<I_CmsClientMessageBundle> result = new ArrayList<I_CmsClientMessageBundle>();
+        List<String> classNames = OpenCmsTestCase.getClassNames();
+        for (String className : classNames) {
+            if (className.endsWith("ClientMessages")) {
+                Class<?> cls = Class.forName(className);
+                try {
+                    Object instance = cls.getMethod("get", new Class[] {}).invoke(null);
+                    result.add((I_CmsClientMessageBundle)instance);
+                } catch (Throwable t) {
+                    t.printStackTrace(System.err);
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -72,7 +81,9 @@ public final class TestCmsModuleMessageBundles extends TestCmsMessageBundles {
     protected I_CmsMessageBundle[] getTestMessageBundles() {
 
         return new I_CmsMessageBundle[] {
-            org.opencms.editors.fckeditor.Messages.get(),
+            org.opencms.editors.codemirror.Messages.get(),
+            org.opencms.workplace.tools.searchindex.sourcesearch.Messages.get(),
+            org.opencms.workplace.tools.workplace.logging.Messages.get(),
             org.opencms.workplace.administration.Messages.get(),
             org.opencms.workplace.tools.accounts.Messages.get(),
             org.opencms.workplace.tools.cache.Messages.get(),
@@ -91,6 +102,7 @@ public final class TestCmsModuleMessageBundles extends TestCmsMessageBundles {
             org.opencms.workplace.tools.publishqueue.Messages.get(),
             org.opencms.workplace.tools.scheduler.Messages.get(),
             org.opencms.workplace.tools.searchindex.Messages.get(),
+            org.opencms.workplace.tools.sites.Messages.get(),
             org.opencms.workplace.tools.workplace.Messages.get(),
             org.opencms.workplace.tools.workplace.broadcast.Messages.get(),
             org.opencms.workplace.tools.workplace.rfsfile.Messages.get()};

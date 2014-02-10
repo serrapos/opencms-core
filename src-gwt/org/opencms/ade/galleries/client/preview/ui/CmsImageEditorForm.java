@@ -48,6 +48,10 @@ import java.util.Map.Entry;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
+<<<<<<< HEAD
+=======
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
@@ -179,6 +183,24 @@ public class CmsImageEditorForm extends Composite {
         m_selectAlign.addOption("", Messages.get().key(Messages.GUI_IMAGE_ALIGN_NOT_SET_0));
         m_selectAlign.addOption("left", Messages.get().key(Messages.GUI_IMAGE_ALIGN_LEFT_0));
         m_selectAlign.addOption("right", Messages.get().key(Messages.GUI_IMAGE_ALIGN_RIGHT_0));
+<<<<<<< HEAD
+=======
+
+        m_checkboxSpacing.addValueChangeHandler(new ValueChangeHandler<Boolean>() {
+
+            public void onValueChange(ValueChangeEvent<Boolean> event) {
+
+                // if spacing is activated and no previous values present, set '5' as default 
+                if (event.getValue().booleanValue()
+                    && CmsStringUtil.isEmptyOrWhitespaceOnly(m_inputHSpace.getFormValueAsString())
+                    && CmsStringUtil.isEmptyOrWhitespaceOnly(m_inputVSpace.getFormValueAsString())) {
+                    m_inputHSpace.setFormValueAsString("5");
+                    m_inputVSpace.setFormValueAsString("5");
+                }
+            }
+        });
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         m_fields = new HashMap<Attribute, I_CmsFormWidget>();
         m_fields.put(Attribute.alt, m_inputAltTitle);
         m_fields.put(Attribute.hspace, m_inputHSpace);

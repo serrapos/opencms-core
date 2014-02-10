@@ -28,12 +28,9 @@
 package org.opencms.gwt.client.ui;
 
 import org.opencms.gwt.client.ui.I_CmsButton.ButtonStyle;
-import org.opencms.gwt.client.ui.css.I_CmsLayoutBundle;
-import org.opencms.gwt.client.util.CmsPositionBean;
 import org.opencms.util.CmsStringUtil;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.HasClickHandlers;
@@ -42,12 +39,14 @@ import com.google.gwt.event.logical.shared.CloseHandler;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
-import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiConstructor;
 import com.google.gwt.uibinder.client.UiField;
+<<<<<<< HEAD
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Element;
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 import com.google.gwt.user.client.Event;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Composite;
@@ -68,54 +67,6 @@ public class CmsMenuButton extends Composite implements HasClickHandlers {
         // GWT interface, nothing to do here
     }
 
-    /**
-     * The menu CSS interface.<p>
-     */
-    interface I_MenuButtonCss extends CssResource {
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String button();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String connect();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String hidden();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String menu();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String showAbove();
-
-        /** Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String toolbarMode();
-    }
-
-    /** The default pop-up width. */
-    private static final int DEFAULT_WIDTH = 650;
-
-    /** Stores the toolbar width. */
-    private static int m_toolbarWidth;
-
     /** The ui-binder instance for this class. */
     private static I_CmsMenuButtonUiBinder uiBinder = GWT.create(I_CmsMenuButtonUiBinder.class);
 
@@ -124,22 +75,16 @@ public class CmsMenuButton extends Composite implements HasClickHandlers {
     protected CmsPushButton m_button;
 
     /** The menu content. */
-    protected CmsPopup m_popup;
+    protected CmsToolbarPopup m_popup;
 
     /** Registration of the window resize handler. */
     protected HandlerRegistration m_resizeRegistration;
-
-    /** A DIV element for the arrow that connects the popup with the button. */
-    private Element m_arrow = DOM.createDiv();
 
     /** Flag if the menu is open. */
     private boolean m_isOpen;
 
     /** Flag if the menu opens to the right hand side. */
     private boolean m_isOpenRight;
-
-    /** Flag if the button is in toolbar mode. */
-    private boolean m_isToolbarMode;
 
     /**
      * Constructor.<p>
@@ -167,11 +112,7 @@ public class CmsMenuButton extends Composite implements HasClickHandlers {
         m_button.setButtonStyle(ButtonStyle.MENU, null);
         m_isOpen = false;
 
-        m_popup = new CmsPopup();
-        m_popup.setModal(false);
-        m_popup.setAutoHideEnabled(true);
-        m_popup.setWidth(DEFAULT_WIDTH);
-        m_popup.removePadding();
+        m_popup = new CmsToolbarPopup(m_button, false, this.getElement());
         m_popup.addCloseHandler(new CloseHandler<PopupPanel>() {
 
             public void onClose(CloseEvent<PopupPanel> event) {
@@ -225,7 +166,11 @@ public class CmsMenuButton extends Composite implements HasClickHandlers {
     public void disable(String disabledReason) {
 
         m_button.disable(disabledReason);
+<<<<<<< HEAD
         DOM.setElementPropertyBoolean(getElement(), "disabled", true);
+=======
+        getElement().setPropertyBoolean("disabled", true);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
@@ -234,7 +179,11 @@ public class CmsMenuButton extends Composite implements HasClickHandlers {
     public void enable() {
 
         m_button.enable();
+<<<<<<< HEAD
         DOM.setElementPropertyBoolean(getElement(), "disabled", false);
+=======
+        getElement().setPropertyBoolean("disabled", false);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
@@ -266,13 +215,16 @@ public class CmsMenuButton extends Composite implements HasClickHandlers {
     }
 
     /**
-     * Returns the isToolbarMode.<p>
-     *
-     * @return the isToolbarMode
+     * @see com.google.gwt.user.client.ui.Composite#onBrowserEvent(com.google.gwt.user.client.Event)
      */
-    public boolean isToolbarMode() {
+    @Override
+    public void onBrowserEvent(Event event) {
 
-        return m_isToolbarMode;
+        // Should not act on button if disabled.
+        if (!isEnabled()) {
+            return;
+        }
+        super.onBrowserEvent(event);
     }
 
     /**
@@ -294,15 +246,15 @@ public class CmsMenuButton extends Composite implements HasClickHandlers {
     public void openMenu() {
 
         m_isOpen = true;
-        m_button.setDown(true);
+        setButtonDown();
 
         m_popup.show();
-        positionPopup();
+        m_popup.position();
         m_resizeRegistration = Window.addResizeHandler(new ResizeHandler() {
 
             public void onResize(ResizeEvent event) {
 
-                positionPopup();
+                m_popup.position();
             }
         });
     }
@@ -318,7 +270,11 @@ public class CmsMenuButton extends Composite implements HasClickHandlers {
             enable();
         } else {
             m_button.setEnabled(enabled);
+<<<<<<< HEAD
             DOM.setElementPropertyBoolean(getElement(), "disabled", true);
+=======
+            getElement().setPropertyBoolean("disabled", true);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         }
     }
 
@@ -350,13 +306,7 @@ public class CmsMenuButton extends Composite implements HasClickHandlers {
      */
     public void setToolbarMode(boolean isToolbarMode) {
 
-        m_isToolbarMode = isToolbarMode;
-        if (m_isToolbarMode) {
-            // important, so a click on the button won't trigger the auto-close 
-            m_popup.addAutoHidePartner(getElement());
-        } else {
-            m_popup.removeAutoHidePartner(getElement());
-        }
+        m_popup.setToolbarMode(isToolbarMode);
     }
 
     /**
@@ -401,6 +351,7 @@ public class CmsMenuButton extends Composite implements HasClickHandlers {
      * Returns if this button is enabled.<p>
      * 
      * @return <code>true</code> if the button is enabled
+<<<<<<< HEAD
      */
     protected boolean isEnabled() {
 
@@ -499,37 +450,29 @@ public class CmsMenuButton extends Composite implements HasClickHandlers {
 
         m_popup.showArrow(m_arrow);
         m_popup.setPopupPosition(contentLeft + Window.getScrollLeft(), contentTop);
+=======
+     */
+    protected boolean isEnabled() {
+
+        return !getElement().getPropertyBoolean("disabled");
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
-     * Returns the toolbar width.<p>
-     * 
-     * @return the toolbar width
+     * Sets the button to its 'down state'.
      */
-    private int getToolbarWidth() {
+    protected void setButtonDown() {
 
-        if (m_toolbarWidth > 0) {
-            return m_toolbarWidth;
-        }
-        String toolbarWidthConstant = I_CmsLayoutBundle.INSTANCE.constants().css().toolbarWidth().toLowerCase();
-        int posPX = toolbarWidthConstant.indexOf("px");
-        if (posPX != -1) {
-            try {
-                m_toolbarWidth = Integer.parseInt(toolbarWidthConstant.substring(0, posPX));
-                return m_toolbarWidth;
-            } catch (NumberFormatException ex) {
-                // noop
-            }
-        }
-        return 930;
+        m_button.setDown(true);
     }
 
     /**
      * Sets button to state up, hides menu fragments (not the content pop-up) and fires the toggle event.<p>
      */
-    private void setButtonUp() {
+    protected void setButtonUp() {
 
         m_isOpen = false;
         m_button.setDown(false);
     }
+
 }

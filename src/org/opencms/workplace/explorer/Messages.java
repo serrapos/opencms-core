@@ -105,6 +105,9 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String GUI_EXPLORER_CONTEXT_ADVANCED_PROPERTIES_0 = "GUI_EXPLORER_CONTEXT_ADVANCED_PROPERTIES_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_EXPLORER_CONTEXT_ALIAS_DIALOG_0 = "GUI_EXPLORER_CONTEXT_ALIAS_DIALOG_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_EXPLORER_CONTEXT_AVAILABILITY_0 = "GUI_EXPLORER_CONTEXT_AVAILABILITY_0";
 
     /** Message constant for key in the resource bundle. */
@@ -144,6 +147,9 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String GUI_EXPLORER_CONTEXT_EDITSOURCE_0 = "GUI_EXPLORER_CONTEXT_EDITSOURCE_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_EXPLORER_CONTEXT_GO_TO_PARENT_0 = "GUI_EXPLORER_CONTEXT_GO_TO_PARENT_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_EXPLORER_CONTEXT_HISTORY_0 = "GUI_EXPLORER_CONTEXT_HISTORY_0";
 
     /** Message constant for key in the resource bundle. */
@@ -154,6 +160,9 @@ public final class Messages extends A_CmsMessageBundle {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_EXPLORER_CONTEXT_LOCK_0 = "GUI_EXPLORER_CONTEXT_LOCK_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_EXPLORER_CONTEXT_LOCK_REPORT_0 = "GUI_EXPLORER_CONTEXT_LOCK_REPORT_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_EXPLORER_CONTEXT_LOCKS_0 = "GUI_EXPLORER_CONTEXT_LOCKS_0";
@@ -177,6 +186,9 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String GUI_EXPLORER_CONTEXT_OVERRIDELOCK_0 = "GUI_EXPLORER_CONTEXT_OVERRIDELOCK_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_EXPLORER_CONTEXT_PAGE_INFO_0 = "GUI_EXPLORER_CONTEXT_PAGE_INFO_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_EXPLORER_CONTEXT_PAGEEDIT_0 = "GUI_EXPLORER_CONTEXT_PAGEEDIT_0";
 
     /** Message constant for key in the resource bundle. */
@@ -189,7 +201,13 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String GUI_EXPLORER_CONTEXT_PUBLISH_SCHEDULED_0 = "GUI_EXPLORER_CONTEXT_PUBLISH_SCHEDULED_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_EXPLORER_CONTEXT_REFRESH_0 = "GUI_EXPLORER_CONTEXT_REFRESH_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_EXPLORER_CONTEXT_RELATIONS_0 = "GUI_EXPLORER_CONTEXT_RELATIONS_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_EXPLORER_CONTEXT_RENAME_0 = "GUI_EXPLORER_CONTEXT_RENAME_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_EXPLORER_CONTEXT_RENAMEIMAGES_0 = "GUI_EXPLORER_CONTEXT_RENAMEIMAGES_0";
@@ -198,7 +216,13 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String GUI_EXPLORER_CONTEXT_REPLACE_0 = "GUI_EXPLORER_CONTEXT_REPLACE_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_EXPLORER_CONTEXT_RESOURCE_INFO_0 = "GUI_EXPLORER_CONTEXT_RESOURCE_INFO_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_EXPLORER_CONTEXT_SECURE_0 = "GUI_EXPLORER_CONTEXT_SECURE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_EXPLORER_CONTEXT_SEO_0 = "GUI_EXPLORER_CONTEXT_SEO_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_EXPLORER_CONTEXT_SHOW_DELETED_0 = "GUI_EXPLORER_CONTEXT_SHOW_DELETED_0";

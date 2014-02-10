@@ -53,7 +53,6 @@ public class CmsSimpleFormFieldPanel extends A_CmsFormFieldPanel {
     public CmsSimpleFormFieldPanel() {
 
         m_panel = new FlowPanel();
-        setBorder(m_panel);
         initWidget(m_panel);
     }
 
@@ -77,6 +76,16 @@ public class CmsSimpleFormFieldPanel extends A_CmsFormFieldPanel {
             CmsFormRow row = createRow(field);
             m_panel.add(row);
         }
+    }
+
+    /**
+     * @see org.opencms.gwt.client.ui.I_CmsTruncable#truncate(java.lang.String, int)
+     */
+    public void truncate(String textMetricsKey, int clientWidth) {
+
+        clientWidth -= 12;
+        storeTruncation(textMetricsKey, clientWidth);
+        truncatePanel(m_panel, textMetricsKey, clientWidth);
     }
 
 }

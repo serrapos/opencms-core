@@ -4,9 +4,10 @@
 }
 
 .groupHeader {
+	display: inline-block;
 	font-weight: bold;
 	font-size: value("constants.css.fontSize");
-    padding-top: 5px;
+    margin-left: 3px; 
 }
 
 .publishRow {
@@ -24,6 +25,10 @@
 
 @sprite .warning {
 	gwt-image: "images.warningSmallImage";
+}
+
+@sprite .checkmark {
+	gwt-image: "bigIcons.checkmark"
 }
 
 .itemToKeep {
@@ -44,6 +49,7 @@
 	margin-left: 5px;
 }
 
+
 @external html-face;
 
 .checkboxes .html-face {
@@ -59,6 +65,10 @@
 .spacer {
 	height: 10px;
 	width: 10px;
+}
+
+span.selectorLabel{
+	margin-left:5px;
 }
 
 .selectorPanel {
@@ -104,11 +114,11 @@
 
 .topBar {
 	margin-bottom: 5px;
-	margin-left: 5px;
 }
 
 .topBar > div {
-	margin-left: 4px;
+	margin-right: 4px;
+	margin-top: 3px; 
 }
 	
 .selector {
@@ -129,6 +139,8 @@
  /* this fixes the 'content vanishes while dragging' problem in IE */	
 zoom: 1;
 }
+
+
 
 
 

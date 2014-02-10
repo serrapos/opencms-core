@@ -63,6 +63,12 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String ERR_WORKPLACE_LOCK_RESOURCE_1 = "ERR_WORKPLACE_LOCK_RESOURCE_1";
 
     /** Message constant for key in the resource bundle. */
+    public static final String ERR_DEFAULT_TEMPLATE_WARNING_0 = "ERR_DEFAULT_TEMPLATE_WARNING_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_DEFAULT_TEMPLATE_ADE_WARNING_0 = "ERR_DEFAULT_TEMPLATE_ADE_WARNING_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_AJAX_REPORT_ERROR_0 = "GUI_AJAX_REPORT_ERROR_0";
 
     /** Message constant for key in the resource bundle. */
@@ -306,6 +312,9 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String GUI_LOGIN_UNKNOWN_RESOURCE_1 = "GUI_LOGIN_UNKNOWN_RESOURCE_1";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_LOGIN_UNSUPPORTED_BROWSER_0 = "GUI_LOGIN_UNSUPPORTED_BROWSER_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_LOGIN_USERNAME_0 = "GUI_LOGIN_USERNAME_0";
 
     /** Message constant for key in the resource bundle. */
@@ -421,6 +430,9 @@ public final class Messages extends A_CmsMessageBundle {
 
     /** Message constant for key in the resource bundle. */
     public static final String LOG_INVALID_EDITOR_PRE_ACTION_1 = "LOG_INVALID_EDITOR_PRE_ACTION_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String LOG_INVALID_SYNCHRONIZE_EXCLUDE_PATTERN_1 = "LOG_INVALID_SYNCHRONIZE_EXCLUDE_PATTERN_1";
 
     /** Message constant for key in the resource bundle. */
     public static final String LOG_LOGIN_NO_STARTUP_PROJECT_2 = "LOG_LOGIN_NO_STARTUP_PROJECT_2";

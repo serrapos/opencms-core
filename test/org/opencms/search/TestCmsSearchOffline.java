@@ -106,7 +106,7 @@ public class TestCmsSearchOffline extends OpenCmsTestCase {
     public void testSearchIndexSetup() throws Exception {
 
         CmsSearchIndex searchIndex = new CmsSearchIndex(INDEX_SPECIAL);
-        searchIndex.setProjectName("Offline");
+        searchIndex.setProject("Offline");
         searchIndex.setLocale(Locale.ENGLISH);
         searchIndex.setRebuildMode(CmsSearchIndex.REBUILD_MODE_OFFLINE);
         // available pre-configured in the test configuration files opencms-search.xml
@@ -136,6 +136,11 @@ public class TestCmsSearchOffline extends OpenCmsTestCase {
         assertEquals("/sites/default/xmlcontent/article_0001.html", searchResult.get(0).getPath());
     }
 
+    /**
+     * Delays execution.<p>
+     * 
+     * @throws InterruptedException if sth. goes wrong
+     */
     protected void waitForUpdate() throws InterruptedException {
 
         // wait for the offline index
@@ -211,6 +216,26 @@ public class TestCmsSearchOffline extends OpenCmsTestCase {
         assertEquals("/sites/default/test/test.txt", (results.get(0)).getPath());
 
         echo("Delete Test - end");
+        echo("Delete New Test - start");
+
+        OpenCms.getSearchManager().getIndex(INDEX_SPECIAL).setCheckPermissions(false);
+        String fileName222 = "/test/test222.txt";
+        String text222 = "Alkacon OpenCms is so great!";
+        cms.createResource(fileName222, CmsResourceTypePlain.getStaticTypeId(), text222.getBytes(), null);
+        // wait for the offline index
+        waitForUpdate();
+        cmsSearchBean.setQuery("+\"Alkacon OpenCms is so great!\"");
+        results = cmsSearchBean.getSearchResult();
+        assertEquals(1, results.size());
+        cms.deleteResource(fileName222, CmsResource.DELETE_PRESERVE_SIBLINGS);
+        waitForUpdate();
+        cmsSearchBean.setQuery("+\"Alkacon OpenCms is so great!\"");
+        results = cmsSearchBean.getSearchResult();
+        assertEquals(0, results.size());
+        OpenCms.getSearchManager().getIndex(INDEX_SPECIAL).setCheckPermissions(true);
+
+        echo("Delete New Test - end");
+        echo("Move Test - start");
 
         // move a resource
         String moveFileName = "/test/test_moved.txt";
@@ -225,5 +250,7 @@ public class TestCmsSearchOffline extends OpenCmsTestCase {
         TestCmsSearch.printResults(results, cms);
         assertEquals(7, results.size());
         assertEquals("/sites/default/test/test_moved.txt", (results.get(0)).getPath());
+
+        echo("Move Test - end");
     }
 }

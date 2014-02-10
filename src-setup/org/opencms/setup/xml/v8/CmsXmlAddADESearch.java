@@ -31,8 +31,8 @@ import org.opencms.configuration.CmsConfigurationManager;
 import org.opencms.configuration.CmsSearchConfiguration;
 import org.opencms.configuration.I_CmsXmlConfiguration;
 import org.opencms.search.CmsVfsIndexer;
-import org.opencms.search.fields.CmsSearchField;
-import org.opencms.search.fields.CmsSearchFieldConfiguration;
+import org.opencms.search.fields.CmsLuceneField;
+import org.opencms.search.fields.CmsLuceneFieldConfiguration;
 import org.opencms.search.fields.CmsSearchFieldMapping;
 import org.opencms.search.galleries.CmsGallerySearchAnalyzer;
 import org.opencms.search.galleries.CmsGallerySearchFieldConfiguration;
@@ -276,6 +276,27 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
         return "Add the ADE containerpage and gallery search nodes";
     }
 
+    /** 
+     * Creates an xpath for an index source.<p>
+     * 
+     * @param name the name of the index source 
+     * 
+     * @return the xpath for the index source 
+     */
+    protected String buildXpathForIndexSource(String name) {
+
+        StringBuffer xp = new StringBuffer(256);
+        xp.append(getCommonPath());
+        xp.append("/");
+        xp.append(CmsSearchConfiguration.N_INDEXSOURCES);
+        xp.append("/");
+        xp.append(CmsSearchConfiguration.N_INDEXSOURCE);
+        xp.append("[");
+        xp.append(I_CmsXmlConfiguration.N_NAME);
+        xp.append("='" + name + "']");
+        return xp.toString();
+    }
+
     /**
      * @see org.opencms.setup.xml.A_CmsSetupXmlUpdate#executeUpdate(org.dom4j.Document, java.lang.String, boolean)
      */
@@ -348,31 +369,6 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
         xp.append(I_CmsXmlConfiguration.N_NAME);
         xp.append("[text()='" + doctype + "']");
         return xp.toString();
-    }
-
-    /**
-     * Creates an action which adds an indexed type to an index source.<p>
-     *  
-     * @param type the type which should be indexed
-     *  
-     * @return the update action 
-     */
-    private CmsXmlUpdateAction createIndexedTypeAction(final String type) {
-
-        return new CmsXmlUpdateAction() {
-
-            @Override
-            public boolean executeUpdate(Document doc, String xpath, boolean forReal) {
-
-                Node node = doc.selectSingleNode(xpath);
-                if (node != null) {
-                    return false;
-                }
-                CmsSetupXmlHelper.setValue(doc, xpath + "/text()", type);
-                return true;
-
-            }
-        };
     }
 
     /**
@@ -604,7 +600,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                     "Offline",
                     "all",
                     "gallery_fields",
-                    new String[] {"gallery_source", "gallery_modules_source"});
+                    new String[] {"gallery_source_all"});
                 return true;
             }
         };
@@ -676,10 +672,10 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                     node.detach();
                 }
                 // create field config
-                CmsSearchFieldConfiguration fieldConf = new CmsSearchFieldConfiguration();
+                CmsLuceneFieldConfiguration fieldConf = new CmsLuceneFieldConfiguration();
                 fieldConf.setName("gallery_fields");
                 fieldConf.setDescription("The standard OpenCms search index field configuration.");
-                CmsSearchField field = new CmsSearchField();
+                CmsLuceneField field = new CmsLuceneField();
                 // <field name="content" store="compress" index="true" excerpt="true">
                 field.setName("content");
                 field.setStored("compress");
@@ -692,7 +688,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="title-key" store="true" index="untokenized" boost="0.0">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("title-key");
                 field.setStored("true");
                 field.setIndexed("untokenized");
@@ -704,7 +700,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="title" store="false" index="true">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("title");
                 field.setStored("false");
                 field.setIndexed("true");
@@ -716,7 +712,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="description" store="true" index="true">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("description");
                 field.setStored("true");
                 field.setIndexed("true");
@@ -728,7 +724,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="meta" store="false" index="true">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("meta");
                 field.setStored("false");
                 field.setIndexed("true");
@@ -742,9 +738,17 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 mapping.setType("property");
                 mapping.setParam("Description");
                 field.addMapping(mapping);
+
+                // <mapping type="attribute">name</mapping>
+                mapping = new CmsSearchFieldMapping();
+                mapping.setType("attribute");
+                mapping.setParam("name");
+                field.addMapping(mapping);
+
                 fieldConf.addField(field);
+
                 // <field name="res_dateExpired" store="true" index="untokenized">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("res_dateExpired");
                 field.setStored("true");
                 field.setIndexed("untokenized");
@@ -755,7 +759,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="res_dateReleased" store="true" index="untokenized">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("res_dateReleased");
                 field.setStored("true");
                 field.setIndexed("untokenized");
@@ -766,7 +770,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="res_length" store="true" index="untokenized">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("res_length");
                 field.setStored("true");
                 field.setIndexed("untokenized");
@@ -777,7 +781,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="res_state" store="true" index="untokenized">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("res_state");
                 field.setStored("true");
                 field.setIndexed("untokenized");
@@ -788,7 +792,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="res_structureId" store="true" index="false">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("res_structureId");
                 field.setStored("true");
                 field.setIndexed("untokenized");
@@ -799,7 +803,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="res_userCreated" store="true" index="untokenized">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("res_userCreated");
                 field.setStored("true");
                 field.setIndexed("untokenized");
@@ -810,7 +814,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="res_userLastModified" store="true" index="untokenized">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("res_userLastModified");
                 field.setStored("true");
                 field.setIndexed("untokenized");
@@ -821,7 +825,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="res_locales" store="true" index="true" analyzer="WhitespaceAnalyzer">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("res_locales");
                 field.setStored("true");
                 field.setIndexed("true");
@@ -838,7 +842,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="additional_info" store="true" index="false">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("additional_info");
                 field.setStored("true");
                 field.setIndexed("false");
@@ -849,7 +853,7 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
                 field.addMapping(mapping);
                 fieldConf.addField(field);
                 // <field name="container_types" store="true" index="true" analyzer="WhitespaceAnalyzer">
-                field = new CmsSearchField();
+                field = new CmsLuceneField();
                 field.setName("container_types");
                 field.setStored("true");
                 field.setIndexed("true");
@@ -884,13 +888,101 @@ public class CmsXmlAddADESearch extends A_CmsXmlSearch {
         //=============================================================================================================
         //
 
+        m_actions.put(
+            "/opencms/search/fieldconfigurations/fieldconfiguration[name='gallery_fields']/field[@name='search_exclude']",
+            new CmsXmlUpdateAction() {
+
+                @Override
+                public boolean executeUpdate(Document document, String xpath, boolean forReal) {
+
+                    if (document.selectSingleNode(xpath) == null) {
+                        Element galleryFieldsElement = (Element)(document.selectSingleNode("/opencms/search/fieldconfigurations/fieldconfiguration[name='gallery_fields']/fields"));
+                        Element fieldElement = galleryFieldsElement.addElement("field").addAttribute(
+                            "name",
+                            "search_exclude").addAttribute("store", "true").addAttribute("index", "true");
+                        fieldElement.addElement("mapping").addAttribute("type", "property-search").addText(
+                            "search.exclude");
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+
+            });
+
+        //
+        //=============================================================================================================
+        //
+
         m_actions.put("/opencms/search/indexsources", new CmsIndexSourceTypeUpdateAction());
 
         // use dummy check [1=1] to make the xpaths unique 
         m_actions.put("/opencms/search/indexsources[1=1]", new CmsAddGalleryModuleIndexSourceAction());
-        m_actions.put(
-            buildXpathForIndexedDocumentType("source1", "containerpage"),
-            createIndexedTypeAction("containerpage"));
+        m_actions.put(buildXpathForIndexedDocumentType("source1", "containerpage"), new CmsXmlUpdateAction() {
+
+            @Override
+            public boolean executeUpdate(Document doc, String xpath, boolean forReal) {
+
+                Node node = doc.selectSingleNode(xpath);
+                if (doc.selectSingleNode(buildXpathForIndexSource("source1")) == null) {
+                    return false;
+                }
+                if (node != null) {
+                    return false;
+                }
+                CmsSetupXmlHelper.setValue(doc, xpath + "/text()", "containerpage");
+                return true;
+
+            }
+        });
+
+        m_actions.put("/opencms/search/indexsource[2=2]", new CmsXmlUpdateAction() {
+
+            /**
+             * @see org.opencms.setup.xml.CmsXmlUpdateAction#executeUpdate(org.dom4j.Document, java.lang.String, boolean)
+             */
+            @Override
+            public boolean executeUpdate(Document doc, String xpath, boolean forReal) {
+
+                Element node = (Element)doc.selectSingleNode("/opencms/search/indexsources");
+                if (!node.selectNodes("indexsource[name='gallery_source_all']").isEmpty()) {
+                    return false;
+                }
+                String xml = "      <indexsource>\n"
+                    + "        <name>gallery_source_all</name>\n"
+                    + "        <indexer class=\"org.opencms.search.CmsVfsIndexer\" />\n"
+                    + "        <resources>\n"
+                    + "          <resource>/</resource>\n"
+                    + "        </resources>\n"
+                    + "        <documenttypes-indexed>\n"
+                    + "          <name>generic</name>\n"
+                    + "          <name>xmlpage-galleries</name>\n"
+                    + "          <name>xmlcontent-galleries</name>\n"
+                    + "          <name>jsp</name>\n"
+                    + "          <name>text</name>\n"
+                    + "          <name>pdf</name>\n"
+                    + "          <name>rtf</name>\n"
+                    + "          <name>html</name>\n"
+                    + "          <name>image</name>\n"
+                    + "          <name>generic</name>\n"
+                    + "          <name>msoffice-ole2</name>\n"
+                    + "          <name>msoffice-ooxml</name>\n"
+                    + "          <name>openoffice</name>\n"
+                    + "          <name>containerpage</name>\n"
+                    + "        </documenttypes-indexed>\n"
+                    + "      </indexsource>\n"
+                    + "";
+                try {
+                    Element sourceElem = createElementFromXml(xml);
+                    node.add(sourceElem);
+                    return true;
+                } catch (DocumentException e) {
+                    System.err.println("Failed to add gallery_modules_source");
+                    return false;
+                }
+            }
+
+        });
 
         //=============================================================================================================
 

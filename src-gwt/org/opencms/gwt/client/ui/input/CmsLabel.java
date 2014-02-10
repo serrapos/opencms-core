@@ -133,7 +133,7 @@ public class CmsLabel extends Label implements I_CmsTruncable {
 
         super.setText(text);
         m_originalText = text;
-        setTitle(getTitle());
+        setTitle(getTitle(true));
     }
 
     /**
@@ -186,6 +186,10 @@ public class CmsLabel extends Label implements I_CmsTruncable {
         if (m_titleGenerator != null) {
             return m_titleGenerator.getTitle(m_originalText);
         }
-        return m_originalText;
+        if (truncating) {
+            return getText();
+        } else {
+            return super.getTitle();
+        }
     }
 }

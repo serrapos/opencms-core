@@ -27,12 +27,16 @@
 
 package org.opencms.util;
 
+import org.opencms.file.CmsResource;
 import org.opencms.i18n.CmsEncoder;
 import org.opencms.i18n.I_CmsMessageBundle;
 import org.opencms.main.CmsIllegalArgumentException;
 import org.opencms.main.CmsLog;
+import org.opencms.main.OpenCms;
 
 import java.awt.Color;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +46,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,6 +55,10 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.commons.logging.Log;
 import org.apache.oro.text.perl.MalformedPerl5PatternException;
 import org.apache.oro.text.perl.Perl5Util;
+
+import com.cybozu.labs.langdetect.Detector;
+import com.cybozu.labs.langdetect.DetectorFactory;
+import com.cybozu.labs.langdetect.LangDetectException;
 
 /**
  * Provides String utility functions.<p>
@@ -97,6 +106,12 @@ public final class CmsStringUtil {
 
     /** Context macro. */
     public static final String MACRO_OPENCMS_CONTEXT = "${OpenCmsContext}";
+
+    /** Pattern to determine a locale for suffixes like '_de' or '_en_US'. */
+    public static final Pattern PATTERN_LOCALE_SUFFIX = Pattern.compile("(.*)_([a-z]{2}(?:_[A-Z]{2})?)(?:\\.[^\\.]*)?$");
+
+    /** Pattern to determine the document number for suffixes like '_0001'. */
+    public static final Pattern PATTERN_NUMBER_SUFFIX = Pattern.compile("(.*)_(\\d+)(\\.[^\\.^\\n]*)?$");
 
     /** The place holder end sign in the pattern. */
     public static final String PLACEHOLDER_END = "}";
@@ -155,6 +170,26 @@ public final class CmsStringUtil {
     private CmsStringUtil() {
 
         // empty
+    }
+
+    /**
+     * Adds leading and trailing slashes to a path.<p>
+     * 
+     * @param path the path to which add the slashes 
+     *   
+     * @return the path with added leading and trailing slashes 
+     */
+    public static String addLeadingAndTrailingSlash(String path) {
+
+        StringBuffer buffer1 = new StringBuffer();
+        if (!path.startsWith("/")) {
+            buffer1.append("/");
+        }
+        buffer1.append(path);
+        if (!path.endsWith("/")) {
+            buffer1.append("/");
+        }
+        return buffer1.toString();
     }
 
     /**
@@ -256,6 +291,18 @@ public final class CmsStringUtil {
     }
 
     /**
+     * Compares paths while ignoring leading / trailing slashes.<p>
+     * 
+     * @param path1 the first path 
+     * @param path2 the second path 
+     * @return true if the paths are equal (ignoring leading or trailing slashes)
+     */
+    public static boolean comparePaths(String path1, String path2) {
+
+        return addLeadingAndTrailingSlash(path1).equals(addLeadingAndTrailingSlash(path2));
+    }
+
+    /**
      * Counts the occurrence of a given char in a given String.<p>
      * 
      * @param s the string
@@ -272,6 +319,24 @@ public final class CmsStringUtil {
             }
         }
         return counter;
+    }
+
+    /**
+     * Returns a String array representation for the given enum.<p>
+     * 
+     * @param <T> the type of the enum
+     * @param values the enum values
+     * 
+     * @return the representing String array
+     */
+    public static <T extends Enum<T>> String[] enumNameToStringArray(T[] values) {
+
+        int i = 0;
+        String[] result = new String[values.length];
+        for (T value : values) {
+            result[i++] = value.name();
+        }
+        return result;
     }
 
     /**
@@ -312,6 +377,9 @@ public final class CmsStringUtil {
         source = CmsStringUtil.substitute(source, "\'", "\\\'");
         source = CmsStringUtil.substitute(source, "\r\n", "\\n");
         source = CmsStringUtil.substitute(source, "\n", "\\n");
+
+        // to avoid XSS (closing script tags) in embedded Javascript 
+        source = CmsStringUtil.substitute(source, "/", "\\/");
         return source;
     }
 
@@ -654,6 +722,34 @@ public final class CmsStringUtil {
     }
 
     /**
+     * Returns the Ethernet-Address of the locale host.<p>
+     * 
+     * A dummy ethernet address is returned, if the ip is 
+     * representing the loopback address or in case of exceptions.<p>
+     * 
+     * @return the Ethernet-Address
+     */
+    public static String getEthernetAddress() {
+
+        try {
+            InetAddress ip = InetAddress.getLocalHost();
+            if (!ip.isLoopbackAddress()) {
+                NetworkInterface network = NetworkInterface.getByInetAddress(ip);
+                byte[] mac = network.getHardwareAddress();
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < mac.length; i++) {
+                    sb.append(String.format("%02X%s", new Byte(mac[i]), (i < (mac.length - 1)) ? ":" : ""));
+                }
+                return sb.toString();
+            }
+        } catch (Throwable t) {
+            // if an exception occurred return a dummy address
+        }
+        // return a dummy ethernet address, if the ip is representing the loopback address or in case of exceptions
+        return CmsUUID.getDummyEthernetAddress();
+    }
+
+    /**
      * Returns the Integer (int) value for the given String value.<p> 
      * 
      * All parse errors are caught and the given default value is returned in this case.<p>
@@ -701,6 +797,87 @@ public final class CmsStringUtil {
             result = defaultValue;
         }
         return result;
+    }
+
+    /** 
+     * Returns the locale by suffix for the given name, including optional country code.<p>
+     * 
+     * Calls {@link CmsResource#getName(String)} first, so the given name can also be a resource root path.<p>
+     * 
+     * @param name the name to get the locale for
+     * 
+     * @return the locale, or <code>null</code>
+     * 
+     * @see #getLocaleSuffixForName(String)
+     */
+    public static Locale getLocaleForName(String name) {
+
+        String suffix = getLocaleSuffixForName(CmsResource.getName(name));
+        if (suffix != null) {
+            String laguageString = suffix.substring(0, 2);
+            return suffix.length() == 5 ? new Locale(laguageString, suffix.substring(3, 5)) : new Locale(laguageString);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the locale for the given text based on the language detection library.<p>
+     * 
+     * The result will be <code>null</code> if the detection fails or the detected locale is not configured
+     * in the 'opencms-system.xml' as available locale.<p>
+     * 
+     * @param text the text to retrieve the locale for
+     * 
+     * @return the detected locale for the given text
+     */
+    public static Locale getLocaleForText(String text) {
+
+        // try to detect locale by language detector
+        if (isNotEmptyOrWhitespaceOnly(text)) {
+            try {
+                Detector detector = DetectorFactory.create();
+                detector.append(text);
+                String lang = detector.detect();
+                Locale loc = new Locale(lang);
+                if (OpenCms.getLocaleManager().getAvailableLocales().contains(loc)) {
+                    return loc;
+                }
+            } catch (LangDetectException e) {
+                LOG.debug(e);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns the locale suffix as String for a given name, <code>null</code> otherwise.<p>
+     * 
+     * Uses the the {@link #PATTERN_LOCALE_SUFFIX} to find a language_country occurrence in the
+     * given name and returns the first group of the match.<p>
+     * 
+     * <b>Examples:</b>
+     * 
+     * <ul>
+     * <li><code>rabbit_en_EN.html -> Locale[en_EN]</code>
+     * <li><code>rabbit_en_EN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-> Locale[en_EN]</code>
+     * <li><code>rabbit_en.html&nbsp;&nbsp;&nbsp;&nbsp;-> Locale[en]</code>
+     * <li><code>rabbit_en&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-> Locale[en]</code>
+     * <li><code>rabbit_en.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-> Locale[en]</code>
+     * <li><code>rabbit_enr&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-> null</code>
+     * <li><code>rabbit_en.tar.gz&nbsp;&nbsp;-> null</code>
+     * </ul>
+     * 
+     * @param name the resource name to get the locale suffix for
+     * 
+     * @return the locale suffix if found, <code>null</code> otherwise
+     */
+    public static String getLocaleSuffixForName(String name) {
+
+        Matcher matcher = PATTERN_LOCALE_SUFFIX.matcher(name);
+        if (matcher.find()) {
+            return matcher.group(2);
+        }
+        return null;
     }
 
     /**

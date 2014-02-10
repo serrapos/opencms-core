@@ -28,11 +28,11 @@
 package org.opencms.workplace.editors;
 
 import org.opencms.file.CmsFile;
+import org.opencms.file.CmsObject;
 import org.opencms.file.CmsRequestContext;
 import org.opencms.file.CmsResource;
 import org.opencms.file.CmsResourceFilter;
 import org.opencms.file.collectors.A_CmsResourceCollector;
-import org.opencms.file.collectors.I_CmsResourceCollector;
 import org.opencms.i18n.CmsEncoder;
 import org.opencms.i18n.CmsLocaleManager;
 import org.opencms.json.JSONArray;
@@ -43,8 +43,10 @@ import org.opencms.lock.CmsLockType;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
+import org.opencms.search.CmsSearchManager;
 import org.opencms.util.CmsRequestUtil;
 import org.opencms.util.CmsStringUtil;
+import org.opencms.util.CmsUUID;
 import org.opencms.widgets.A_CmsWidget;
 import org.opencms.widgets.I_CmsWidget;
 import org.opencms.widgets.I_CmsWidgetDialog;
@@ -118,6 +120,9 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
     /** Action that sub choices should be determined. */
     public static final int ACTION_SUBCHOICES = 159;
 
+    /** Request context attribute for the page from which the editor was opened. */
+    public static final String ATTRIBUTE_EDITCONTEXT = CmsXmlContentEditor.class.getName() + ".ATTRIBUTE_EDITCONTEXT";
+
     /** Indicates that the content should be checked before executing the direct edit action. */
     public static final String EDITOR_ACTION_CHECK = "check";
 
@@ -153,6 +158,9 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
 
     /** Parameter name for the request parameter "choicetype". */
     public static final String PARAM_CHOICETYPE = "choicetype";
+
+    /** Parameter name for the request parameter "editcontext". */
+    public static final String PARAM_EDITCONTEXT = "editcontext";
 
     /** Parameter name for the request parameter "elementindex". */
     public static final String PARAM_ELEMENTINDEX = "elementindex";
@@ -198,6 +206,9 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
 
     /** Parameter stores the flag if the element to add is a choice type. */
     private String m_paramChoiceType;
+
+    /** The page in whose context the content is being edited. */
+    private String m_paramEditContext;
 
     /** Parameter stores the index of the element to add or remove. */
     private String m_paramElementIndex;
@@ -321,9 +332,12 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
             if (!hasValidationErrors()) {
                 // save content of the editor only to the temporary file
                 writeContent();
+                CmsObject cloneCms = getCloneCms();
+                CmsUUID tempProjectId = OpenCms.getWorkplaceManager().getTempFileProjectId();
+                cloneCms.getRequestContext().setCurrentProject(getCms().readProject(tempProjectId));
                 // remove eventual release & expiration date from temporary file to make preview work
-                getCms().setDateReleased(getParamTempfile(), CmsResource.DATE_RELEASED_DEFAULT, false);
-                getCms().setDateExpired(getParamTempfile(), CmsResource.DATE_EXPIRED_DEFAULT, false);
+                cloneCms.setDateReleased(getParamTempfile(), CmsResource.DATE_RELEASED_DEFAULT, false);
+                cloneCms.setDateExpired(getParamTempfile(), CmsResource.DATE_EXPIRED_DEFAULT, false);
             }
         } catch (CmsException e) {
             // show error page
@@ -461,63 +475,15 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
      */
     public void actionNew() throws JspException {
 
-        // get the collector used to create the new content
-        int pos = m_paramNewLink.indexOf('|');
-        String collectorName = m_paramNewLink.substring(0, pos);
-        String collectorParams = m_paramNewLink.substring(pos + 1);
-
-        String param;
-        String templateFileName;
-
-        pos = collectorParams.indexOf(A_CmsResourceCollector.SEPARATOR_TEMPLATEFILE);
-        if (pos != -1) {
-            // found an explicit template file name to use for the new resource, use it
-            param = collectorParams.substring(0, pos);
-            templateFileName = collectorParams.substring(pos + A_CmsResourceCollector.SEPARATOR_TEMPLATEFILE.length());
-        } else {
-            // no template file name was specified, use given resource name as template file
-            param = collectorParams;
-            templateFileName = getParamResource();
-        }
-
-        // get the collector used for calculating the next file name
-        I_CmsResourceCollector collector = OpenCms.getResourceManager().getContentCollector(collectorName);
         String newFileName = "";
         try {
 
-            // one resource serves as a "template" for the new resource
-            CmsFile templateFile = getCms().readFile(templateFileName, CmsResourceFilter.IGNORE_EXPIRATION);
-
-            CmsXmlContent template = CmsXmlContentFactory.unmarshal(getCloneCms(), templateFile);
-
-            // set the required content locale
-            Locale locale = getElementLocale();
-
-            // now create a new XML content based on the templates content definition            
-            CmsXmlContent newContent = CmsXmlContentFactory.createDocument(
+            newFileName = A_CmsResourceCollector.createResourceForCollector(
                 getCms(),
-                locale,
-                template.getEncoding(),
-                template.getContentDefinition());
-
-            // IMPORTANT: calculation of the name MUST be done here so the file name is ensured to be valid
-            newFileName = collector.getCreateLink(getCms(), collectorName, param);
-
-            boolean useModelFile = false;
-            if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(getParamModelFile())) {
-                getCms().getRequestContext().setAttribute(CmsRequestContext.ATTRIBUTE_MODEL, getParamModelFile());
-                useModelFile = true;
-            }
-            // now create the resource, fill it with the marshalled XML and write it back to the VFS
-            getCms().createResource(newFileName, templateFile.getTypeId());
-            // re-read the created resource
-            CmsFile newFile = getCms().readFile(newFileName, CmsResourceFilter.ALL);
-            if (!useModelFile) {
-                newFile.setContents(newContent.marshal());
-
-                // write the file with the updated content
-                getCloneCms().writeFile(newFile);
-            }
+                m_paramNewLink,
+                getElementLocale(),
+                getParamResource(),
+                getParamModelFile());
             // wipe out parameters for the editor to ensure proper operation
             setParamNewLink(null);
             setParamAction(null);
@@ -529,8 +495,10 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
 
             // set the member variables for the content 
             m_file = getCms().readFile(getParamTempfile(), CmsResourceFilter.ALL);
-            if (!useModelFile) {
-                m_content = newContent;
+            if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(getParamModelFile())) {
+                m_content = CmsXmlContentFactory.unmarshal(
+                    getCms(),
+                    getCms().readFile(newFileName, CmsResourceFilter.ALL));
             } else {
                 m_content = CmsXmlContentFactory.unmarshal(getCms(), m_file);
             }
@@ -562,9 +530,13 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
             // save content of the editor only to the temporary file
             setEditorValues(getElementLocale());
             writeContent();
+            CmsObject cloneCms = getCloneCms();
+            CmsUUID tempProjectId = OpenCms.getWorkplaceManager().getTempFileProjectId();
+            cloneCms.getRequestContext().setCurrentProject(getCms().readProject(tempProjectId));
             // remove eventual release & expiration date from temporary file to make preview work
-            getCms().setDateReleased(getParamTempfile(), CmsResource.DATE_RELEASED_DEFAULT, false);
-            getCms().setDateExpired(getParamTempfile(), CmsResource.DATE_EXPIRED_DEFAULT, false);
+            cloneCms.setDateReleased(getParamTempfile(), CmsResource.DATE_RELEASED_DEFAULT, false);
+            cloneCms.setDateExpired(getParamTempfile(), CmsResource.DATE_EXPIRED_DEFAULT, false);
+
         } catch (CmsException e) {
             // show error page
             showErrorPage(this, e);
@@ -622,6 +594,8 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
                 commitTempFile();
                 // set the modified parameter
                 setParamModified(Boolean.TRUE.toString());
+                // update the offline search indices
+                OpenCms.getSearchManager().updateOfflineIndexes(2 * CmsSearchManager.DEFAULT_OFFLINE_UPDATE_FREQNENCY);
             }
         } catch (CmsException e) {
             showErrorPage(e);
@@ -886,6 +860,16 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
     public String getParamChoiceType() {
 
         return m_paramChoiceType;
+    }
+
+    /**
+     * Gets the editor context path (usually either a container page path or null).<p>
+     * 
+     * @return the editor context path 
+     */
+    public String getParamEditContext() {
+
+        return m_paramEditContext;
     }
 
     /**
@@ -1194,6 +1178,7 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
      * @param locale the locale of the content to save
      * @throws CmsXmlException if something goes wrong
      */
+    @SuppressWarnings("unchecked")
     public void setEditorValues(Locale locale) throws CmsXmlException {
 
         List<String> names = m_content.getNames(locale);
@@ -1230,6 +1215,20 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
     public void setParamChoiceType(String paramChoiceType) {
 
         m_paramChoiceType = paramChoiceType;
+    }
+
+    /**
+     * Sets the edit context URI.<p>
+     *  
+     * @param editContext the edit context URI.
+     */
+    public void setParamEditContext(String editContext) {
+
+        m_paramEditContext = editContext;
+        CmsObject cms = getCms();
+        if ((cms != null) && (editContext != null)) {
+            cms.getRequestContext().setAttribute(ATTRIBUTE_EDITCONTEXT, editContext);
+        }
     }
 
     /**
@@ -1561,7 +1560,6 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
      * Returns the HTML for the element operation buttons add, move, remove.<p>
      * 
      * @param value the value for which the buttons are generated
-     * @param index the index of the element
      * @param addElement if true, the button to add an element is shown
      * @param removeElement if true, the button to remove an element is shown
      * @return the HTML for the element operation buttons
@@ -1708,6 +1706,7 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
      * @param contentDefinition the content definition to start with
      * @param pathPrefix for nested xml content
      * @param showHelpBubble if the code for a help bubble should be generated
+     * @param superTabOpened if the super tab is opened
      * 
      * @return the HTML that generates the form for the XML editor
      */
@@ -2013,7 +2012,7 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
 
                     } else {
                         // element is enabled, show it
-                        if (value.isSimpleType()) {
+                        if ((widget != null) && value.isSimpleType()) {
                             // this is a simple type, display widget
                             result.append(widget.getDialogWidget(getCms(), this, (I_CmsWidgetParameter)value));
                         } else {
@@ -2109,7 +2108,11 @@ public class CmsXmlContentEditor extends CmsEditor implements I_CmsWidgetDialog 
             throw new CmsException(Messages.get().container(Messages.ERR_INVALID_CONTENT_ENC_1, getParamResource()), e);
         }
         // the file content might have been modified during the write operation    
-        m_file = getCloneCms().writeFile(m_file);
-        m_content = CmsXmlContentFactory.unmarshal(getCloneCms(), m_file);
+        CmsObject cloneCms = getCloneCms();
+        CmsUUID tempProjectId = OpenCms.getWorkplaceManager().getTempFileProjectId();
+        cloneCms.getRequestContext().setCurrentProject(getCms().readProject(tempProjectId));
+        m_file = cloneCms.writeFile(m_file);
+        m_content = CmsXmlContentFactory.unmarshal(cloneCms, m_file);
+
     }
 }

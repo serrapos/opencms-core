@@ -33,11 +33,12 @@ import org.opencms.gwt.client.ui.I_CmsAutoHider;
 import org.opencms.gwt.client.ui.input.form.CmsWidgetFactoryRegistry;
 import org.opencms.gwt.client.ui.input.form.I_CmsFormWidgetFactory;
 import org.opencms.gwt.client.util.CmsMessages;
-import org.opencms.util.CmsPair;
 import org.opencms.util.CmsStringUtil;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+
+import com.google.gwt.user.client.ui.FocusPanel;
 
 /**
  * Widget for selecting one of multiple items from a drop-down list which opens
@@ -48,26 +49,35 @@ import java.util.Map;
  */
 public class CmsSelectBox extends A_CmsSelectBox<CmsLabelSelectCell> implements I_CmsHasInit, I_CmsHasGhostValue {
 
+    /** The key for the text which should be displayed in the opener if no option is available. */
+    public static final String NO_SELECTION_OPENER_TEXT = "%NO_SELECTION_OPENER_TEXT%";
+
+    /** The key for the text which should be displayed if no option is available. */
+    public static final String NO_SELECTION_TEXT = "%NO_SELECTION_TEXT%";
+
     /** Text metrics key. */
     private static final String TM_OPENER_LABEL = "OpenerLabel";
 
     /** The widget type identifier. */
     private static final String WIDGET_TYPE = "select";
 
-    /** The key for the text which should be displayed if no option is available. */
-    public static final String NO_SELECTION_TEXT = "%NO_SELECTION_TEXT%";
+    /** The ghost value. */
+    protected String m_ghostValue;
 
     /** The widget displayed in the opener. */
     protected CmsLabel m_openerWidget;
 
-    /** The ghost value. */
-    private String m_ghostValue;
-
     /** A map from select options to their label texts. */
     private Map<String, String> m_items;
 
+    /** The text which should be displayed in the opener if there is no selection. */
+    private String m_noSelectionOpenerText;
+
     /** The text which should be displayed if there is no selection. */
     private String m_noSelectionText;
+
+    /** A map of titles for the select options which should  be displayed on mouseover. */
+    private Map<String, String> m_titles = new HashMap<String, String>();
 
     /**
      * Default constructor.<p>
@@ -76,19 +86,6 @@ public class CmsSelectBox extends A_CmsSelectBox<CmsLabelSelectCell> implements 
 
         super();
 
-    }
-
-    /**
-     * Constructs a new select box from a list of key-value pairs.<p>
-     * 
-     * The first component of each pair is the option value, the second is the text to be displayed for the option value.<p>
-     * 
-     * @param items the items
-     */
-    public CmsSelectBox(List<CmsPair<String, String>> items) {
-
-        super();
-        setItems(items);
     }
 
     /**
@@ -116,7 +113,12 @@ public class CmsSelectBox extends A_CmsSelectBox<CmsLabelSelectCell> implements 
         super();
         if (items.containsKey(NO_SELECTION_TEXT)) {
             m_noSelectionText = items.get(NO_SELECTION_TEXT);
+            m_noSelectionOpenerText = items.get(NO_SELECTION_OPENER_TEXT);
+            if (m_noSelectionOpenerText == null) {
+                m_noSelectionOpenerText = m_noSelectionText;
+            }
             items.remove(NO_SELECTION_TEXT);
+            items.remove(NO_SELECTION_OPENER_TEXT);
         }
         if (addNullOption) {
             String text = Messages.get().key(Messages.GUI_SELECTBOX_EMPTY_SELECTION_0);
@@ -154,7 +156,8 @@ public class CmsSelectBox extends A_CmsSelectBox<CmsLabelSelectCell> implements 
      */
     public void addOption(String value, String text) {
 
-        CmsLabelSelectCell cell = new CmsLabelSelectCell(value, text);
+        String title = getTitle(value, text);
+        CmsLabelSelectCell cell = new CmsLabelSelectCell(value, text, title);
         addOption(cell);
     }
 
@@ -169,6 +172,36 @@ public class CmsSelectBox extends A_CmsSelectBox<CmsLabelSelectCell> implements 
         }
         return val;
 
+    }
+
+    /**
+     * Returns the items as a map for option values to label text.<p>
+     * 
+     * @return the items as a map for option values to label text
+     */
+    public Map<String, String> getItems() {
+
+        return m_items;
+    }
+
+    /**
+     * Returns the opener of this widget.<p>
+     * 
+     * @return the opener of this widget
+     */
+    public FocusPanel getOpener() {
+
+        return m_opener;
+    }
+
+    /**
+     * @see org.opencms.gwt.client.ui.input.A_CmsSelectBox#selectValue(java.lang.String)
+     */
+    @Override
+    public void selectValue(String value) {
+
+        super.selectValue(value);
+        updateStyle();
     }
 
     /**
@@ -201,25 +234,11 @@ public class CmsSelectBox extends A_CmsSelectBox<CmsLabelSelectCell> implements 
         String message = m_noSelectionText != null ? m_noSelectionText : Messages.get().key(
             Messages.GUI_SELECTBOX_EMPTY_SELECTION_1);
         message = CmsMessages.formatMessage(message, otherOptionText);
-        setTextForNullSelection(message);
+        //setTextForNullSelection(message);
+        m_ghostValue = value;
+        updateCells();
         if (ghostMode) {
             selectValue("");
-            m_ghostValue = value;
-        }
-    }
-
-    /**
-     * Sets the items as key-value pairs.<p>
-     * 
-     * The first component of each pair is the option value, the second is the text to be displayed for the option value.<p>
-     * 
-     * @param items the items
-     */
-    public void setItems(List<CmsPair<String, String>> items) {
-
-        clearItems();
-        for (CmsPair<String, String> item : items) {
-            addOption(item.getFirst(), item.getSecond());
         }
     }
 
@@ -250,11 +269,23 @@ public class CmsSelectBox extends A_CmsSelectBox<CmsLabelSelectCell> implements 
             return;
         }
         cell.setText(text);
-
         // if the null option is selected, we still need to update the opener 
         if (CmsStringUtil.isEmptyOrWhitespaceOnly(m_selectedValue)) {
             selectValue("");
         }
+    }
+
+    /**
+     * Sets the title for a select option.<p>
+     * 
+     * Note: This will only affect select options added *after* calling this method! 
+     * 
+     * @param option the select option value 
+     * @param title the new title for the option 
+     */
+    public void setTitle(String option, String title) {
+
+        m_titles.put(option, title);
     }
 
     /**
@@ -264,6 +295,26 @@ public class CmsSelectBox extends A_CmsSelectBox<CmsLabelSelectCell> implements 
     public void truncateOpener(String prefix, int width) {
 
         m_openerWidget.truncate(prefix + '_' + TM_OPENER_LABEL, width);
+    }
+
+    /**
+     * Updates a single select cell.<p>
+     * 
+     * @param cell the select cell to update 
+     */
+    public void updateCell(CmsLabelSelectCell cell) {
+
+        // do nothing 
+    }
+
+    /**
+     * Updates the select cells.<p>
+     */
+    public void updateCells() {
+
+        for (CmsLabelSelectCell cell : m_selectCells.values()) {
+            updateCell(cell);
+        }
     }
 
     /**
@@ -278,6 +329,22 @@ public class CmsSelectBox extends A_CmsSelectBox<CmsLabelSelectCell> implements 
     }
 
     /**
+     * Helper method to get the title for a given select option.<p>
+     * 
+     * @param option the select option value 
+     * @param defaultValue the value to return when no title for the value was found
+     *  
+     * @return the title for the select option 
+     */
+    protected String getTitle(String option, String defaultValue) {
+
+        if ((option != null) && m_titles.containsKey(option)) {
+            return m_titles.get(option);
+        }
+        return defaultValue;
+    }
+
+    /**
      * @see org.opencms.gwt.client.ui.input.A_CmsSelectBox#initOpener()
      */
     @Override
@@ -289,6 +356,16 @@ public class CmsSelectBox extends A_CmsSelectBox<CmsLabelSelectCell> implements 
     }
 
     /**
+     * @see com.google.gwt.user.client.ui.Widget#onLoad()
+     */
+    @Override
+    protected void onLoad() {
+
+        super.onLoad();
+        updateStyle();
+    }
+
+    /**
      * @see org.opencms.gwt.client.ui.input.A_CmsSelectBox#updateOpener(java.lang.String)
      */
     @Override
@@ -296,8 +373,16 @@ public class CmsSelectBox extends A_CmsSelectBox<CmsLabelSelectCell> implements 
 
         CmsLabel label = m_openerWidget;
         CmsLabelSelectCell cell = m_selectCells.get(newValue);
-        label.setText(cell.getText());
-        label.setTitle(cell.getText());
+        String openerText = cell.getOpenerText();
+        label.setText(openerText);
+        label.setTitle(getTitle(cell.getValue(), openerText));
     }
 
+    /**
+     * This method should be used to make changes to the CSS style of the select box when the value changes.<p>
+     */
+    protected void updateStyle() {
+
+        // do nothing
+    }
 }

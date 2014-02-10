@@ -62,6 +62,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -131,6 +132,7 @@ public class JSONObject {
          * @param object an object to test for nullness
          * @return true if the object parameter is the JSONObject.NULL object or null
          */
+        @Override
         public boolean equals(Object object) {
 
             return (object == null) || (object == this);
@@ -139,6 +141,7 @@ public class JSONObject {
         /**
          * @see Object#hashCode()
          */
+        @Override
         public int hashCode() {
 
             return super.hashCode();
@@ -149,6 +152,7 @@ public class JSONObject {
          * 
          * @return the string "null".
          */
+        @Override
         public String toString() {
 
             return "null";
@@ -160,6 +164,7 @@ public class JSONObject {
          * 
          * @return NULL.
          */
+        @Override
         protected Object clone() {
 
             return this;
@@ -379,7 +384,7 @@ public class JSONObject {
     public JSONObject(Object object, String[] names) {
 
         this();
-        Class c = object.getClass();
+        Class<?> c = object.getClass();
         for (int i = 0; i < names.length; i += 1) {
             String name = names[i];
             try {
@@ -485,7 +490,7 @@ public class JSONObject {
         if (object == null) {
             return null;
         }
-        Class klass = object.getClass();
+        Class<?> klass = object.getClass();
         Field[] fields = klass.getFields();
         int length = fields.length;
         if (length == 0) {
@@ -637,6 +642,7 @@ public class JSONObject {
      *  with <code>}</code>&nbsp;<small>(right brace)</small>
      * @throws JSONException if the value is or contains an invalid number
      */
+    @SuppressWarnings("unchecked")
     static String valueToString(Object value) throws JSONException {
 
         if ((value == null) || value.equals(null)) {
@@ -661,10 +667,10 @@ public class JSONObject {
             return value.toString();
         }
         if (value instanceof Map) {
-            return new JSONObject((Map)value).toString();
+            return new JSONObject((Map<String, Object>)value).toString();
         }
         if (value instanceof Collection) {
-            return new JSONArray((Collection)value).toString();
+            return new JSONArray((Collection<Object>)value).toString();
         }
         if (value.getClass().isArray()) {
             return new JSONArray(value).toString();
@@ -687,6 +693,7 @@ public class JSONObject {
      *  with <code>}</code>&nbsp;<small>(right brace)</small>
      * @throws JSONException if the object contains an invalid number
      */
+    @SuppressWarnings("unchecked")
     static String valueToString(Object value, int indentFactor, int indent) throws JSONException {
 
         if ((value == null) || value.equals(null)) {
@@ -715,10 +722,10 @@ public class JSONObject {
             return ((JSONArray)value).toString(indentFactor, indent);
         }
         if (value instanceof Map) {
-            return new JSONObject((Map)value).toString(indentFactor, indent);
+            return new JSONObject((Map<String, Object>)value).toString(indentFactor, indent);
         }
         if (value instanceof Collection) {
-            return new JSONArray((Collection)value).toString(indentFactor, indent);
+            return new JSONArray((Collection<Object>)value).toString(indentFactor, indent);
         }
         if (value.getClass().isArray()) {
             return new JSONArray(value).toString(indentFactor, indent);
@@ -943,6 +950,16 @@ public class JSONObject {
     public Iterator<String> keys() {
 
         return this.m_map.keySet().iterator();
+    }
+
+    /**
+     * Gets the set of keys.<p>
+     * 
+     * @return the set of keys 
+     */
+    public Set<String> keySet() {
+
+        return m_map.keySet();
     }
 
     /**
@@ -1539,7 +1556,14 @@ public class JSONObject {
         return sb.toString();
     }
 
-    private boolean isStandardProperty(Class clazz) {
+    /**
+     * Returns if the given class is a standard property.<p>
+     * 
+     * @param clazz the class
+     * 
+     * @return <code>true</code> if the given class is a standard property
+     */
+    private boolean isStandardProperty(Class<?> clazz) {
 
         return clazz.isPrimitive()
             || clazz.isAssignableFrom(Byte.class)
@@ -1553,9 +1577,16 @@ public class JSONObject {
             || clazz.isAssignableFrom(Boolean.class);
     }
 
+    /**
+     * Populates the internal map.<p>
+     * 
+     * @param bean the bean
+     * @param includeSuperClass flag indicating if super class properties should be included
+     */
+    @SuppressWarnings("unchecked")
     private void populateInternalMap(Object bean, boolean includeSuperClass) {
 
-        Class klass = bean.getClass();
+        Class<?> klass = bean.getClass();
 
         //If klass.getSuperClass is System class then includeSuperClass = false;
 
@@ -1589,9 +1620,9 @@ public class JSONObject {
                     } else if (result.getClass().isArray()) {
                         m_map.put(key, new JSONArray(result, includeSuperClass));
                     } else if (result instanceof Collection) { //List or Set
-                        m_map.put(key, new JSONArray((Collection)result, includeSuperClass));
+                        m_map.put(key, new JSONArray((Collection<Object>)result, includeSuperClass));
                     } else if (result instanceof Map) {
-                        m_map.put(key, new JSONObject((Map)result, includeSuperClass));
+                        m_map.put(key, new JSONObject((Map<String, Object>)result, includeSuperClass));
                     } else if (isStandardProperty(result.getClass())) { //Primitives, String and Wrapper
                         m_map.put(key, result);
                     } else {

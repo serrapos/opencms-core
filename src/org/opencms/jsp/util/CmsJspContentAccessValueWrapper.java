@@ -27,6 +27,7 @@
 
 package org.opencms.jsp.util;
 
+import org.opencms.ade.contenteditor.CmsContentService;
 import org.opencms.file.CmsObject;
 import org.opencms.i18n.CmsLocaleManager;
 import org.opencms.util.CmsCollectionsGenericWrapper;
@@ -73,6 +74,26 @@ public final class CmsJspContentAccessValueWrapper {
             return Boolean.valueOf(obtainContentValue().getDocument().hasValue(
                 createPath(input),
                 obtainContentValue().getLocale()));
+        }
+    }
+
+    /**
+     * Provides a Map which lets the user a nested sub value from the current value, 
+     * the input is assumed to be a String that represents an xpath in the XML content.<p>
+     */
+    public class CmsRdfaTransformer implements Transformer {
+
+        /**
+         * @see org.apache.commons.collections.Transformer#transform(java.lang.Object)
+         */
+        public Object transform(Object input) {
+
+            if ((obtainCmsObject() != null)
+                && !obtainCmsObject().getRequestContext().getCurrentProject().isOnlineProject()) {
+                return CmsContentService.getRdfaAttributes(obtainContentValue(), String.valueOf(input));
+            } else {
+                return "";
+            }
         }
     }
 
@@ -183,6 +204,9 @@ public final class CmsJspContentAccessValueWrapper {
 
     /** The names of the sub elements. */
     private List<String> m_names;
+
+    /** The lazy initialized map of RDFA for nested sub values. */
+    private Map<String, String> m_rdfa;
 
     /** The lazy initialized sub value list Map. */
     private Map<String, List<CmsJspContentAccessValueWrapper>> m_subValueList;
@@ -413,7 +437,7 @@ public final class CmsJspContentAccessValueWrapper {
             return CmsStringUtil.isEmptyOrWhitespaceOnly(m_contentValue.getStringValue(m_cms));
         } else {
             // nested types are not empty if they have any children in the XML
-            return m_contentValue.getElement().elements().size() > 0;
+            return m_contentValue.getElement().elements().isEmpty();
         }
     }
 
@@ -520,6 +544,45 @@ public final class CmsJspContentAccessValueWrapper {
             return "";
         }
         return m_contentValue.getPath();
+    }
+
+    /**
+     * Returns a lazy initialized Map that provides the RDFA for nested sub values.<p>
+     * 
+     * The provided Map key is assumed to be a String that represents the relative xpath to the value.<p>
+     * 
+     * @return a lazy initialized Map that provides the RDFA for nested sub values
+     */
+    public Map<String, String> getRdfa() {
+
+        if (m_rdfa == null) {
+            m_rdfa = CmsCollectionsGenericWrapper.createLazyMap(new CmsRdfaTransformer());
+        }
+        return m_rdfa;
+    }
+
+    /**
+     * Returns the RDF annotation to this content value.<p>
+     * 
+     * Use to insert the annotation attributes into a HTML tag.<p>
+     * Example using EL: &lt;h1 ${value.Title.rdfaAttr}&gt;${value.Title}&lt;/h1&gt; will result in 
+     * &lt;h1 about="..." property="..."&gt;My title&lt;/h1&gt;<p>
+     *  
+     * @return the RDFA
+     */
+    public String getRdfaAttr() {
+
+        String result = "";
+        if ((obtainCmsObject() != null) && (m_contentValue != null)) {
+            if (!obtainCmsObject().getRequestContext().getCurrentProject().isOnlineProject()) {
+                // within the offline project return the OpenCms specific entity id's and property names
+                result = "about=\"" + CmsContentService.getEntityId(m_contentValue) + "\" ";
+                result += "property=\"" + CmsContentService.getAttributeName(m_contentValue) + "\"";
+            } else {
+                // TODO: return mapped property names etc. when online
+            }
+        }
+        return result;
     }
 
     /**

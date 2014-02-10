@@ -80,7 +80,7 @@ public class CmsEditFieldDialog extends A_CmsFieldDialog {
      */
     public String getIndexed() {
 
-        if (m_field != null && m_field.getIndexed() != null) {
+        if ((m_field != null) && (m_field.getIndexed() != null)) {
             return m_field.getIndexed();
         }
         return "";
@@ -104,6 +104,7 @@ public class CmsEditFieldDialog extends A_CmsFieldDialog {
      * @param dialog the dialog (page) to get the HTML for
      * @return the dialog HTML for all defined widgets of the named dialog (page)
      */
+    @Override
     protected String createDialogHtml(String dialog) {
 
         StringBuffer result = new StringBuffer(1024);
@@ -128,6 +129,7 @@ public class CmsEditFieldDialog extends A_CmsFieldDialog {
     /**
      * Creates the list of widgets for this dialog.<p>
      */
+    @Override
     protected void defineWidgets() {
 
         super.defineWidgets();
@@ -168,9 +170,9 @@ public class CmsEditFieldDialog extends A_CmsFieldDialog {
      * 
      * @return a list for the indexed select box
      */
-    private List getTokenizedWidgetConfiguration() {
+    private List<CmsSelectWidgetOption> getTokenizedWidgetConfiguration() {
 
-        List result = new ArrayList();
+        List<CmsSelectWidgetOption> result = new ArrayList<CmsSelectWidgetOption>();
         result.add(new CmsSelectWidgetOption("true", true));
         result.add(new CmsSelectWidgetOption("false", false));
         result.add(new CmsSelectWidgetOption("untokenized", false));

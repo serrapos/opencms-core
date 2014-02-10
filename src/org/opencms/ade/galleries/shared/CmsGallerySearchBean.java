@@ -27,6 +27,9 @@
 
 package org.opencms.ade.galleries.shared;
 
+import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants.GalleryMode;
+import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants.GalleryTabId;
+import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants.SortParams;
 import org.opencms.util.CmsStringUtil;
 
 import java.util.ArrayList;
@@ -71,14 +74,26 @@ public class CmsGallerySearchBean implements IsSerializable {
     /** The start modification date criteria as long. */
     private long m_dateModifiedStart = -1L;
 
+    /** Flag to disable the preview. */
+    private boolean m_disablePreview;
+
     /** The list of selected vfs folders. */
     private Set<String> m_folders = new HashSet<String>();
 
     /** The list of selected galleries ids (path). */
     private List<String> m_galleries = new ArrayList<String>();
 
+    /** The gallery mode. */
+    private GalleryMode m_galleryMode;
+
+    /** Indicates the search exclude property should be ignored. */
+    private boolean m_ignoreSearchExclude;
+
     /** Flag indicating if the search should include expired or unreleased resources. */
     private boolean m_includeExpired;
+
+    /** The id of a tab which will be set after an initial (CmsGalleryDataBean) search. */
+    private GalleryTabId m_initialTabId;
 
     /** The index of the last search results page. */
     private int m_lastPage;
@@ -113,6 +128,9 @@ public class CmsGallerySearchBean implements IsSerializable {
     /** The search scope. */
     private CmsGallerySearchScope m_scope;
 
+    /** The sitemap preload data. */
+    private CmsSitemapEntryBean m_sitemapPreloadData;
+
     /** The sort order of the search result. */
     private String m_sortOrder;
 
@@ -122,6 +140,9 @@ public class CmsGallerySearchBean implements IsSerializable {
     /** The list of the resource types ids (resource type name). */
     private List<String> m_types = new ArrayList<String>();
 
+    /** The VFS tree preload data. */
+    private CmsVfsEntryBean m_vfsPreloadData;
+
     /**
      * Empty default constructor. <p>
      */
@@ -129,6 +150,8 @@ public class CmsGallerySearchBean implements IsSerializable {
 
         m_matchesPerPage = DEFAULT_MATCHES_PER_PAGE;
         m_page = 1;
+        // default sorting by date last modified
+        m_sortOrder = SortParams.dateLastModified_desc.name();
     }
 
     /**
@@ -157,6 +180,8 @@ public class CmsGallerySearchBean implements IsSerializable {
         setDateModifiedStart(searchObj.getDateModifiedStart());
         setScope(searchObj.getScope());
         setIncludeExpired(searchObj.isIncludeExpired());
+        setIgnoreSearchExclude(searchObj.isIgnoreSearchExclude());
+        setGalleryMode(searchObj.getGalleryMode());
     }
 
     /**
@@ -320,6 +345,26 @@ public class CmsGallerySearchBean implements IsSerializable {
     }
 
     /**
+     * Gets the gallery mode.<p>
+     * 
+     * @return the gallery mode 
+     */
+    public GalleryMode getGalleryMode() {
+
+        return m_galleryMode;
+    }
+
+    /**
+     * Gets the initial tab id.<p>
+     * 
+     * @return the initial tab id 
+     */
+    public GalleryTabId getInitialTabId() {
+
+        return m_initialTabId;
+    }
+
+    /**
      * Gets the index of the last search results page.<p> 
      * 
      * @return the index of the last search results page 
@@ -433,6 +478,16 @@ public class CmsGallerySearchBean implements IsSerializable {
     }
 
     /**
+     * Gets the sitemap preload data.<p>
+     * 
+     * @return the sitemap preload data 
+     */
+    public CmsSitemapEntryBean getSitemapPreloadData() {
+
+        return m_sitemapPreloadData;
+    }
+
+    /**
      * Returns the sort order of the search results.<p>
      *
      * @return the sortOrder
@@ -463,6 +518,16 @@ public class CmsGallerySearchBean implements IsSerializable {
     }
 
     /**
+     * Gets the VFS preload data.<p>
+     * 
+     * @return the VFS preload data 
+     */
+    public CmsVfsEntryBean getVfsPreloadData() {
+
+        return m_vfsPreloadData;
+    }
+
+    /**
      * Checks if there are more search items available on the next page.<p>
      * 
      * @return <code>true</code> if there are more search results available <code>false</code> otherwise
@@ -470,6 +535,16 @@ public class CmsGallerySearchBean implements IsSerializable {
     public boolean hasMore() {
 
         return (m_resultCount > (m_page * m_matchesPerPage));
+    }
+
+    /**
+     * Returns true if no preview should be shown for the search result.<p>
+     * 
+     * @return true if no preview should be shown 
+     */
+    public boolean isDisablePreview() {
+
+        return m_disablePreview;
     }
 
     /**
@@ -495,11 +570,21 @@ public class CmsGallerySearchBean implements IsSerializable {
             Long.valueOf(m_dateModifiedEnd),
             Long.valueOf(m_dateModifiedStart)});
         for (Long date : dates) {
-            if ((date != null) && (date != Long.valueOf(-1L))) {
+            if ((date != null) && (!date.equals(Long.valueOf(-1L)))) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Returns the search exclude property ignore flag.<p>
+     *
+     * @return the search exclude property ignore flag
+     */
+    public boolean isIgnoreSearchExclude() {
+
+        return m_ignoreSearchExclude;
     }
 
     /**
@@ -602,6 +687,16 @@ public class CmsGallerySearchBean implements IsSerializable {
         m_dateModifiedStart = dateModifiedStart;
     }
 
+    /**
+     * Sets the 'disable preview' flag.<p>
+     * 
+     * @param disablePreview true if the preview for the search result should not be shown 
+     */
+    public void setDisablePreview(boolean disablePreview) {
+
+        m_disablePreview = disablePreview;
+    }
+
     /** 
      * Sets the folders to search in.<p>
      * 
@@ -623,6 +718,26 @@ public class CmsGallerySearchBean implements IsSerializable {
     }
 
     /**
+     * Sets the gallery mode.<p>
+     * 
+     * @param galleryMode the gallery mode to set 
+     */
+    public void setGalleryMode(GalleryMode galleryMode) {
+
+        m_galleryMode = galleryMode;
+    }
+
+    /**
+     * Sets the search exclude property ignore flag.<p>
+     *
+     * @param excludeForPageEditor the search exclude property ignore flag
+     */
+    public void setIgnoreSearchExclude(boolean excludeForPageEditor) {
+
+        m_ignoreSearchExclude = excludeForPageEditor;
+    }
+
+    /**
      * Sets if the search should include expired or unreleased resources.<p>
      *
      * @param includeExpired if the search should include expired or unreleased resources
@@ -630,6 +745,16 @@ public class CmsGallerySearchBean implements IsSerializable {
     public void setIncludeExpired(boolean includeExpired) {
 
         m_includeExpired = includeExpired;
+    }
+
+    /**
+     * Sets the initial tab id.<p>
+     * 
+     * @param initialTabId the initial tab id 
+     */
+    public void setInitialTabId(GalleryTabId initialTabId) {
+
+        m_initialTabId = initialTabId;
     }
 
     /**
@@ -743,6 +868,16 @@ public class CmsGallerySearchBean implements IsSerializable {
     }
 
     /**
+     * Sets the sitemap preload data.<p>
+     * 
+     * @param preloadData the sitemap preload data
+     */
+    public void setSitemapPreloadData(CmsSitemapEntryBean preloadData) {
+
+        m_sitemapPreloadData = preloadData;
+    }
+
+    /**
      * Sets the sortOrder.<p>
      *
      * @param sortOrder the sortOrder to set
@@ -774,5 +909,15 @@ public class CmsGallerySearchBean implements IsSerializable {
         } else {
             m_types = types;
         }
+    }
+
+    /**
+     * Sets the VFS tree preload data.<p>
+     * 
+     * @param preloadData the VFS tree preload data
+     */
+    public void setVfsPreloadData(CmsVfsEntryBean preloadData) {
+
+        m_vfsPreloadData = preloadData;
     }
 }

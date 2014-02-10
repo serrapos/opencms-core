@@ -28,7 +28,7 @@
 package org.opencms.xml.containerpage;
 
 import org.opencms.file.CmsObject;
-import org.opencms.main.CmsLog;
+import org.opencms.jsp.util.CmsJspStandardContextBean.TemplateBean;
 import org.opencms.main.OpenCms;
 import org.opencms.util.CmsCollectionsGenericWrapper;
 
@@ -37,8 +37,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.collections.list.NodeCachingLinkedList;
-import org.apache.commons.logging.Log;
 
 /**
  * ADE's session cache.<p>
@@ -50,14 +51,17 @@ public final class CmsADESessionCache {
     /** Session attribute name constant. */
     public static final String SESSION_ATTR_ADE_CACHE = "__OCMS_ADE_CACHE__";
 
-    /** The log object for this class. */
-    private static final Log LOG = CmsLog.getLog(CmsADESessionCache.class);
-
     /** The container elements. */
     private Map<String, CmsContainerElementBean> m_containerElements;
 
+    /** Flag which controls whether small elements should be shown. */
+    private boolean m_isEditSmallElements;
+
     /** The ADE recent list. */
     private List<CmsContainerElementBean> m_recentLists;
+
+    /** Template bean cache. */
+    private Map<String, TemplateBean> m_templateBeanCache = new HashMap<String, TemplateBean>();
 
     /** The tool-bar visibility flag. */
     private boolean m_toolbarVisible;
@@ -82,6 +86,25 @@ public final class CmsADESessionCache {
     }
 
     /**
+     * Gets the session cache for the current session.<p>
+     * 
+     * @param request the current request
+     * @param cms the current CMS context
+     *  
+     * @return the ADE session cache for the current session 
+     */
+    public static CmsADESessionCache getCache(HttpServletRequest request, CmsObject cms) {
+
+        CmsADESessionCache cache = (CmsADESessionCache)request.getSession().getAttribute(
+            CmsADESessionCache.SESSION_ATTR_ADE_CACHE);
+        if (cache == null) {
+            cache = new CmsADESessionCache(cms);
+            request.getSession().setAttribute(CmsADESessionCache.SESSION_ATTR_ADE_CACHE, cache);
+        }
+        return cache;
+    }
+
+    /**
      * Returns the cached container element under the given key.<p>
      * 
      * @param key the cache key
@@ -101,6 +124,34 @@ public final class CmsADESessionCache {
     public List<CmsContainerElementBean> getRecentList() {
 
         return m_recentLists;
+    }
+
+    /**
+     * Gets the cached template bean for a given container page uri.<p>
+     * 
+     * @param uri the container page uri 
+     * @param safe if true, return a valid template bean even if it hasn't been cached before 
+     * 
+     * @return the template bean 
+     */
+    public TemplateBean getTemplateBean(String uri, boolean safe) {
+
+        TemplateBean templateBean = m_templateBeanCache.get(uri);
+        if ((templateBean != null) || !safe) {
+            return templateBean;
+        }
+        return new TemplateBean("", "");
+    }
+
+    /** 
+     * Returns true if, in this session, a newly opened container page editor window should display edit points for 
+     * small elements initially.<p>
+     * 
+     * @return true if small elements should be editable initially 
+     */
+    public boolean isEditSmallElements() {
+
+        return m_isEditSmallElements;
     }
 
     /**
@@ -136,6 +187,27 @@ public final class CmsADESessionCache {
         for (CmsContainerElementBean element : m_recentLists) {
             setCacheContainerElement(element.editorHash(), element);
         }
+    }
+
+    /** 
+     * Sets the default initial setting for small element editability in this session.<p>
+     * 
+     * @param editSmallElements true if small elements should be initially editable 
+     */
+    public void setEditSmallElements(boolean editSmallElements) {
+
+        m_isEditSmallElements = editSmallElements;
+    }
+
+    /**
+     * Caches a template bean for a given container page URI.<p>
+     * 
+     * @param uri the container page uri 
+     * @param templateBean the template bean to cache 
+     */
+    public void setTemplateBean(String uri, TemplateBean templateBean) {
+
+        m_templateBeanCache.put(uri, templateBean);
     }
 
     /**

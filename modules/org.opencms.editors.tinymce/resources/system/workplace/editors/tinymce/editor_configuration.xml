@@ -9,9 +9,14 @@
 		</type>
 	</resourcetypes>
 	<useragents>
+		<agent>^Mozilla/5\.0 \(.*\) like Gecko$</agent>
 		<agent>^Mozilla/[45]\.0 \(compatible; MSIE .*\)$</agent>
 		<agent>^Mozilla/5\.0 \(.*\) Gecko/20\d* .*$</agent>
+		<agent>^Mozilla/5\.0 \(.*\) Gecko/\d+\.\d+ .*$</agent>
 		<agent>^Mozilla/5\.0 \(.*\).*Chrome.*$</agent>
-		<agent>^Mozilla/5\.0 \(.*\).* Version/[34].* Safari.*$</agent>
+		<agent>^Mozilla/5\.0 \(.*\).* Version/.* Safari.*$</agent>
 	</useragents>
+	<params>
+		<param name="paste_text">false</param>
+	</params>
 </editor>

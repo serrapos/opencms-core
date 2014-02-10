@@ -16,6 +16,12 @@
 	zoom: 1;
 }
 
+.decorationBox.decorationBoxSmall {
+	float:left;
+	margin-top: 2px;
+}
+
+
 .decorationBox {
 	float:left;
 	margin-top: 12px;

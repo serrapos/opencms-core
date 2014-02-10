@@ -43,13 +43,40 @@ public final class Messages {
     public static final String ERR_DATEBOX_INVALID_TIME_FORMAT_0 = "ERR_DATEBOX_INVALID_TIME_FORMAT_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String ERR_EMPTY_PROPERTY_NAME_0 = "ERR_EMPTY_PROPERTY_NAME_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_INVALID_PROPERTY_NAME_0 = "ERR_INVALID_PROPERTY_NAME_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String ERR_INVALID_UUID_1 = "ERR_INVALID_UUID_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_PROPERTY_EXISTS_0 = "ERR_PROPERTY_EXISTS_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String ERR_RESOURCE_UNAVAILABLE_1 = "ERR_RESOURCE_UNAVAILABLE_1";
 
     /** Message constant for key in the resource bundle. */
     public static final String ERR_TITLE_ERROR_0 = "ERR_TITLE_ERROR_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_UPLOAD_BROWSER_0 = "ERR_UPLOAD_BROWSER_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_UPLOAD_BROWSER_ABORT_ERR_0 = "ERR_UPLOAD_BROWSER_ABORT_ERR_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_UPLOAD_BROWSER_ENCODING_0 = "ERR_UPLOAD_BROWSER_ENCODING_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_UPLOAD_BROWSER_NOT_FOUND_0 = "ERR_UPLOAD_BROWSER_NOT_FOUND_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_UPLOAD_BROWSER_NOT_READABLE_0 = "ERR_UPLOAD_BROWSER_NOT_READABLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_UPLOAD_BROWSER_SECURITY_0 = "ERR_UPLOAD_BROWSER_SECURITY_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_BROKEN_LINK_NO_TITLE_0 = "GUI_BROKEN_LINK_NO_TITLE_0";
@@ -70,10 +97,16 @@ public final class Messages {
     public static final String GUI_BROWSING_0 = "GUI_BROWSING_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_BUTTON_ELEMENT_EDIT_0 = "GUI_BUTTON_ELEMENT_EDIT_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_CANCEL_0 = "GUI_CANCEL_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_CANT_LOAD_TREE_1 = "GUI_CANT_LOAD_TREE_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_CAPTION_DEFINE_PROPERTY_0 = "GUI_CAPTION_DEFINE_PROPERTY_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_CLOSE_0 = "GUI_CLOSE_0";
@@ -83,6 +116,9 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_DATE_PM_0 = "GUI_DATE_PM_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_DATEBOX_DATE_PATTERN_0 = "GUI_DATEBOX_DATE_PATTERN_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_DATEBOX_DATETIME_PATTERN_0 = "GUI_DATEBOX_DATETIME_PATTERN_0";
@@ -143,6 +179,9 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_DIALOG_AVAILABILITY_TITLE_0 = "GUI_DIALOG_AVAILABILITY_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_DIALOG_CATEGORIES_TITLE_0 = "GUI_DIALOG_CATEGORIES_TITLE_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_DIALOG_CHANGES_PUBLISH_TEXT_0 = "GUI_DIALOG_CHANGES_PUBLISH_TEXT_0";
@@ -214,6 +253,12 @@ public final class Messages {
     public static final String GUI_INPUT_NOT_USED_0 = "GUI_INPUT_NOT_USED_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_LABEL_EXISTING_PROPERTIES_0 = "GUI_LABEL_EXISTING_PROPERTIES_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_LABEL_NEW_PROPERTY_0 = "GUI_LABEL_NEW_PROPERTY_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_LINK_CHECKBOX_EXTERNAL_0 = "GUI_LINK_CHECKBOX_EXTERNAL_0";
 
     /** Message constant for key in the resource bundle. */
@@ -232,7 +277,16 @@ public final class Messages {
     public static final String GUI_LOCK_REPORT_NOTHING_LOCKED_0 = "GUI_LOCK_REPORT_NOTHING_LOCKED_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_LOCK_REPORT_STEAL_ALL_LOCKS_MESSAGE_0 = "GUI_LOCK_REPORT_STEAL_ALL_LOCKS_MESSAGE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_LOCK_REPORT_STEAL_LOCK_MESSAGE_0 = "GUI_LOCK_REPORT_STEAL_LOCK_MESSAGE_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_LOCK_REPORT_TITLE_0 = "GUI_LOCK_REPORT_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_LOCK_REPORT_UNLOCK_ALL_MESSAGE_0 = "GUI_LOCK_REPORT_UNLOCK_ALL_MESSAGE_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_LOCK_REPORT_UNLOCK_MESSAGE_0 = "GUI_LOCK_REPORT_UNLOCK_MESSAGE_0";
@@ -241,10 +295,22 @@ public final class Messages {
     public static final String GUI_LOCKING_0 = "GUI_LOCKING_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_MODEL_SELECT_MESSAGE_0 = "GUI_MODEL_SELECT_MESSAGE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_MODEL_SELECT_TITLE_0 = "GUI_MODEL_SELECT_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_NO_0 = "GUI_NO_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_NO_DESCIPTION_0 = "GUI_NO_DESCIPTION_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_NO_TITLE_0 = "GUI_NO_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_NOTHING_CHANGED_0 = "GUI_NOTHING_CHANGED_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_OK_0 = "GUI_OK_0";
@@ -257,6 +323,15 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_PLEASE_WAIT_0 = "GUI_PLEASE_WAIT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_POPUP_BLOCKED_0 = "GUI_POPUP_BLOCKED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_POPUP_BLOCKED_TITLE_0 = "GUI_POPUP_BLOCKED_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_PROPERTIES_0 = "GUI_PROPERTIES_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_PROPERTY_BLOCK_UNUSED_0 = "GUI_PROPERTY_BLOCK_UNUSED_0";
@@ -280,7 +355,49 @@ public final class Messages {
     public static final String GUI_REASON_0 = "GUI_REASON_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_RENAME_DIALOG_MENU_TEXT_0 = "GUI_RENAME_DIALOG_MENU_TEXT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RENAME_DIALOG_NEW_NAME_LABEL_0 = "GUI_RENAME_DIALOG_NEW_NAME_LABEL_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RENAME_DIALOG_OLD_NAME_LABEL_0 = "GUI_RENAME_DIALOG_OLD_NAME_LABEL_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RENAME_DIALOG_TITLE_0 = "GUI_RENAME_DIALOG_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_REPLACE_CHANGE_FILE_0 = "GUI_REPLACE_CHANGE_FILE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_REPLACE_INFO_0 = "GUI_REPLACE_INFO_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_REPLACE_LOCKED_RESOURCE_0 = "GUI_REPLACE_LOCKED_RESOURCE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_REPLACE_NO_FILE_SELECTED_0 = "GUI_REPLACE_NO_FILE_SELECTED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_REPLACE_TITLE_0 = "GUI_REPLACE_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_REPLACE_WRONG_FILE_EXTENSION_0 = "GUI_REPLACE_WRONG_FILE_EXTENSION_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_RESET_0 = "GUI_RESET_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCE_INFO_TAB_ATTRIBUTES_0 = "GUI_RESOURCE_INFO_TAB_ATTRIBUTES_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCE_INFO_TAB_TARGETS_0 = "GUI_RESOURCE_INFO_TAB_TARGETS_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCE_INFO_TAB_USAGE_0 = "GUI_RESOURCE_INFO_TAB_USAGE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCE_LOCKED_0 = "GUI_RESOURCE_LOCKED_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_RESOURCE_STATE_0 = "GUI_RESOURCE_STATE_0";
@@ -298,6 +415,78 @@ public final class Messages {
     public static final String GUI_RESOURCE_STATE_UNCHANGED_0 = "GUI_RESOURCE_STATE_UNCHANGED_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_DIALOG_TITLE_0 = "GUI_RESOURCEINFO_DIALOG_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_FIELDSET_TITLE_0 = "GUI_RESOURCEINFO_FIELDSET_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_DATECREATED_0 = "GUI_RESOURCEINFO_LABEL_DATECREATED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_DATEEXPIRED_0 = "GUI_RESOURCEINFO_LABEL_DATEEXPIRED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_DATEMODIFIED_0 = "GUI_RESOURCEINFO_LABEL_DATEMODIFIED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_DATERELEASED_0 = "GUI_RESOURCEINFO_LABEL_DATERELEASED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_LASTPROJECT_0 = "GUI_RESOURCEINFO_LABEL_LASTPROJECT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_LOCALES_0 = "GUI_RESOURCEINFO_LABEL_LOCALES_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_LOCKOWNER_0 = "GUI_RESOURCEINFO_LABEL_LOCKOWNER_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_LOCKSTATE_0 = "GUI_RESOURCEINFO_LABEL_LOCKSTATE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_NAVTEXT_0 = "GUI_RESOURCEINFO_LABEL_NAVTEXT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_PERMISSIONS_0 = "GUI_RESOURCEINFO_LABEL_PERMISSIONS_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_SIZE_0 = "GUI_RESOURCEINFO_LABEL_SIZE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_STATE_0 = "GUI_RESOURCEINFO_LABEL_STATE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_TITLE_0 = "GUI_RESOURCEINFO_LABEL_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_TYPE_0 = "GUI_RESOURCEINFO_LABEL_TYPE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_USERCREATED_0 = "GUI_RESOURCEINFO_LABEL_USERCREATED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESOURCEINFO_LABEL_USERMODIFIED_0 = "GUI_RESOURCEINFO_LABEL_USERMODIFIED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESTORE_CHECKBOX_UNDO_MOVE_0 = "GUI_RESTORE_CHECKBOX_UNDO_MOVE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESTORE_CONFIRM_MESSAGE_0 = "GUI_RESTORE_CONFIRM_MESSAGE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESTORE_DIALOG_TITLE_0 = "GUI_RESTORE_DIALOG_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESTORE_INFO_OFFLINE_DATE_0 = "GUI_RESTORE_INFO_OFFLINE_DATE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESTORE_INFO_ONLINE_DATE_0 = "GUI_RESTORE_INFO_ONLINE_DATE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_RESTORE_RESOURCE_MOVED_2 = "GUI_RESTORE_RESOURCE_MOVED_2";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_SAVE_0 = "GUI_SAVE_0";
 
     /** Message constant for key in the resource bundle. */
@@ -310,7 +499,28 @@ public final class Messages {
     public static final String GUI_SELECTBOX_EMPTY_SELECTION_1 = "GUI_SELECTBOX_EMPTY_SELECTION_1";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_SELECTBOX_INHERIT_1 = "GUI_SELECTBOX_INHERIT_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SELECTBOX_UNSELECTED_0 = "GUI_SELECTBOX_UNSELECTED_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_SELECTBOX_UNSELECTED_1 = "GUI_SELECTBOX_UNSELECTED_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SESSION_EXPIRED_0 = "GUI_SESSION_EXPIRED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_SHOW_PREVIEW_0 = "GUI_SHOW_PREVIEW_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_TARGETS_EMPTY_0 = "GUI_TARGETS_EMPTY_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_TEMPLATE_CONTEXT_NONE_0 = "GUI_TEMPLATE_CONTEXT_NONE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_TEMPLATE_CONTEXT_PARENT_0 = "GUI_TEMPLATE_CONTEXT_PARENT_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_TICKET_MESSAGE_3 = "GUI_TICKET_MESSAGE_3";
@@ -325,10 +535,19 @@ public final class Messages {
     public static final String GUI_TOOLBAR_BACK_0 = "GUI_TOOLBAR_BACK_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_TOOLBAR_INHERITED_0 = "GUI_TOOLBAR_INHERITED_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_TOOLBAR_CLIPBOARD_0 = "GUI_TOOLBAR_CLIPBOARD_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_TOOLBAR_CONTEXT_0 = "GUI_TOOLBAR_CONTEXT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_TOOLBAR_CONTEXT_EMPTY_0 = "GUI_TOOLBAR_CONTEXT_EMPTY_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_TOOLBAR_COPY_LOCALE_0 = "GUI_TOOLBAR_COPY_LOCALE_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_TOOLBAR_DELETE_0 = "GUI_TOOLBAR_DELETE_0";
@@ -337,7 +556,16 @@ public final class Messages {
     public static final String GUI_TOOLBAR_EDIT_0 = "GUI_TOOLBAR_EDIT_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_TOOLBAR_ELEMENT_INFO_0 = "GUI_TOOLBAR_ELEMENT_INFO_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_TOOLBAR_EXIT_0 = "GUI_TOOLBAR_EXIT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_TOOLBAR_GALLERY_0 = "GUI_TOOLBAR_GALLERY_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_TOOLBAR_INFO_0 = "GUI_TOOLBAR_INFO_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_TOOLBAR_MOVE_IN_0 = "GUI_TOOLBAR_MOVE_IN_0";
@@ -355,6 +583,9 @@ public final class Messages {
     public static final String GUI_TOOLBAR_PUBLISH_0 = "GUI_TOOLBAR_PUBLISH_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_TOOLBAR_REFRESH_0 = "GUI_TOOLBAR_REFRESH_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_TOOLBAR_REMOVE_0 = "GUI_TOOLBAR_REMOVE_0";
 
     /** Message constant for key in the resource bundle. */
@@ -367,7 +598,16 @@ public final class Messages {
     public static final String GUI_TOOLBAR_SELECTION_0 = "GUI_TOOLBAR_SELECTION_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_TOOLBAR_SHOWSMALL_0 = "GUI_TOOLBAR_SHOWSMALL_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_TOOLBAR_SITEMAP_0 = "GUI_TOOLBAR_SITEMAP_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_TOOLBAR_TOGGLE_HELP_0 = "GUI_TOOLBAR_TOGGLE_HELP_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UNLOCK_0 = "GUI_UNLOCK_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_UNLOCK_ALL_0 = "GUI_UNLOCK_ALL_0";
@@ -379,6 +619,45 @@ public final class Messages {
     public static final String GUI_UNLOCKING_0 = "GUI_UNLOCKING_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String GUI_UNPUBLISHED_CHANGES_TITLE_0 = "GUI_UNPUBLISHED_CHANGES_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_BUTTON_TITLE_0 = "GUI_UPLOAD_BUTTON_TITLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_FILES_PLURAL_0 = "GUI_UPLOAD_FILES_PLURAL_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_FILES_SINGULAR_0 = "GUI_UPLOAD_FILES_SINGULAR_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_FINISH_UPLOADED_0 = "GUI_UPLOAD_FINISH_UPLOADED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_FINISH_UPLOADED_VALUE_4 = "GUI_UPLOAD_FINISH_UPLOADED_VALUE_4";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_INFO_CREATING_RESOURCES_0 = "GUI_UPLOAD_INFO_CREATING_RESOURCES_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_INFO_FINISHING_0 = "GUI_UPLOAD_INFO_FINISHING_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_INFO_UPLOADING_0 = "GUI_UPLOAD_INFO_UPLOADING_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_PROGRESS_CURRENT_FILE_0 = "GUI_UPLOAD_PROGRESS_CURRENT_FILE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_PROGRESS_CURRENT_VALUE_3 = "GUI_UPLOAD_PROGRESS_CURRENT_VALUE_3";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_PROGRESS_UPLOADING_0 = "GUI_UPLOAD_PROGRESS_UPLOADING_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_UPLOAD_PROGRESS_UPLOADING_VALUE_2 = "GUI_UPLOAD_PROGRESS_UPLOADING_VALUE_2";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_URLNAME_CANT_BE_EMPTY_0 = "GUI_URLNAME_CANT_BE_EMPTY_0";
 
     /** Message constant for key in the resource bundle. */
@@ -386,6 +665,9 @@ public final class Messages {
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_URLNAME_PROPERTY_DESC_0 = "GUI_URLNAME_PROPERTY_DESC_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_USAGE_EMPTY_0 = "GUI_USAGE_EMPTY_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_YES_0 = "GUI_YES_0";

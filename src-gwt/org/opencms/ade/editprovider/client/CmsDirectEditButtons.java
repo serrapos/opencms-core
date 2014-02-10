@@ -80,16 +80,15 @@ public class CmsDirectEditButtons extends A_CmsDirectEditButtons implements I_Cm
      * 
      * @param containerElement the parent container element
      */
-    public void setPosition(
-        CmsPositionBean position,
-        CmsPositionBean buttonsPosition,
-        com.google.gwt.user.client.Element containerElement) {
+    public void setPosition(CmsPositionBean position, CmsPositionBean buttonsPosition, Element containerElement) {
 
         m_position = position;
         Element parent = CmsDomUtil.getPositioningParent(getElement());
         Style style = getElement().getStyle();
-        style.setRight(parent.getOffsetWidth()
-            - ((buttonsPosition.getLeft() + buttonsPosition.getWidth()) - parent.getAbsoluteLeft()), Unit.PX);
+        style.setRight(
+            parent.getOffsetWidth()
+                - ((buttonsPosition.getLeft() + buttonsPosition.getWidth()) - parent.getAbsoluteLeft()),
+            Unit.PX);
         int top = buttonsPosition.getTop() - parent.getAbsoluteTop();
         if (top < 0) {
             top = 0;
@@ -150,25 +149,36 @@ public class CmsDirectEditButtons extends A_CmsDirectEditButtons implements I_Cm
     protected void openEditDialog(boolean isNew) {
 
         // create a form to submit a post request to the editor JSP
-        Map<String, String> formVaules = new HashMap<String, String>();
+        Map<String, String> formValues = new HashMap<String, String>();
         if (m_editableData.getSitePath() != null) {
-            formVaules.put("resource", m_editableData.getSitePath());
+            formValues.put("resource", m_editableData.getSitePath());
         }
         if (m_editableData.getElementLanguage() != null) {
-            formVaules.put("elementlanguage", m_editableData.getElementLanguage());
+            formValues.put("elementlanguage", m_editableData.getElementLanguage());
         }
         if (m_editableData.getElementName() != null) {
-            formVaules.put("elementname", m_editableData.getElementName());
+            formValues.put("elementname", m_editableData.getElementName());
         }
-        formVaules.put("backlink", CmsCoreProvider.get().getUri() + Window.Location.getQueryString());
-        formVaules.put("redirect", "true");
-        formVaules.put("directedit", "true");
+        String backlink = CmsCoreProvider.get().getUri();
+        if (Window.Location.getPath().endsWith(backlink)) {
+            // CmsCoreProvider.get().getUri() is the request context uri from the time the direct edit provider
+            // includes are generated. In case the template has changed the request context uri before that point, 
+            // we don't append the request parameters, as they may be inappropriate for the new URI. 
+            backlink += Window.Location.getQueryString();
+        }
+        formValues.put("backlink", backlink);
+        formValues.put("redirect", "true");
+        formValues.put("directedit", "true");
+        formValues.put("editcontext", CmsCoreProvider.get().getUri());
         if (isNew) {
-            formVaules.put("newlink", m_editableData.getNewLink());
-            formVaules.put("editortitle", m_editableData.getNewTitle());
+            formValues.put("newlink", m_editableData.getNewLink());
+            formValues.put("editortitle", m_editableData.getNewTitle());
         }
-        FormElement formElement = CmsDomUtil.generateHiddenForm(CmsCoreProvider.get().link(
-            CmsCoreProvider.get().getContentEditorUrl()), Method.post, Target.TOP, formVaules);
+        FormElement formElement = CmsDomUtil.generateHiddenForm(
+            CmsCoreProvider.get().link(CmsCoreProvider.get().getContentEditorUrl()),
+            Method.post,
+            Target.TOP,
+            formValues);
         getMarkerTag().appendChild(formElement);
         formElement.submit();
     }

@@ -63,6 +63,7 @@ import org.opencms.security.I_CmsPrincipal;
 import org.opencms.setup.CmsSetupDb;
 import org.opencms.util.CmsDateUtil;
 import org.opencms.util.CmsFileUtil;
+import org.opencms.util.CmsStringUtil;
 import org.opencms.util.CmsUUID;
 
 import java.io.File;
@@ -71,6 +72,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -211,6 +213,9 @@ public class OpenCmsTestCase extends TestCase {
 
     /** The setup connection data. */
     protected static ConnectionData m_setupConnection;
+
+    /** The cached list of OpenCms class names. */
+    private static List<String> classNameList;
 
     /** The file date of the configuration files. */
     private static long[] m_dateConfigFiles;
@@ -508,16 +513,7 @@ public class OpenCmsTestCase extends TestCase {
         final String targetFolder) {
 
         try {
-            TestSuite suite = new TestSuite();
-            suite.setName(testClass.getName());
-            Constructor<? extends Test> constructor = testClass.getConstructor(String.class);
-            for (Method method : testClass.getMethods()) {
-                String methodName = method.getName();
-                if (methodName.startsWith("test") && (method.getParameterTypes().length == 0)) {
-                    Test test = constructor.newInstance(method.getName());
-                    suite.addTest(test);
-                }
-            }
+            TestSuite suite = generateTestSuite(testClass);
             TestSetup wrapper = new TestSetup(suite) {
 
                 /**
@@ -542,6 +538,34 @@ public class OpenCmsTestCase extends TestCase {
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Generates a test suite by creating a test instance for all test* methods in the given test class and adding them to a new suite.<p>
+     * 
+     * @param testClass the test class 
+     * 
+     * @return the test suite for the given class 
+     * 
+     * @throws NoSuchMethodException
+     * @throws InstantiationException
+     * @throws IllegalAccessException
+     * @throws InvocationTargetException
+     */
+    public static TestSuite generateTestSuite(Class<? extends Test> testClass)
+    throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+
+        TestSuite suite = new TestSuite();
+        suite.setName(testClass.getName());
+        Constructor<? extends Test> constructor = testClass.getConstructor(String.class);
+        for (Method method : testClass.getMethods()) {
+            String methodName = method.getName();
+            if (methodName.startsWith("test") && (method.getParameterTypes().length == 0)) {
+                Test test = constructor.newInstance(method.getName());
+                suite.addTest(test);
+            }
+        }
+        return suite;
     }
 
     /**
@@ -572,6 +596,48 @@ public class OpenCmsTestCase extends TestCase {
     }
 
     /**
+     * Gets the list of all names of classes which exist as class files in a directory in the classpath (not in JARs) and whose path contains 'opencms' or 'alkacon'.
+     * 
+     * @return the list of all opencms class on the class path
+     *  
+     * @throws Exception if something goes  wrong 
+     */
+    public static List<String> getClassNames() throws Exception {
+
+        if (classNameList != null) {
+            return classNameList;
+        }
+
+        FileFilter filter = new FileFilter() {
+
+            public boolean accept(File pathname) {
+
+                return pathname.isFile() && pathname.getName().endsWith(".class");
+            }
+        };
+        String[] classpaths = System.getProperty("java.class.path", "").split(File.pathSeparator);
+        List<String> classNames = new ArrayList<String>();
+
+        for (String path : classpaths) {
+            File baseFile = new File(path);
+            String basePath = baseFile.getPath();
+            List<File> classFiles = CmsFileUtil.getFiles(path, filter, true);
+            for (File classFile : classFiles) {
+                String relativePath = classFile.getPath().substring(basePath.length());
+                String className = relativePath.replace("" + File.separatorChar, ".").substring(1).replaceFirst(
+                    "\\.class$",
+                    "");
+
+                if ((className.indexOf("opencms") > -1) || (className.indexOf("alkacon") > -1)) {
+                    classNames.add(className);
+                }
+            }
+        }
+        classNameList = classNames;
+        return classNames;
+    }
+
+    /**
      * Returns the currently used database/configuration.<p>
      * 
      * @return he currently used database/configuration
@@ -579,6 +645,34 @@ public class OpenCmsTestCase extends TestCase {
     public static String getDbProduct() {
 
         return m_dbProduct;
+    }
+
+    /**
+     * Returns the path to a file in the test data configuration, 
+     * or <code>null</code> if the given file can not be found.<p>
+     * 
+     * This methods searches the given file in all configured test data paths.
+     * It returns the file found first.<p>
+     * 
+     * @param filename the file name to look up
+     * @return the path to a file in the test data configuration
+     */
+    public static String getTestDataPath(String filename) {
+
+        for (int i = 0; i < m_testDataPath.size(); i++) {
+
+            String path = m_testDataPath.get(i);
+            File file = new File(path + filename);
+            if (file.exists()) {
+                if (file.isDirectory()) {
+                    return CmsFileUtil.normalizePath(file.getAbsolutePath() + File.separator);
+                } else {
+                    return CmsFileUtil.normalizePath(file.getAbsolutePath());
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -912,16 +1006,19 @@ public class OpenCmsTestCase extends TestCase {
             script = new File(getTestDataPath("scripts/script_default_projects.txt"));
             stream = new FileInputStream(script);
             m_shell.start(stream);
+            stream.close();
 
             if (publish) {
                 // publish the current project by script
                 script = new File(getTestDataPath("scripts/script_publish.txt"));
                 stream = new FileInputStream(script);
                 m_shell.start(stream);
+                stream.close();
                 OpenCms.getPublishManager().waitWhileRunning();
             } else {
                 cms.unlockProject(cms.readProject("_setupProject").getUuid());
             }
+            stream.close();
 
             // switch to the "Offline" project
             cms.getRequestContext().setCurrentProject(cms.readProject("Offline"));
@@ -1005,6 +1102,10 @@ public class OpenCmsTestCase extends TestCase {
     protected static synchronized String getSetupDataPath() {
 
         if (m_setupDataPath == null) {
+            String testWebAppPath = System.getProperty(OpenCmsTestProperties.PROP_TEST_WEBAPP_PATH);
+            if (CmsStringUtil.isEmptyOrWhitespaceOnly(testWebAppPath)) {
+                testWebAppPath = OpenCmsTestProperties.getInstance().getTestWebappPath();
+            }
             // check if the db setup files are available
             File setupDataFolder = new File(OpenCmsTestProperties.getInstance().getTestWebappPath());
             if (!setupDataFolder.exists()) {
@@ -1042,34 +1143,6 @@ public class OpenCmsTestCase extends TestCase {
         }
 
         return setupDb;
-    }
-
-    /**
-     * Returns the path to a file in the test data configuration, 
-     * or <code>null</code> if the given file can not be found.<p>
-     * 
-     * This methods searches the given file in all configured test data paths.
-     * It returns the file found first.<p>
-     * 
-     * @param filename the file name to look up
-     * @return the path to a file in the test data configuration
-     */
-    protected static String getTestDataPath(String filename) {
-
-        for (int i = 0; i < m_testDataPath.size(); i++) {
-
-            String path = m_testDataPath.get(i);
-            File file = new File(path + filename);
-            if (file.exists()) {
-                if (file.isDirectory()) {
-                    return CmsFileUtil.normalizePath(file.getAbsolutePath() + File.separator);
-                } else {
-                    return CmsFileUtil.normalizePath(file.getAbsolutePath());
-                }
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -1281,6 +1354,7 @@ public class OpenCmsTestCase extends TestCase {
      * 
      * @param newConfig the folder with the configuration files to copy
      */
+    @SuppressWarnings("deprecation")
     private static void copyConfiguration(String newConfig) {
 
         File configDir = new File(getTestDataPath("WEB-INF" + File.separatorChar + CmsSystemInfo.FOLDER_CONFIG_DEFAULT));
@@ -2746,7 +2820,7 @@ public class OpenCmsTestCase extends TestCase {
             }
 
             // test if the property was already in the stored result
-            List storedProperties = storedResource.getProperties();
+            List<CmsProperty> storedProperties = storedResource.getProperties();
             if (storedProperties.contains(property)) {
                 fail("property already found in stored value: " + property);
             }
@@ -2768,7 +2842,7 @@ public class OpenCmsTestCase extends TestCase {
      * @param resourceName the name of the resource to compare
      * @param excludeList a list of CmsProperties to exclude
      */
-    public void assertPropertyNew(CmsObject cms, String resourceName, List excludeList) {
+    public void assertPropertyNew(CmsObject cms, String resourceName, List<CmsProperty> excludeList) {
 
         try {
             // get the stored resource
@@ -2786,10 +2860,10 @@ public class OpenCmsTestCase extends TestCase {
 
             String propertyNoMatches = "";
             String storedFound = "";
-            Iterator i = excludeList.iterator();
-            List storedProperties = storedResource.getProperties();
+            Iterator<CmsProperty> i = excludeList.iterator();
+            List<CmsProperty> storedProperties = storedResource.getProperties();
             while (i.hasNext()) {
-                CmsProperty property = (CmsProperty)i.next();
+                CmsProperty property = i.next();
                 CmsProperty resourceProperty = cms.readPropertyObject(resourceName, property.getName(), false);
                 // test if the property has the same value
                 if (!resourceProperty.isIdentical(property)) {
@@ -2825,7 +2899,7 @@ public class OpenCmsTestCase extends TestCase {
         try {
 
             // create the exclude list
-            List excludeList = new ArrayList();
+            List<CmsProperty> excludeList = new ArrayList<CmsProperty>();
             excludeList.add(property);
 
             // get the stored resource
@@ -2839,7 +2913,7 @@ public class OpenCmsTestCase extends TestCase {
             }
 
             // test if the property was already in the stored result
-            List storedProperties = storedResource.getProperties();
+            List<CmsProperty> storedProperties = storedResource.getProperties();
             if (!storedProperties.contains(property)) {
                 fail("property not found in stored value: " + property);
             }
@@ -2861,7 +2935,7 @@ public class OpenCmsTestCase extends TestCase {
      * @param resourceName the name of the resource to compare
      * @param excludeList a list of CmsProperties to exclude
      */
-    public void assertPropertyRemoved(CmsObject cms, String resourceName, List excludeList) {
+    public void assertPropertyRemoved(CmsObject cms, String resourceName, List<CmsProperty> excludeList) {
 
         try {
             // get the stored resource
@@ -2879,12 +2953,12 @@ public class OpenCmsTestCase extends TestCase {
 
             String propertyNotDeleted = "";
             String storedNotFound = "";
-            Iterator i = excludeList.iterator();
-            List storedProperties = storedResource.getProperties();
-            List resourceProperties = cms.readPropertyObjects(resourceName, false);
+            Iterator<CmsProperty> i = excludeList.iterator();
+            List<CmsProperty> storedProperties = storedResource.getProperties();
+            List<CmsProperty> resourceProperties = cms.readPropertyObjects(resourceName, false);
 
             while (i.hasNext()) {
-                CmsProperty property = (CmsProperty)i.next();
+                CmsProperty property = i.next();
                 // test if the property has the same value
                 if (resourceProperties.contains(property)) {
                     CmsProperty resourceProperty = cms.readPropertyObject(resourceName, property.getName(), false);
@@ -3178,7 +3252,7 @@ public class OpenCmsTestCase extends TestCase {
     }
 
     /**
-     * Gets an precalculate resource state from the storage.<p>
+     * Gets an pre-calculate resource state from the storage.<p>
      * 
      * @param resourceName the name of the resource to get  the state
      * @return precalculated resource state
@@ -3252,10 +3326,10 @@ public class OpenCmsTestCase extends TestCase {
                 }
 
                 // now get all subresources and add them as well
-                List resources = cms.readResources(resourceName, CmsResourceFilter.ALL);
-                Iterator i = resources.iterator();
+                List<CmsResource> resources = cms.readResources(resourceName, CmsResourceFilter.ALL);
+                Iterator<CmsResource> i = resources.iterator();
                 while (i.hasNext()) {
-                    CmsResource res = (CmsResource)i.next();
+                    CmsResource res = i.next();
                     resName = cms.getSitePath(res);
                     m_currentResourceStrorage.add(cms, resName, res);
                 }
@@ -3282,6 +3356,24 @@ public class OpenCmsTestCase extends TestCase {
             m_currentResourceStrorage = storage;
         } else {
             throw new CmsException(Messages.get().container(Messages.ERR_RESOURCE_STORAGE_NOT_FOUND_0));
+        }
+    }
+
+    /** 
+     * Deletes a given resource if possible.<p>
+     * 
+     * @param path the path of the resource to delete 
+     * @throws CmsException
+     */
+    protected void delete(String path) throws CmsException {
+
+        CmsObject cms = getCmsObject();
+        if (cms.existsResource(path)) {
+            CmsLock lock = cms.getLock(path);
+            if (lock.isUnlocked() || !lock.isOwnedBy(cms.getRequestContext().getCurrentUser())) {
+                cms.lockResource(path);
+            }
+            cms.deleteResource(path, CmsResource.DELETE_PRESERVE_SIBLINGS);
         }
     }
 
@@ -3347,6 +3439,30 @@ public class OpenCmsTestCase extends TestCase {
     }
 
     /**
+     * Imports a module (zipfile) from the default module directory, 
+     * creating a temporary project for this.<p>
+     *
+     * @param importFile the name of the import module located in the default module directory
+     * 
+     * @throws Exception if something goes wrong
+     * 
+     * @see org.opencms.importexport.CmsImportExportManager#importData(CmsObject, org.opencms.report.I_CmsReport, CmsImportParameters)
+     */
+    protected void importModuleFromDefault(String importFile) throws Exception {
+
+        String exportPath = OpenCms.getSystemInfo().getPackagesRfsPath();
+        String fileName = OpenCms.getSystemInfo().getAbsoluteRfsPathRelativeToWebInf(
+            exportPath + CmsSystemInfo.FOLDER_MODULES + importFile);
+
+        CmsImportParameters params = new CmsImportParameters(fileName, "/", true);
+
+        OpenCms.getImportExportManager().importData(
+            getCmsObject(),
+            new CmsShellReport(getCmsObject().getRequestContext().getLocale()),
+            params);
+    }
+
+    /**
      * Removes and deletes a storage object.<p>
      * @param name the name of the storage
      */
@@ -3390,12 +3506,12 @@ public class OpenCmsTestCase extends TestCase {
         CmsObject cms,
         String resourceName,
         OpenCmsTestResourceStorageEntry storedResource,
-        List excludeList) throws CmsException {
+        List<CmsAccessControlEntry> excludeList) throws CmsException {
 
         String noMatches = "";
-        List resAce = cms.getAccessControlEntries(resourceName);
-        List storedAce = storedResource.getAccessControlEntries();
-        List unmatchedAce;
+        List<CmsAccessControlEntry> resAce = cms.getAccessControlEntries(resourceName);
+        List<CmsAccessControlEntry> storedAce = storedResource.getAccessControlEntries();
+        List<CmsAccessControlEntry> unmatchedAce;
         unmatchedAce = compareAce(resAce, storedAce, excludeList);
         if (unmatchedAce.size() > 0) {
             noMatches += "[ACE missing " + unmatchedAce.toString() + "]\n";
@@ -3421,12 +3537,12 @@ public class OpenCmsTestCase extends TestCase {
         CmsObject cms,
         String resourceName,
         OpenCmsTestResourceStorageEntry storedResource,
-        List excludeList) throws CmsException {
+        List<CmsUUID> excludeList) throws CmsException {
 
         String noMatches = "";
         CmsAccessControlList resList = cms.getAccessControlList(resourceName);
         CmsAccessControlList storedList = storedResource.getAccessControlList();
-        List unmatchedList;
+        List<String> unmatchedList;
         unmatchedList = compareList(resList, storedList, excludeList);
         if (unmatchedList.size() > 0) {
             noMatches += "[ACL differences " + unmatchedList.toString() + "]\n";
@@ -3446,20 +3562,23 @@ public class OpenCmsTestCase extends TestCase {
      * @param exclude the exclude list
      * @return list of non matching access control entires 
      */
-    private List compareAce(List source, List target, List exclude) {
+    private List<CmsAccessControlEntry> compareAce(
+        List<CmsAccessControlEntry> source,
+        List<CmsAccessControlEntry> target,
+        List<CmsAccessControlEntry> exclude) {
 
         boolean isOverwriteAll = false;
-        Iterator itTargets = target.iterator();
+        Iterator<CmsAccessControlEntry> itTargets = target.iterator();
         while (itTargets.hasNext()) {
-            CmsAccessControlEntry ace = (CmsAccessControlEntry)itTargets.next();
+            CmsAccessControlEntry ace = itTargets.next();
             if (ace.isOverwriteAll()) {
                 isOverwriteAll = true;
             }
         }
-        List result = new ArrayList();
-        Iterator i = source.iterator();
+        List<CmsAccessControlEntry> result = new ArrayList<CmsAccessControlEntry>();
+        Iterator<CmsAccessControlEntry> i = source.iterator();
         while (i.hasNext()) {
-            CmsAccessControlEntry ace = (CmsAccessControlEntry)i.next();
+            CmsAccessControlEntry ace = i.next();
             // here would be best to check the path of the overwrite all entry
             // but since we have just the resource id, instead of the structure id
             // we are not able to do that here :(
@@ -3469,9 +3588,9 @@ public class OpenCmsTestCase extends TestCase {
         }
         // finally match the result list with the exclude list
         if (exclude != null) {
-            Iterator l = exclude.iterator();
+            Iterator<CmsAccessControlEntry> l = exclude.iterator();
             while (l.hasNext()) {
-                CmsAccessControlEntry excludeAce = (CmsAccessControlEntry)l.next();
+                CmsAccessControlEntry excludeAce = l.next();
                 if (result.contains(excludeAce)) {
                     result.remove(excludeAce);
                 }
@@ -3487,29 +3606,29 @@ public class OpenCmsTestCase extends TestCase {
      * @param exclude the exclude list
      * @return list of non matching permission sets
      */
-    private List compareList(CmsAccessControlList source, CmsAccessControlList target, List exclude) {
+    private List<String> compareList(CmsAccessControlList source, CmsAccessControlList target, List<CmsUUID> exclude) {
 
         boolean isOverwriteAll = false;
-        Iterator itTargets = target.getPermissionMap().keySet().iterator();
+        Iterator<CmsUUID> itTargets = target.getPermissionMap().keySet().iterator();
         while (itTargets.hasNext()) {
-            CmsUUID principalId = (CmsUUID)itTargets.next();
+            CmsUUID principalId = itTargets.next();
             if (principalId.equals(CmsAccessControlEntry.PRINCIPAL_OVERWRITE_ALL_ID)) {
                 isOverwriteAll = true;
             }
         }
 
-        HashMap result = new HashMap();
+        HashMap<CmsUUID, String> result = new HashMap<CmsUUID, String>();
 
-        Map destinationMap = target.getPermissionMap();
-        Map sourceMap = source.getPermissionMap();
+        Map<CmsUUID, CmsPermissionSetCustom> destinationMap = target.getPermissionMap();
+        Map<CmsUUID, CmsPermissionSetCustom> sourceMap = source.getPermissionMap();
 
-        Iterator i = sourceMap.entrySet().iterator();
+        Iterator<Map.Entry<CmsUUID, CmsPermissionSetCustom>> i = sourceMap.entrySet().iterator();
         while (i.hasNext()) {
-            Map.Entry entry = (Map.Entry)i.next();
-            CmsUUID key = (CmsUUID)entry.getKey();
-            CmsPermissionSet value = (CmsPermissionSet)entry.getValue();
+            Map.Entry<CmsUUID, CmsPermissionSetCustom> entry = i.next();
+            CmsUUID key = entry.getKey();
+            CmsPermissionSet value = entry.getValue();
             if (destinationMap.containsKey(key)) {
-                CmsPermissionSet destValue = (CmsPermissionSet)destinationMap.get(key);
+                CmsPermissionSet destValue = destinationMap.get(key);
                 if (!destValue.equals(value)) {
                     result.put(key, key + " " + value + " != " + destValue);
                 }
@@ -3523,15 +3642,15 @@ public class OpenCmsTestCase extends TestCase {
 
         // finally match the result list with the exclude list
         if (exclude != null) {
-            Iterator l = exclude.iterator();
+            Iterator<CmsUUID> l = exclude.iterator();
             while (l.hasNext()) {
-                CmsUUID excludeUUID = (CmsUUID)l.next();
+                CmsUUID excludeUUID = l.next();
                 if (result.containsKey(excludeUUID)) {
                     result.remove(excludeUUID);
                 }
             }
         }
-        return new ArrayList(result.values());
+        return new ArrayList<String>(result.values());
     }
 
     /**
@@ -3541,12 +3660,15 @@ public class OpenCmsTestCase extends TestCase {
      * @param exclude the exclude propertydefintion
      * @return String of missing propertydefinitions
      */
-    private String comparePropertydefintions(List source, List target, CmsPropertyDefinition exclude) {
+    private String comparePropertydefintions(
+        List<CmsPropertyDefinition> source,
+        List<CmsPropertyDefinition> target,
+        CmsPropertyDefinition exclude) {
 
         String noMatches = "";
-        Iterator i = source.iterator();
+        Iterator<CmsPropertyDefinition> i = source.iterator();
         while (i.hasNext()) {
-            CmsPropertyDefinition prop = (CmsPropertyDefinition)i.next();
+            CmsPropertyDefinition prop = i.next();
             if ((!target.contains(prop)) && (!prop.getName().equals(exclude.getName()))) {
                 noMatches += "[" + prop + "]";
             }
@@ -3630,12 +3752,12 @@ public class OpenCmsTestCase extends TestCase {
                     index++;
                 }
             } while (cont);
-
+            String propertyFile = "";
             try {
-                String propertyFile = getTestDataPath("WEB-INF/config." + m_dbProduct + "/opencms.properties");
+                propertyFile = getTestDataPath("WEB-INF/config." + m_dbProduct + "/opencms.properties");
                 m_configuration = new CmsParameterConfiguration(propertyFile);
-            } catch (IOException e) {
-                fail(e.toString());
+            } catch (Exception e) {
+                fail("Error while reading configuration from '" + propertyFile + "'\n" + e.toString());
                 return;
             }
 

@@ -73,10 +73,15 @@ public class CmsOpenGallery extends CmsDialog {
         if ((galleryPath != null) && !galleryPath.endsWith("/")) {
             galleryPath += "/";
         }
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String[]> params = new HashMap<String, String[]>();
         Locale locale = OpenCms.getLocaleManager().getDefaultLocale(getCms(), galleryPath);
+<<<<<<< HEAD
         params.put("__locale", locale.toString());
         params.put(I_CmsGalleryProviderConstants.ReqParam.dialogmode.name(), GalleryMode.view.name());
+=======
+        params.put("__locale", new String[] {locale.toString()});
+        params.put(I_CmsGalleryProviderConstants.CONFIG_GALLERY_MODE, new String[] {GalleryMode.view.name()});
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         try {
             if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(galleryPath)) {
                 // ensure to have a proper site path to the gallery folder, this is needed within the shared site
@@ -86,8 +91,13 @@ public class CmsOpenGallery extends CmsDialog {
         } catch (CmsException e) {
             // nothing to do
         }
+<<<<<<< HEAD
         params.put(I_CmsGalleryProviderConstants.ReqParam.gallerypath.name(), galleryPath);
         params.put(I_CmsGalleryProviderConstants.ReqParam.types.name(), "");
+=======
+        params.put(I_CmsGalleryProviderConstants.CONFIG_GALLERY_PATH, new String[] {galleryPath});
+        params.put(I_CmsGalleryProviderConstants.CONFIG_RESOURCE_TYPES, new String[] {""});
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         sendForward(I_CmsGalleryProviderConstants.VFS_OPEN_GALLERY_PATH, params);
     }
 }

@@ -27,8 +27,12 @@
 
 package org.opencms.workplace.editors.directedit;
 
+import org.opencms.cache.CmsVfsMemoryObjectCache;
+import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
 import org.opencms.i18n.CmsEncoder;
+import org.opencms.main.CmsException;
+import org.opencms.util.CmsMacroResolver;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.workplace.editors.Messages;
 
@@ -53,6 +57,7 @@ public class CmsDirectEditJQueryProvider extends CmsDirectEditDefaultProvider {
      * 
      * @see org.opencms.workplace.editors.directedit.CmsDirectEditDefaultProvider#getDirectEditIncludes(org.opencms.workplace.editors.directedit.CmsDirectEditParams)
      */
+    @Override
     public String getDirectEditIncludes(CmsDirectEditParams params) {
 
         m_closeLink = getLink(params.getLinkForClose());
@@ -62,6 +67,7 @@ public class CmsDirectEditJQueryProvider extends CmsDirectEditDefaultProvider {
     /**
      * @see org.opencms.workplace.editors.directedit.I_CmsDirectEditProvider#init(org.opencms.file.CmsObject, org.opencms.workplace.editors.directedit.CmsDirectEditMode, java.lang.String)
      */
+    @Override
     public void init(CmsObject cms, CmsDirectEditMode mode, String fileName) {
 
         if (CmsStringUtil.isEmpty(fileName)) {
@@ -73,6 +79,7 @@ public class CmsDirectEditJQueryProvider extends CmsDirectEditDefaultProvider {
     /**
      * @see org.opencms.workplace.editors.directedit.I_CmsDirectEditProvider#newInstance()
      */
+    @Override
     public I_CmsDirectEditProvider newInstance() {
 
         CmsDirectEditJQueryProvider result = new CmsDirectEditJQueryProvider();
@@ -84,6 +91,7 @@ public class CmsDirectEditJQueryProvider extends CmsDirectEditDefaultProvider {
      * 
      * @see org.opencms.workplace.editors.directedit.CmsDirectEditDefaultProvider#startDirectEditDisabled(org.opencms.workplace.editors.directedit.CmsDirectEditParams, org.opencms.workplace.editors.directedit.CmsDirectEditResourceInfo)
      */
+    @Override
     public String startDirectEditDisabled(CmsDirectEditParams params, CmsDirectEditResourceInfo resourceInfo) {
 
         return appendDirectEditData(params, false);
@@ -93,9 +101,27 @@ public class CmsDirectEditJQueryProvider extends CmsDirectEditDefaultProvider {
      * 
      * @see org.opencms.workplace.editors.directedit.CmsDirectEditDefaultProvider#startDirectEditEnabled(org.opencms.workplace.editors.directedit.CmsDirectEditParams, org.opencms.workplace.editors.directedit.CmsDirectEditResourceInfo)
      */
+    @Override
     public String startDirectEditEnabled(CmsDirectEditParams params, CmsDirectEditResourceInfo resourceInfo) {
 
         return appendDirectEditData(params, false);
+    }
+
+    /**
+     * @see org.opencms.workplace.editors.directedit.CmsDirectEditDefaultProvider#prepareMacroResolverForIncludes(org.opencms.workplace.editors.directedit.CmsDirectEditParams)
+     */
+    @Override
+    protected CmsMacroResolver prepareMacroResolverForIncludes(CmsDirectEditParams params) {
+
+        CmsMacroResolver resolver = super.prepareMacroResolverForIncludes(params);
+        resolver.addMacro(
+            "jquery_flydom",
+            readFile("/system/modules/org.opencms.jquery/resources/packed/jquery.flydom.js"));
+        resolver.addMacro(
+            "jquery_dimensions",
+            readFile("/system/modules/org.opencms.jquery/resources/packed/jquery.dimensions.js"));
+        resolver.addMacro("jquery", readFile("/system/modules/org.opencms.jquery/resources/packed/jquery.js"));
+        return resolver;
     }
 
     /**
@@ -162,5 +188,30 @@ public class CmsDirectEditJQueryProvider extends CmsDirectEditDefaultProvider {
 
         result.append("<div id=\"").append(editId).append("\" class=\"ocms_de_norm\">");
         return result.toString();
+    }
+
+    /**
+     * Helper method to read the content of an included Javascript file.<p>
+     * 
+     * @param path the root path of a Javascript file 
+     * 
+     * @return the content of the Javascript file 
+     */
+    private String readFile(String path) {
+
+        String result = (String)CmsVfsMemoryObjectCache.getVfsMemoryObjectCache().getCachedObject(m_cms, path);
+        if (result == null) {
+            try {
+                CmsFile file = m_cms.readFile(path);
+                result = getContentAsString(file);
+            } catch (CmsException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (result != null) {
+            CmsVfsMemoryObjectCache.getVfsMemoryObjectCache().putCachedObject(m_cms, path, result);
+        }
+        return result;
+
     }
 }

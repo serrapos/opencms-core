@@ -139,9 +139,9 @@ public class CmsTreeItem extends CmsListItem {
     /**
      * Creates a new tree item with a 24px wide icon.<p>
      *  
-     * @param showOpeners
-     * @param mainWidget
-     * @param icon
+     * @param showOpeners if <code>true</code>, show open/close icons 
+     * @param mainWidget the main widget
+     * @param icon the icon style name
      */
     public CmsTreeItem(boolean showOpeners, Widget mainWidget, String icon) {
 
@@ -227,7 +227,7 @@ public class CmsTreeItem extends CmsListItem {
      * @return the path level
      */
     protected static native int getPathLevel(String path)/*-{
-        return path.match(/\//g).length - 1;
+      return path.match(/\//g).length - 1;
     }-*/;
 
     /**
@@ -381,19 +381,6 @@ public class CmsTreeItem extends CmsListItem {
     }
 
     /**
-     * @see org.opencms.gwt.client.dnd.I_CmsDraggable#onDragCancel()
-     */
-    @Override
-    public void onDragCancel() {
-
-        CmsTreeItem parent = getParentItem();
-        if (parent != null) {
-            parent.insertChild(this, parent.getItemPosition(this));
-        }
-        super.onDragCancel();
-    }
-
-    /**
      * @see org.opencms.gwt.client.ui.CmsListItem#getParentTarget()
      */
     @Override
@@ -484,6 +471,19 @@ public class CmsTreeItem extends CmsListItem {
     }
 
     /**
+     * @see org.opencms.gwt.client.dnd.I_CmsDraggable#onDragCancel()
+     */
+    @Override
+    public void onDragCancel() {
+
+        CmsTreeItem parent = getParentItem();
+        if (parent != null) {
+            parent.insertChild(this, parent.getItemPosition(this));
+        }
+        super.onDragCancel();
+    }
+
+    /**
      * Removes an item from the list.<p>
      * 
      * @param item the item to remove
@@ -557,6 +557,14 @@ public class CmsTreeItem extends CmsListItem {
     }
 
     /**
+     * Removes the opener widget.<p>
+     */
+    public void removeOpener() {
+
+        removeDecorationWidget(m_opener, OPENER_WIDTH);
+    }
+
+    /**
      * Positions the drag and drop placeholder as a sibling or descendant of this element.<p> 
      * 
      * @param x the cursor client x position
@@ -571,10 +579,6 @@ public class CmsTreeItem extends CmsListItem {
         I_CmsDraggable draggable = null;
         if (getTree().getDnDHandler() != null) {
             draggable = getTree().getDnDHandler().getDraggable();
-            //            if (draggable == this) {
-            //                // can't drop item on itself, keeping previous position
-            //                return getTree().getPlaceholderIndex();
-            //            }
         }
         Element itemElement = getListItemWidget().getElement();
         // check if the mouse pointer is within the height of the element 
@@ -692,31 +696,23 @@ public class CmsTreeItem extends CmsListItem {
      */
     public void setOpen(boolean open) {
 
+        setOpen(open, true);
+    }
+
+    /**
+     * Opens or closes this tree item (i.e. shows or hides its descendants).<p>
+     * 
+     * @param open if <code>true</code>, open the tree item, else close it
+     * @param fireEvents true if the open/close events should be fired 
+     */
+    public void setOpen(boolean open, boolean fireEvents) {
+
         if (m_open == open) {
             return;
         }
         m_open = open;
-        executeOpen();
-
-        //        if ((m_tree != null) && m_tree.isAnimationEnabled()) {
-        //            Command openCallback = new Command() {
-        //
-        //                /**
-        //                 * @see com.google.gwt.user.client.Command#execute()
-        //                 */
-        //                public void execute() {
-        //
-        //                    executeOpen();
-        //                }
-        //            };
-        //            if (m_open) {
-        //                CmsSlideAnimation.slideIn(m_children.getElement(), openCallback, ANIMATION_DURATION);
-        //            } else {
-        //                CmsSlideAnimation.slideOut(m_children.getElement(), openCallback, ANIMATION_DURATION);
-        //            }
-        //        } else {
-        //            executeOpen();
-        //        }
+        executeOpen(fireEvents);
+        CmsDomUtil.resizeAncestor(getParent());
     }
 
     /**
@@ -810,16 +806,35 @@ public class CmsTreeItem extends CmsListItem {
 
     /**
      * Executes the open call.<p>
+     * 
+     * @param fireEvents if true, open/close events will be fired 
      */
-    protected void executeOpen() {
+    protected void executeOpen(boolean fireEvents) {
 
         m_styleVar.setValue(m_open ? CSS.listTreeItemOpen() : CSS.listTreeItemClosed());
+        setLeafStyle(false);
         m_children.getElement().getStyle().clearDisplay();
         if (m_opener.isDown() != m_open) {
             m_opener.setDown(m_open);
         }
-        if (m_open) {
-            fireOpen();
+        if (fireEvents) {
+            if (m_open) {
+                fireOpen();
+            } else {
+                fireClose();
+            }
+        }
+        // reset the leaf style according to the child count
+        setLeafStyle(0 == getChildCount());
+    }
+
+    /**
+     * Fires the close event.<p>
+     */
+    protected void fireClose() {
+
+        if (m_tree != null) {
+            m_tree.fireClose(this);
         }
     }
 
@@ -873,14 +888,17 @@ public class CmsTreeItem extends CmsListItem {
      */
     protected void onChangeChildren() {
 
-        int count = getChildCount();
-        setLeafStyle(count == 0);
+        setLeafStyle(0 == getChildCount());
     }
 
     /**
      * Determines if the draggable should be inserted into the previous siblings children list.<p>
      * 
+<<<<<<< HEAD
      * @param originalPathLevel the original path level
+=======
+     * @param originalPathLevel the original path level 
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * @param parent the parent item
      * @param index the current index
      * 

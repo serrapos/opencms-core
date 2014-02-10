@@ -28,6 +28,7 @@
 package org.opencms.widgets;
 
 import org.opencms.file.CmsObject;
+import org.opencms.i18n.CmsMessages;
 import org.opencms.json.JSONException;
 import org.opencms.json.JSONObject;
 import org.opencms.util.CmsMacroResolver;
@@ -59,6 +60,9 @@ public class CmsGalleryWidgetConfiguration {
     /** Configuration key name for the class configuration. */
     public static final String CONFIG_KEY_CLASS = "class";
 
+    /** Configuration key name for the gallery types configuration. */
+    public static final String CONFIG_KEY_GALLERYTYPES = "gallerytypes";
+
     /** Configuration key name for the startup configuration. */
     public static final String CONFIG_KEY_STARTUP = "startup";
 
@@ -77,13 +81,8 @@ public class CmsGalleryWidgetConfiguration {
     /** The type of the initial item list to load, either gallery or category. */
     protected String m_type;
 
-    /**
-     * Default constructor.<p>
-     */
-    protected CmsGalleryWidgetConfiguration() {
-
-        // empty constructor is required for class registration
-    }
+    /** The configured gallery types. */
+    private String m_galleryTypes;
 
     /**
      * Generates an initialized configuration for the gallery item widget using the given configuration string.<p>
@@ -95,11 +94,19 @@ public class CmsGalleryWidgetConfiguration {
      */
     public CmsGalleryWidgetConfiguration(
         CmsObject cms,
-        I_CmsWidgetDialog widgetDialog,
+        CmsMessages widgetDialog,
         I_CmsWidgetParameter param,
         String configuration) {
 
         init(cms, widgetDialog, param, configuration);
+    }
+
+    /**
+     * Default constructor.<p>
+     */
+    protected CmsGalleryWidgetConfiguration() {
+
+        // empty constructor is required for class registration
     }
 
     /**
@@ -110,6 +117,16 @@ public class CmsGalleryWidgetConfiguration {
     public String getClassName() {
 
         return m_className;
+    }
+
+    /**
+     * Returns the configured gallery types.<p>
+     *
+     * @return the configured gallery types
+     */
+    public String getGalleryTypes() {
+
+        return m_galleryTypes;
     }
 
     /**
@@ -139,17 +156,17 @@ public class CmsGalleryWidgetConfiguration {
      * Initializes the widget configuration using the given configuration string.<p>
      * 
      * @param cms an initialized instance of a CmsObject
-     * @param widgetDialog the dialog where the widget is used on
+     * @param messages the dialog messages
      * @param param the widget parameter to generate the widget for
      * @param configuration the widget configuration string
      */
-    protected void init(CmsObject cms, I_CmsWidgetDialog widgetDialog, I_CmsWidgetParameter param, String configuration) {
+    protected void init(CmsObject cms, CmsMessages messages, I_CmsWidgetParameter param, String configuration) {
 
         if (configuration == null) {
             // no configuration String found, return
             return;
         }
-        configuration = CmsMacroResolver.resolveMacros(configuration, cms, widgetDialog.getMessages());
+        configuration = CmsMacroResolver.resolveMacros(configuration, cms, messages);
         JSONObject jsonObj = new JSONObject();
         try {
             jsonObj = new JSONObject(configuration);
@@ -170,11 +187,12 @@ public class CmsGalleryWidgetConfiguration {
         // determine the initial item list settings
         setType(jsonObj.optString(CONFIG_KEY_TYPE));
         if ((CONFIG_VALUE_DYNAMIC.equals(getType()) || CmsStringUtil.isEmpty(getType())) && (dynConf != null)) {
-            setType(dynConf.getType(cms, widgetDialog, param));
+            setType(dynConf.getType(cms, messages, param));
         }
+        setGalleryTypes(jsonObj.optString(CONFIG_KEY_GALLERYTYPES, null));
         setStartup(jsonObj.optString(CONFIG_KEY_STARTUP));
         if ((CONFIG_VALUE_DYNAMIC.equals(getStartup()) || CmsStringUtil.isEmpty(getStartup())) && (dynConf != null)) {
-            setStartup(dynConf.getStartup(cms, widgetDialog, param));
+            setStartup(dynConf.getStartup(cms, messages, param));
         }
     }
 
@@ -186,6 +204,16 @@ public class CmsGalleryWidgetConfiguration {
     protected void setClassName(String className) {
 
         m_className = className;
+    }
+
+    /**
+     * Sets the configured gallery types.<p>
+     * 
+     * @param galleryTypes the configured gallery types
+     */
+    protected void setGalleryTypes(String galleryTypes) {
+
+        m_galleryTypes = galleryTypes;
     }
 
     /**
@@ -209,6 +237,24 @@ public class CmsGalleryWidgetConfiguration {
     protected void setType(String type) {
 
         m_type = type;
+    }
+
+    /**
+     * Returns the values as a parameter string.<p>
+     * 
+     * @return the values as a parameter string
+     * */
+    public String getConfigString() {
+
+        String result = "";
+        if (m_startup != null) {
+            result += "&startup=" + m_startup;
+        }
+        if (m_type != null) {
+            result += "&type=" + m_type;
+        }
+
+        return result;
     }
 
 }

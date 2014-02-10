@@ -42,8 +42,11 @@ import com.google.gwt.user.client.rpc.IsSerializable;
  */
 public class CmsPublishResource implements IsSerializable {
 
-    /** The resource type name.*/
-    private String m_resourceType;
+    /** The last modification date. */
+    private long m_dateLastModified;
+
+    /** The last modification date as a formatted string. */
+    private String m_dateLastModifiedStr;
 
     /** The resource id.*/
     private CmsUUID m_id;
@@ -60,11 +63,17 @@ public class CmsPublishResource implements IsSerializable {
     /** Flag to indicate if the resource can be removed from the user's publish list.*/
     private boolean m_removable;
 
+    /** The resource type name.*/
+    private String m_resourceType;
+
     /** The resource state.*/
     private CmsResourceState m_state;
 
     /** The resource title.*/
     private String m_title;
+
+    /** Name of the user who last modified the resource. */
+    private String m_userLastModified;
 
     /** 
      * Creates a new publish group bean.<p> 
@@ -74,6 +83,9 @@ public class CmsPublishResource implements IsSerializable {
      * @param title the resource title
      * @param resourceType the resource type name
      * @param state the resource state
+     * @param dateLastModified the last modification date
+     * @param userLastModified name of the user who last modified the resource
+     * @param dateLastModifiedStr the last modification date as a formatted string 
      * @param removable to indicate if the resource can be removed from the user's publish list
      * @param info the additional information, if any
      * @param related the related resources
@@ -84,21 +96,24 @@ public class CmsPublishResource implements IsSerializable {
         String title,
         String resourceType,
         CmsResourceState state,
+        long dateLastModified,
+        String userLastModified,
+        String dateLastModifiedStr,
         boolean removable,
         CmsPublishResourceInfo info,
         List<CmsPublishResource> related) {
 
-        super();
         m_resourceType = resourceType;
         m_id = id;
         m_name = name;
-        // m_related = ((related == null) ? Collections.<CmsPublishResource> emptyList() : related);
-        // HACK: GWT serialization does not like unmodifiable collections :(
         m_related = ((related == null) ? new ArrayList<CmsPublishResource>() : related);
         m_state = state;
         m_title = title;
         m_removable = removable;
         m_info = info;
+        m_dateLastModified = dateLastModified;
+        m_dateLastModifiedStr = dateLastModifiedStr;
+        m_userLastModified = userLastModified;
     }
 
     /**
@@ -110,13 +125,23 @@ public class CmsPublishResource implements IsSerializable {
     }
 
     /**
-     * Returns the resource type name.<p>
-     *
-     * @return the resource type name
+     * Gets the last modification date.<p>
+     * 
+     * @return the last modification date 
      */
-    public String getResourceType() {
+    public long getDateLastModified() {
 
-        return m_resourceType;
+        return m_dateLastModified;
+    }
+
+    /**
+     * Gets the modification date formatted as a string.<p>
+     *  
+     * @return the formatted modification date 
+     */
+    public String getDateLastModifiedString() {
+
+        return m_dateLastModifiedStr;
     }
 
     /**
@@ -160,6 +185,32 @@ public class CmsPublishResource implements IsSerializable {
     }
 
     /**
+     * Returns the resource type name.<p>
+     *
+     * @return the resource type name
+     */
+    public String getResourceType() {
+
+        return m_resourceType;
+    }
+
+    /** 
+     * Gets the date to be used for sorting.<p>
+     * 
+     * @return the date which should be used for sorting 
+     */
+    public long getSortDate() {
+
+        long result = getDateLastModified();
+        if (m_related != null) {
+            for (CmsPublishResource rel : m_related) {
+                result = Math.max(result, rel.getSortDate());
+            }
+        }
+        return result;
+    }
+
+    /**
      * Returns the state.<p>
      *
      * @return the state
@@ -180,6 +231,16 @@ public class CmsPublishResource implements IsSerializable {
     }
 
     /**
+     * Gets the name of the user who last modified the resource.<p>
+     * 
+     * @return the name of the user who last modified the resource 
+     */
+    public String getUserLastModified() {
+
+        return m_userLastModified;
+    }
+
+    /**
      * Returns the removable flag.<p>
      *
      * @return the removable flag
@@ -187,5 +248,25 @@ public class CmsPublishResource implements IsSerializable {
     public boolean isRemovable() {
 
         return m_removable;
+    }
+
+    /**
+     * Sets the publish resource info.<p>
+     * 
+     * @param info the publish resource info
+     */
+    public void setInfo(CmsPublishResourceInfo info) {
+
+        m_info = info;
+    }
+
+    /**
+     * Enables/disables removability.<p>
+     * 
+     * @param removable true if the item should be removable 
+     */
+    public void setRemovable(boolean removable) {
+
+        m_removable = removable;
     }
 }

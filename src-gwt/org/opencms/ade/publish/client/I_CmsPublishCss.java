@@ -49,6 +49,13 @@ public interface I_CmsPublishCss extends CssResource {
      * 
      * @return the CSS class name
      */
+    String checkmark();
+
+    /** 
+     * Access method.<p>
+     * 
+     * @return the CSS class name
+     */
     String clear();
 
     /** 
@@ -148,6 +155,13 @@ public interface I_CmsPublishCss extends CssResource {
      * @return the CSS class name
      */
     String selector();
+
+    /** 
+     * Access method.<p>
+     * 
+     * @return the CSS class name
+     */
+    String selectorLabel();
 
     /** 
      * Access method.<p>

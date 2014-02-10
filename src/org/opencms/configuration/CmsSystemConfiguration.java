@@ -52,15 +52,19 @@ import org.opencms.publish.CmsPublishManager;
 import org.opencms.scheduler.CmsScheduleManager;
 import org.opencms.scheduler.CmsScheduledJobInfo;
 import org.opencms.security.CmsDefaultAuthorizationHandler;
+import org.opencms.security.CmsDefaultCredentialsResolver;
 import org.opencms.security.CmsDefaultValidationHandler;
 import org.opencms.security.CmsRoleViolationException;
 import org.opencms.security.I_CmsAuthorizationHandler;
+import org.opencms.security.I_CmsCredentialsResolver;
 import org.opencms.security.I_CmsPasswordHandler;
 import org.opencms.security.I_CmsValidationHandler;
 import org.opencms.site.CmsSite;
 import org.opencms.site.CmsSiteManagerImpl;
 import org.opencms.site.CmsSiteMatcher;
 import org.opencms.util.CmsStringUtil;
+import org.opencms.workflow.CmsDefaultWorkflowManager;
+import org.opencms.workflow.I_CmsWorkflowManager;
 import org.opencms.xml.containerpage.CmsADECacheSettings;
 
 import java.util.ArrayList;
@@ -68,6 +72,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -84,11 +89,22 @@ import org.dom4j.Element;
  */
 public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
 
+    /** Enum for the user session mode. */
+    public enum UserSessionMode {
+        /** Only a single session per user is allowed. */
+        single,
+        /** Any number of sessions for a user are allowed. */
+        standard
+    }
+
     /** The attribute name for the deleted node. */
     public static final String A_DELETED = "deleted";
 
     /** The "error" attribute. */
     public static final String A_ERROR = "error";
+
+    /** The "errorPage" attribute. */
+    public static final String A_ERROR_PAGE = "errorPage";
 
     /** The "exclusive" attribute. */
     public static final String A_EXCLUSIVE = "exclusive";
@@ -111,11 +127,23 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     /** The "poolname" attribute. */
     public static final String A_POOLNAME = "poolname";
 
+    /** The "position" attribute. */
+    public static final String A_POSITION = "position";
+
     /** The "server" attribute. */
     public static final String A_SERVER = "server";
 
+    /** The "title" attribute. */
+    public static final String A_TITLE = "title";
+
+    /** The "webserver" attribute. */
+    public static final String A_WEBSERVER = "webserver";
+
     /** The name of the DTD for this configuration. */
     public static final String CONFIGURATION_DTD_NAME = "opencms-system.dtd";
+
+    /** The default user session mode. */
+    public static final UserSessionMode DEFAULT_USER_SESSION_MODE = UserSessionMode.standard;
 
     /** The name of the default XML file for this configuration. */
     public static final String DEFAULT_XML_FILE_NAME = "opencms-system.xml";
@@ -486,17 +514,29 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     /** The node name for the warning-interval node. */
     public static final String N_WARNING_INTERVAL = "warning-interval";
 
+    /** The node name for the workflow configuration. */
+    public static final String N_WORKFLOW = "workflow";
+
     /** The node name for the workplace-server node. */
     public static final String N_WORKPLACE_SERVER = "workplace-server";
 
     /** The log object for this class. */
     private static final Log LOG = CmsLog.getLog(CmsSystemConfiguration.class);
 
+    /** Node name for the credentials resolver setting. */
+    private static final String N_CREDENTIALS_RESOLVER = "credentials-resolver";
+
+    /** Node name for the user session mode. */
+    private static final String N_USER_SESSION_MODE = "user-session-mode";
+
     /** The ADE cache settings. */
     private CmsADECacheSettings m_adeCacheSettings;
 
     /** The ADE configuration. */
     private String m_adeConfiguration;
+
+    /** The ADE configuration parameters. */
+    private Map<String, String> m_adeParameters = new LinkedHashMap<String, String>();
 
     /** The authorization handler. */
     private String m_authorizationHandler;
@@ -515,6 +555,12 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
 
     /** The list of jobs for the scheduler. */
     private List<CmsScheduledJobInfo> m_configuredJobs;
+
+    /** The credentials resolver instance. */
+    private I_CmsCredentialsResolver m_credentialsResolver;
+
+    /** The configured credentials resolver class name. */
+    private String m_credentialsResolverClass;
 
     /** The default content encoding. */
     private String m_defaultContentEncoding;
@@ -589,8 +635,25 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     /** The temporary file project id. */
     private int m_tempFileProjectId;
 
+    /** The user session mode. */
+    private UserSessionMode m_userSessionMode;
+
     /** The configured validation handler. */
     private String m_validationHandler;
+
+    /** The configured workflow manager. */
+    private I_CmsWorkflowManager m_workflowManager;
+
+    /** 
+     * Adds an ADE configuration parameter.<p>
+     * 
+     * @param name the parameter name 
+     * @param value the parameter value 
+     */
+    public void addAdeParameter(String name, String value) {
+
+        m_adeParameters.put(name, value);
+    }
 
     /**
      * @see org.opencms.configuration.I_CmsConfigurationParameterHandler#addConfigurationParameter(java.lang.String, java.lang.String)
@@ -905,12 +968,16 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
         digester.addSetNext("*/" + N_SYSTEM + "/" + N_SITES, "setSiteManager");
 
         // add site configuration rule
-        digester.addCallMethod("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE, "addSite", 5);
+        digester.addCallMethod("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE, "addSite", 9);
         digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE, 0, A_SERVER);
         digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE, 1, A_URI);
-        digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE + "/" + N_SECURE, 2, A_SERVER);
-        digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE + "/" + N_SECURE, 3, A_EXCLUSIVE);
-        digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE + "/" + N_SECURE, 4, A_ERROR);
+        digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE, 2, A_TITLE);
+        digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE, 3, A_POSITION);
+        digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE, 4, A_ERROR_PAGE);
+        digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE, 5, A_WEBSERVER);
+        digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE + "/" + N_SECURE, 6, A_SERVER);
+        digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE + "/" + N_SECURE, 7, A_EXCLUSIVE);
+        digester.addCallParam("*/" + N_SYSTEM + "/" + N_SITES + "/" + N_SITE + "/" + N_SECURE, 8, A_ERROR);
 
         // add an alias to the currently configured site
         digester.addCallMethod(
@@ -1124,6 +1191,11 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
         // set the settings
         digester.addSetNext(adeCachePath, "setAdeCacheSettings");
 
+        String adeParamPath = "*/" + N_SYSTEM + "/" + N_ADE + "/" + N_PARAMETERS + "/" + N_PARAM;
+        digester.addCallMethod(adeParamPath, "addAdeParameter", 2);
+        digester.addCallParam(adeParamPath, 0, I_CmsXmlConfiguration.A_NAME);
+        digester.addCallParam(adeParamPath, 1);
+
         // add rule for subscription manager settings
         digester.addObjectCreate("*/" + N_SYSTEM + "/" + N_SUBSCRIPTIONMANAGER, CmsSubscriptionManager.class);
         digester.addCallMethod("*/" + N_SYSTEM + "/" + N_SUBSCRIPTIONMANAGER, "setEnabled", 1);
@@ -1133,6 +1205,21 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
         digester.addCallMethod("*/" + N_SYSTEM + "/" + N_SUBSCRIPTIONMANAGER, "setMaxVisitedCount", 1);
         digester.addCallParam("*/" + N_SYSTEM + "/" + N_SUBSCRIPTIONMANAGER, 0, A_MAXVISITED);
         digester.addSetNext("*/" + N_SYSTEM + "/" + N_SUBSCRIPTIONMANAGER, "setSubscriptionManager");
+
+        String workflowXpath = "*/" + N_SYSTEM + "/" + N_WORKFLOW;
+        digester.addObjectCreate(workflowXpath, CmsDefaultWorkflowManager.class.getName(), A_CLASS);
+        digester.addObjectCreate(workflowXpath + "/" + N_PARAMETERS, LinkedHashMap.class);
+        digester.addCallMethod(workflowXpath + "/" + N_PARAMETERS + "/" + N_PARAM, "put", 2);
+        digester.addCallParam(workflowXpath + "/" + N_PARAMETERS + "/" + N_PARAM, 0, A_NAME);
+        digester.addCallParam(workflowXpath + "/" + N_PARAMETERS + "/" + N_PARAM, 1);
+        digester.addSetNext(workflowXpath + "/" + N_PARAMETERS, "setParameters");
+        digester.addSetNext(workflowXpath, "setWorkflowManager");
+
+        String userSessionPath = "*/" + N_SYSTEM + "/" + N_USER_SESSION_MODE;
+        digester.addCallMethod(userSessionPath, "setUserSessionMode", 0);
+
+        String credentialsResolverPath = "*/" + N_SYSTEM + "/" + N_CREDENTIALS_RESOLVER;
+        digester.addCallMethod(credentialsResolverPath, "setCredentialsResolver", 0);
     }
 
     /**
@@ -1303,12 +1390,16 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
 
             siteElement.addAttribute(A_SERVER, site.getSiteMatcher().toString());
             siteElement.addAttribute(A_URI, site.getSiteRoot().concat("/"));
+            siteElement.addAttribute(A_TITLE, site.getTitle());
+            siteElement.addAttribute(A_POSITION, Float.toString(site.getPosition()));
+            siteElement.addAttribute(A_ERROR_PAGE, site.getErrorPage());
+            siteElement.addAttribute(A_WEBSERVER, String.valueOf(site.isWebserver()));
             // create <secure server=""/> subnode            
             if (site.hasSecureServer()) {
                 Element secureElem = siteElement.addElement(N_SECURE);
                 secureElem.addAttribute(A_SERVER, site.getSecureUrl());
-                secureElem.addAttribute(A_EXCLUSIVE, "" + site.isExclusiveUrl());
-                secureElem.addAttribute(A_ERROR, "" + site.isExclusiveError());
+                secureElem.addAttribute(A_EXCLUSIVE, String.valueOf(site.isExclusiveUrl()));
+                secureElem.addAttribute(A_ERROR, String.valueOf(site.isExclusiveError()));
             }
             // create <alias server=""/> subnode(s)            
             Iterator<CmsSiteMatcher> aliasIterator = site.getAliases().iterator();
@@ -1518,10 +1609,20 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
         }
 
         // ADE settings
-        if ((getAdeConfiguration() != null) || (getAdeCacheSettings() != null)) {
+        if ((getAdeConfiguration() != null) || (getAdeCacheSettings() != null) || !m_adeParameters.isEmpty()) {
             Element adeElem = systemElement.addElement(N_ADE);
             if (getAdeConfiguration() != null) {
                 adeElem.addElement(N_CONFIGURATION).addAttribute(A_CLASS, getAdeConfiguration());
+            }
+            if (!m_adeParameters.isEmpty()) {
+                Element paramsElement = adeElem.addElement(N_PARAMETERS);
+                for (Map.Entry<String, String> entry : m_adeParameters.entrySet()) {
+                    String name = entry.getKey();
+                    String value = entry.getValue();
+                    Element paramElement = paramsElement.addElement(N_PARAM);
+                    paramElement.addAttribute(N_NAME, name);
+                    paramElement.setText(value);
+                }
             }
             if (getAdeCacheSettings() != null) {
                 Element cacheElem = adeElem.addElement(N_ADE_CACHE);
@@ -1545,6 +1646,26 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
             subscrManElem.addAttribute(A_MAXVISITED, String.valueOf(getSubscriptionManager().getMaxVisitedCount()));
         }
 
+        I_CmsWorkflowManager workflowMan = getWorkflowManager();
+        if (workflowMan != null) {
+            Element workflowElem = systemElement.addElement(N_WORKFLOW);
+            workflowElem.addAttribute(A_CLASS, workflowMan.getClass().getName());
+            Map<String, String> parameters = workflowMan.getParameters();
+            Element parametersElem = workflowElem.addElement(N_PARAMETERS);
+            for (Map.Entry<String, String> entry : parameters.entrySet()) {
+                Element paramElem = parametersElem.addElement(N_PARAM);
+                paramElem.addAttribute(A_NAME, entry.getKey());
+                paramElem.addText(entry.getValue());
+            }
+        }
+        if (m_userSessionMode != null) {
+            Element userSessionElem = systemElement.addElement(N_USER_SESSION_MODE);
+            userSessionElem.setText(m_userSessionMode.toString());
+        }
+
+        if (m_credentialsResolverClass != null) {
+            systemElement.addElement(N_CREDENTIALS_RESOLVER).setText(m_credentialsResolverClass);
+        }
         // return the system node
         return systemElement;
     }
@@ -1567,6 +1688,16 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     public String getAdeConfiguration() {
 
         return m_adeConfiguration;
+    }
+
+    /**
+     * Gets the ADE configuration parameters.<p>
+     * 
+     * @return the ADE configuration parameters 
+     */
+    public Map<String, String> getAdeParameters() {
+
+        return m_adeParameters;
     }
 
     /**
@@ -1637,6 +1768,29 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     public CmsMemoryMonitorConfiguration getCmsMemoryMonitorConfiguration() {
 
         return m_cmsMemoryMonitorConfiguration;
+    }
+
+    /**
+     * Gets the credentials resolver.<p>
+     * 
+     * @return the credentials resolver 
+     */
+    public I_CmsCredentialsResolver getCredentialsResolver() {
+
+        if (m_credentialsResolver == null) {
+            m_credentialsResolver = new CmsDefaultCredentialsResolver();
+        }
+        return m_credentialsResolver;
+    }
+
+    /**
+     * Gets the configured credentials resolver class name (null if no class is explicity configured).<p>
+     * 
+     * @return the name of the configured credentials resolver class 
+     */
+    public String getCredentialsResolverClass() {
+
+        return m_credentialsResolverClass;
     }
 
     /**
@@ -1925,6 +2079,24 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     }
 
     /**
+     * Gets the user session mode.<p>
+     * 
+     * @param useDefault if true, and no user session mode was configured, this will return the default value 
+     * 
+     * @return the user session mode 
+     */
+    public UserSessionMode getUserSessionMode(boolean useDefault) {
+
+        if (m_userSessionMode != null) {
+            return m_userSessionMode;
+        } else if (useDefault) {
+            return DEFAULT_USER_SESSION_MODE;
+        } else {
+            return null;
+        }
+    }
+
+    /**
      * Returns an instance of the configured validation handler.<p>
      * 
      * @return an instance of the configured validation handler
@@ -1948,6 +2120,16 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
                 t);
             return new CmsDefaultValidationHandler();
         }
+    }
+
+    /**
+     * Gets the configured workflow manager instance.<p>
+     * 
+     * @return the configured workflow manager instance.
+     */
+    public I_CmsWorkflowManager getWorkflowManager() {
+
+        return m_workflowManager;
     }
 
     /**
@@ -2093,6 +2275,22 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     public void setCmsMemoryMonitorConfiguration(CmsMemoryMonitorConfiguration cmsMemoryMonitorConfiguration) {
 
         m_cmsMemoryMonitorConfiguration = cmsMemoryMonitorConfiguration;
+    }
+
+    /**
+     * Sets the credentials resolver class.<p>
+     * 
+     * @param className the name of the credentials resolver class 
+     * 
+     * @throws Exception if something goes wrong  
+     */
+    public void setCredentialsResolver(String className) throws Exception {
+
+        String originalClassName = className;
+        className = className.trim();
+        Class<?> resolverClass = Class.forName(className);
+        m_credentialsResolver = (I_CmsCredentialsResolver)(resolverClass.newInstance());
+        m_credentialsResolverClass = originalClassName;
     }
 
     /**
@@ -2402,6 +2600,19 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     }
 
     /**
+     * Sets the user session mode.<p>
+     * 
+     * @param userSessionMode the user session mode 
+     */
+    public void setUserSessionMode(String userSessionMode) {
+
+        if ((userSessionMode == null) || (m_userSessionMode != null)) {
+            throw new IllegalStateException("Can't set user session mode to " + userSessionMode);
+        }
+        m_userSessionMode = UserSessionMode.valueOf(userSessionMode);
+    }
+
+    /**
      * Sets the validation handler.<p>
      * 
      * @param validationHandlerClass the validation handler class to set.
@@ -2409,6 +2620,16 @@ public class CmsSystemConfiguration extends A_CmsXmlConfiguration {
     public void setValidationHandler(String validationHandlerClass) {
 
         m_validationHandler = validationHandlerClass;
+    }
+
+    /**
+     * Sets the configured workflow manager instance.<p>
+     * 
+     * @param workflowManager the configured workflow manager 
+     */
+    public void setWorkflowManager(I_CmsWorkflowManager workflowManager) {
+
+        m_workflowManager = workflowManager;
     }
 
     /**

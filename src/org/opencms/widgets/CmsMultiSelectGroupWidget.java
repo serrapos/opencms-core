@@ -1,8 +1,19 @@
 /*
+<<<<<<< HEAD
  * This library is part of OpenCms -
  * the Open Source Content Management System
  *
  * Copyright (c) Alkacon Software GmbH (http://www.alkacon.com)
+=======
+ * File   : $Source: /home/cvs/OpenCms-v8/src/org/opencms/widgets/CmsSelectGroupWidget.java,v $
+ * Date   : $Date: 2010-07-23 08:29:34 $
+ * Version: $Revision: 1.1 $
+ *
+ * This library is part of OpenCms -
+ * the Open Source Content Management System
+ *
+ * Copyright (C) 2002 - 2009 Alkacon Software (http://www.alkacon.com)
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -14,7 +25,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
+<<<<<<< HEAD
  * For further information about Alkacon Software GmbH, please see the
+=======
+ * For further information about Alkacon Software, please see the
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
  * company website: http://www.alkacon.com
  *
  * For further information about OpenCms, please see the
@@ -29,6 +44,11 @@ package org.opencms.widgets;
 
 import org.opencms.file.CmsGroup;
 import org.opencms.file.CmsObject;
+<<<<<<< HEAD
+=======
+import org.opencms.file.CmsResource;
+import org.opencms.i18n.CmsMessages;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
@@ -36,10 +56,18 @@ import org.opencms.security.CmsOrganizationalUnit;
 import org.opencms.util.CmsMacroResolver;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.workplace.CmsWorkplace;
+<<<<<<< HEAD
+=======
+import org.opencms.xml.types.A_CmsXmlContentValue;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+<<<<<<< HEAD
+=======
+import java.util.Locale;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -129,6 +157,40 @@ public class CmsMultiSelectGroupWidget extends CmsSelectGroupWidget {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * @see org.opencms.widgets.I_CmsADEWidget#getConfiguration(org.opencms.file.CmsObject, org.opencms.xml.types.A_CmsXmlContentValue, org.opencms.i18n.CmsMessages, org.opencms.file.CmsResource, java.util.Locale)
+     */
+    @Override
+    public String getConfiguration(
+        CmsObject cms,
+        A_CmsXmlContentValue schemaType,
+        CmsMessages messages,
+        CmsResource resource,
+        Locale contentLocale) {
+
+        String result = "";
+        CmsDummyWidgetDialog widgetDialog = new CmsDummyWidgetDialog(schemaType.getLocale(), messages);
+        widgetDialog.setResource(resource);
+        List<CmsSelectWidgetOption> options = parseSelectOptions(cms, widgetDialog, schemaType);
+        Iterator<CmsSelectWidgetOption> it = options.iterator();
+        int i = 0;
+        while (it.hasNext()) {
+            CmsSelectWidgetOption option = it.next();
+            if (i > 0) {
+                result += "|";
+            }
+            result += option.toString();
+            i++;
+        }
+        if (m_requiresActivation) {
+            result += "|" + CmsMultiSelectWidget.CONFIGURATION_REQUIRES_ACTIVATION;
+        }
+        return result;
+    }
+
+    /**
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * @see org.opencms.widgets.I_CmsWidget#getDialogIncludes(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog)
      */
     @Override
@@ -146,7 +208,11 @@ public class CmsMultiSelectGroupWidget extends CmsSelectGroupWidget {
         String id = param.getId();
         StringBuffer result = new StringBuffer(16);
         String height = getHeight();
+<<<<<<< HEAD
         List<CmsSelectWidgetOption> options = parseSelectOptions(cms, widgetDialog, param);
+=======
+        List<CmsSelectWidgetOption> options = parseSelectOptions(cms, widgetDialog.getMessages(), param);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         result.append("<td class=\"xmlTd\">");
         // the configured select widget height start element
         if (m_asCheckBoxes && CmsStringUtil.isNotEmptyOrWhitespaceOnly(height)) {
@@ -240,6 +306,18 @@ public class CmsMultiSelectGroupWidget extends CmsSelectGroupWidget {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    @Override
+    public String getWidgetName() {
+
+        return CmsMultiSelectGroupWidget.class.getName();
+    }
+
+    /**
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * @see org.opencms.widgets.I_CmsWidget#newInstance()
      */
     @Override
@@ -297,20 +375,32 @@ public class CmsMultiSelectGroupWidget extends CmsSelectGroupWidget {
     }
 
     /**
+<<<<<<< HEAD
      * Returns the select options for the widget, generated from the configured input fields of the XML content.<p>
      * 
      * @see org.opencms.widgets.A_CmsSelectWidget#parseSelectOptions(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog, org.opencms.widgets.I_CmsWidgetParameter)
+=======
+     * @see org.opencms.widgets.CmsSelectGroupWidget#parseSelectOptions(org.opencms.file.CmsObject, org.opencms.i18n.CmsMessages, org.opencms.widgets.I_CmsWidgetParameter)
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      */
     @Override
     protected List<CmsSelectWidgetOption> parseSelectOptions(
         CmsObject cms,
+<<<<<<< HEAD
         I_CmsWidgetDialog widgetDialog,
+=======
+        CmsMessages messages,
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         I_CmsWidgetParameter param) {
 
         // only create options if not already done
         if (getSelectOptions() == null) {
             // parse widget configuration
+<<<<<<< HEAD
             parseConfiguration(cms, widgetDialog);
+=======
+            parseConfiguration(cms, messages);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
             List<CmsSelectWidgetOption> result = new ArrayList<CmsSelectWidgetOption>();
 
             if (isUseGroupNames()) {
@@ -356,6 +446,21 @@ public class CmsMultiSelectGroupWidget extends CmsSelectGroupWidget {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * @see org.opencms.widgets.A_CmsSelectWidget#parseSelectOptions(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog, org.opencms.widgets.I_CmsWidgetParameter)
+     */
+    @Override
+    protected List<CmsSelectWidgetOption> parseSelectOptions(
+        CmsObject cms,
+        I_CmsWidgetDialog widgetDialog,
+        I_CmsWidgetParameter param) {
+
+        return parseSelectOptions(cms, widgetDialog.getMessages(), param);
+    }
+
+    /**
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * Returns the configured group filter to match groups to show in the select box.<p>
      * 
      * @return the configured group filter to match groups to show in the select box
@@ -421,9 +526,15 @@ public class CmsMultiSelectGroupWidget extends CmsSelectGroupWidget {
      * @param cms the current users OpenCms context
      * @param widgetDialog the dialog of this widget
      */
+<<<<<<< HEAD
     private void parseConfiguration(CmsObject cms, I_CmsWidgetDialog widgetDialog) {
 
         String configString = CmsMacroResolver.resolveMacros(getConfiguration(), cms, widgetDialog.getMessages());
+=======
+    private void parseConfiguration(CmsObject cms, CmsMessages widgetDialog) {
+
+        String configString = CmsMacroResolver.resolveMacros(getConfiguration(), cms, widgetDialog);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         Map<String, String> config = CmsStringUtil.splitAsMap(configString, "|", "=");
         // get the list of group names to show
         String groups = config.get(CONFIGURATION_GROUPS);

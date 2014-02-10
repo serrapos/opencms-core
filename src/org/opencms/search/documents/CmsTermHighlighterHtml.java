@@ -31,6 +31,7 @@ import org.opencms.i18n.CmsEncoder;
 import org.opencms.main.OpenCms;
 import org.opencms.search.CmsSearchIndex;
 import org.opencms.search.CmsSearchParameters;
+import org.opencms.search.fields.CmsLuceneFieldConfiguration;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -42,7 +43,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
-import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.QueryTermScorer;
 
 /**
  * Default highlighter implementation used for generation of search excerpts.<p>
@@ -70,15 +71,20 @@ public class CmsTermHighlighterHtml implements I_CmsTermHighlighter {
         if ((doc == null) || (index == null) || (params == null) || (analyzer == null) || (query == null)) {
             return null;
         }
+        if (!(index.getFieldConfiguration() instanceof CmsLuceneFieldConfiguration)) {
+            // also return null if the field configuration is not a lucene field configuration
+            return null;
+        }
         Highlighter highlighter = null;
-        Iterator<String> excerptFieldNames = index.getFieldConfiguration().getExcerptFieldNames().iterator();
+        CmsLuceneFieldConfiguration conf = (CmsLuceneFieldConfiguration)index.getFieldConfiguration();
+        Iterator<String> excerptFieldNames = conf.getExcerptFieldNames().iterator();
         StringBuffer excerptBuffer = new StringBuffer();
         while (excerptFieldNames.hasNext()) {
             String fieldName = excerptFieldNames.next();
             boolean createExcerpt = !params.isExcerptOnlySearchedFields() || params.getFields().contains(fieldName);
-            if (createExcerpt && (doc.getFieldable(fieldName) != null)) {
+            if (createExcerpt && (doc.getField(fieldName) != null)) {
                 // only generate field excerpt if the field is available in the document
-                String text = doc.getFieldable(fieldName).stringValue();
+                String text = doc.getField(fieldName).stringValue();
                 // make sure all XML in the text is escaped, otherwise excerpt HTML output may be garbled
                 text = CmsEncoder.escapeXml(text);
 
@@ -86,11 +92,11 @@ public class CmsTermHighlighterHtml implements I_CmsTermHighlighter {
 
                 if (params.isExcerptOnlySearchedFields()) {
                     // highlight the search query only in the matching fields 
-                    highlighter = new Highlighter(new QueryScorer(query, fieldName));
+                    highlighter = new Highlighter(new QueryTermScorer(query, fieldName));
                 } else {
                     // highlight search query in all fields
                     if (highlighter == null) {
-                        highlighter = new Highlighter(new QueryScorer(query));
+                        highlighter = new Highlighter(new QueryTermScorer(query));
                     }
                 }
                 String fragment = highlighter.getBestFragments(

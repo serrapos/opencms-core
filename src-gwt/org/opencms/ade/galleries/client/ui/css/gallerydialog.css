@@ -1,6 +1,10 @@
-@external html-face;
+@external html-face, cmsState;
 
+<<<<<<< HEAD
 div.editorGallery {}
+=======
+.editorGallery {}
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 @if user.agent ie8 {
 	div.editorGallery{
 		-ms-filter: none;
@@ -44,8 +48,6 @@ div.showPreview{
 div.criteriaList {
 	border:1px solid value("constants.css.borderColor");
 	height:414px;
-	overflow: auto;
-	position: relative;
 	background-color: value("constants.css.backgroundColorDialog");
 	padding:0 2px;
 }
@@ -141,6 +143,15 @@ div.searchTabInputWide {
 	width: 497px;
 	float: right;
 }
+
+div.searchTabInputWide.hasButton > div{
+	margin-right: 24px;
+}
+div.searchTabInputWide.hasButton > div.cmsState{
+	margin: 0px;
+	float:right;
+}
+
 div.searchTabBorderLayer {
 	position:absolute; 
 	top:0px; 
@@ -166,6 +177,7 @@ div.infoLabel {
 div.quickFilterBox {
 	float: right;
 	width: 200px;
+	margin-right: 4px;
 }
 div.quickFilterBox > div{
 	padding-top: 3px;

@@ -46,8 +46,78 @@ public class CmsCoreData implements IsSerializable {
         /** Context for container page. */
         containerpage,
 
+        /** Context for classic direct edit provider. */
+        editprovider,
+
         /** Context for sitemap. */
         sitemap
+    }
+
+    /**
+     * Bean class containing info about the current user.<p>
+     */
+    public static class UserInfo implements IsSerializable {
+
+        /** True if the user is an administrator. */
+        private boolean m_isAdmin;
+
+        /** True if the user is a template developer. */
+        private boolean m_isDeveloper;
+
+        /** The user name. */
+        private String m_name;
+
+        /** 
+         * Creates a new instance.<p>
+         * 
+         * @param name the user name 
+         * @param isAdmin true if the user is an administrator 
+         * @param isDeveloper true if the user is a template developer 
+         */
+        public UserInfo(String name, boolean isAdmin, boolean isDeveloper) {
+
+            m_isDeveloper = isDeveloper;
+            m_isAdmin = isAdmin;
+            m_name = name;
+        }
+
+        /**
+         * Default constructor, needed for serialization.<p>
+         */
+        protected UserInfo() {
+
+            // empty 
+        }
+
+        /**
+         * Gets the user name.<p>
+         * 
+         * @return the user name 
+         */
+        public String getName() {
+
+            return m_name;
+        }
+
+        /**
+         * Returns true if the user is an administrator.<p>
+         * 
+         * @return true if the user is an administrator 
+         */
+        public boolean isAdmin() {
+
+            return m_isAdmin;
+        }
+
+        /**
+         * Returns true if the user is a template developer.<p>
+         * 
+         * @return true if the user is a template developer 
+         */
+        public boolean isDeveloper() {
+
+            return m_isDeveloper;
+        }
     }
 
     /** Name of the used js variable. */
@@ -65,6 +135,12 @@ public class CmsCoreData implements IsSerializable {
     /** The time sent from the server when loading the data. */
     protected long m_serverTime;
 
+    /** A bean with information about the current user. */
+    protected UserInfo m_userInfo;
+
+    /** ADE parameters. */
+    private Map<String, String> m_adeParameters;
+
     /** The XML content editor back-link URL. */
     private String m_contentEditorBacklinkUrl;
 
@@ -74,8 +150,17 @@ public class CmsCoreData implements IsSerializable {
     /** The XML content editor URL. */
     private String m_contentEditorUrl;
 
+    /** The default link to use for opening the workplace. */
+    private String m_defaultWorkplaceLink;
+
     /** The mappings of file extensions to resource types. */
     private Map<String, String> m_extensionMapping;
+
+    /** The show editor help flag. */
+    private boolean m_isShowEditorHelp;
+
+    /** Keep-alive setting. */
+    private boolean m_keepAlive;
 
     /** The current request locale. */
     private String m_locale;
@@ -94,6 +179,9 @@ public class CmsCoreData implements IsSerializable {
 
     /** A flag which indicates whether the toolbar should be shown initially. */
     private boolean m_toolbarVisible;
+
+    /** The maximum file size for the upload. */
+    private long m_uploadFileSizeLimit;
 
     /** The current uri. */
     private String m_uri;
@@ -139,8 +227,18 @@ public class CmsCoreData implements IsSerializable {
             clone.getStructureId(),
             clone.getExtensionMapping(),
             clone.getServerTime(),
+<<<<<<< HEAD
             clone.isToolbarVisible(),
             clone.getGwtBuildIds());
+=======
+            clone.isShowEditorHelp(),
+            clone.isToolbarVisible(),
+            clone.getDefaultWorkplaceLink(),
+            clone.getUserInfo(),
+            clone.getUploadFileSizeLimit(),
+            clone.isKeepAlive(),
+            clone.m_adeParameters);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
@@ -159,8 +257,18 @@ public class CmsCoreData implements IsSerializable {
      * @param navigationUri the current navigation URI
      * @param extensionMapping the mappings of file extensions to resource types
      * @param serverTime the current time  
+<<<<<<< HEAD
      * @param toolbarVisible a flag to indicate whether the toolbar should be visible initially
      * @param gwtBuildIds the map of GWT build ids 
+=======
+     * @param isShowEditorHelp the show editor help flag
+     * @param toolbarVisible a flag to indicate whether the toolbar should be visible initially
+     * @param defaultWorkplaceLink the default link to use for opening the workplace  
+     * @param userInfo information about the current user 
+     * @param uploadFileSizeLimit the file upload size limit
+     * @param isKeepAlive the keep-alive mode 
+     * @param adeParameters the map of ADE configuration parameters 
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      */
     public CmsCoreData(
         String contentEditorUrl,
@@ -176,8 +284,18 @@ public class CmsCoreData implements IsSerializable {
         CmsUUID structureId,
         Map<String, String> extensionMapping,
         long serverTime,
+<<<<<<< HEAD
         boolean toolbarVisible,
         Map<String, String> gwtBuildIds) {
+=======
+        boolean isShowEditorHelp,
+        boolean toolbarVisible,
+        String defaultWorkplaceLink,
+        UserInfo userInfo,
+        long uploadFileSizeLimit,
+        boolean isKeepAlive,
+        Map<String, String> adeParameters) {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
         m_contentEditorUrl = contentEditorUrl;
         m_contentEditorBacklinkUrl = contentEditorBacklinkUrl;
@@ -191,9 +309,28 @@ public class CmsCoreData implements IsSerializable {
         m_navigationUri = navigationUri;
         m_extensionMapping = extensionMapping;
         m_serverTime = serverTime;
+        m_isShowEditorHelp = isShowEditorHelp;
         m_toolbarVisible = toolbarVisible;
         m_structureId = structureId;
+<<<<<<< HEAD
         m_gwtBuildIds = gwtBuildIds;
+=======
+        m_defaultWorkplaceLink = defaultWorkplaceLink;
+        m_userInfo = userInfo;
+        m_uploadFileSizeLimit = uploadFileSizeLimit;
+        m_keepAlive = isKeepAlive;
+        m_adeParameters = adeParameters;
+    }
+
+    /** 
+     * Gets the map of ADE configuration parameters.<p>
+     * 
+     * @return the ADE configuration parameters 
+     */
+    public Map<String, String> getAdeParameters() {
+
+        return m_adeParameters;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
@@ -224,6 +361,16 @@ public class CmsCoreData implements IsSerializable {
     public String getContentEditorUrl() {
 
         return m_contentEditorUrl;
+    }
+
+    /**
+     * Gets the default link to use for opening the workplace.<p>
+     * 
+     * @return the default workplace link 
+     */
+    public String getDefaultWorkplaceLink() {
+
+        return m_defaultWorkplaceLink;
     }
 
     /**
@@ -307,6 +454,16 @@ public class CmsCoreData implements IsSerializable {
     }
 
     /**
+     * Returns the file upload size limit.<p>
+     *
+     * @return the file upload size limit
+     */
+    public long getUploadFileSizeLimit() {
+
+        return m_uploadFileSizeLimit;
+    }
+
+    /**
      * Returns the current uri.<p>
      *
      * @return the current uri
@@ -314,6 +471,16 @@ public class CmsCoreData implements IsSerializable {
     public String getUri() {
 
         return m_uri;
+    }
+
+    /**
+     * Gets the information about the current user.<p>
+     * 
+     * @return the information about the current user 
+     */
+    public UserInfo getUserInfo() {
+
+        return m_userInfo;
     }
 
     /**
@@ -337,6 +504,26 @@ public class CmsCoreData implements IsSerializable {
     }
 
     /**
+     * Returns true if the session should be kept alive even without user actions.<p>
+     * 
+     * @return true if keep-alive mode is active 
+     */
+    public boolean isKeepAlive() {
+
+        return m_keepAlive;
+    }
+
+    /**
+     * Returns the show editor help flag.<p>
+     *
+     * @return the show editor help flag
+     */
+    public boolean isShowEditorHelp() {
+
+        return m_isShowEditorHelp;
+    }
+
+    /**
      * Returns true if the toolbar should be visible initially.<p>
      * 
      * @return true if the toolbar should be visible initially 
@@ -345,5 +532,9 @@ public class CmsCoreData implements IsSerializable {
 
         return m_toolbarVisible;
     }
+<<<<<<< HEAD
 
 }
+=======
+}
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485

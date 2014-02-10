@@ -44,14 +44,15 @@ public class CmsResourceTypeBean implements I_CmsHasTitle, I_CmsHasType, IsSeria
     /** Flag to indicate if the current user may create a new resource of this type. */
     private boolean m_creatableType;
 
+<<<<<<< HEAD
     /** The resource type description. */
+=======
+    /** The description. */
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     private String m_description;
 
     /** An array of gallery type names associated with this content type. */
     private ArrayList<String> m_galleryTypeNames;
-
-    /** The path to the resource type icon. */
-    private String m_iconResource;
 
     /** The name of the preview provider. */
     private String m_previewProviderName;
@@ -83,16 +84,6 @@ public class CmsResourceTypeBean implements I_CmsHasTitle, I_CmsHasType, IsSeria
     public ArrayList<String> getGalleryTypeNames() {
 
         return m_galleryTypeNames;
-    }
-
-    /**
-     * Returns the resource type icon.<p>
-     *
-     * @return the iconResource the icon for the resource type
-     */
-    public String getIconResource() {
-
-        return m_iconResource;
     }
 
     /**

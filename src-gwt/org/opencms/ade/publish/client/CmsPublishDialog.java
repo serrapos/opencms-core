@@ -28,23 +28,30 @@
 package org.opencms.ade.publish.client;
 
 import org.opencms.ade.publish.shared.CmsPublishData;
-import org.opencms.ade.publish.shared.CmsPublishGroup;
+import org.opencms.ade.publish.shared.CmsPublishGroupList;
+import org.opencms.ade.publish.shared.CmsPublishListToken;
 import org.opencms.ade.publish.shared.CmsPublishOptions;
-import org.opencms.ade.publish.shared.CmsPublishResource;
+import org.opencms.ade.publish.shared.CmsWorkflow;
+import org.opencms.ade.publish.shared.CmsWorkflowAction;
+import org.opencms.ade.publish.shared.CmsWorkflowActionParams;
+import org.opencms.ade.publish.shared.CmsWorkflowResponse;
 import org.opencms.ade.publish.shared.rpc.I_CmsPublishService;
 import org.opencms.ade.publish.shared.rpc.I_CmsPublishServiceAsync;
 import org.opencms.gwt.client.CmsCoreProvider;
 import org.opencms.gwt.client.rpc.CmsRpcAction;
+import org.opencms.gwt.client.ui.CmsNotification;
 import org.opencms.gwt.client.ui.CmsPopup;
 import org.opencms.gwt.client.ui.CmsPushButton;
 import org.opencms.util.CmsUUID;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.logical.shared.CloseHandler;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.ServiceDefTarget;
 import com.google.gwt.user.client.ui.DeckPanel;
 import com.google.gwt.user.client.ui.PopupPanel;
@@ -61,21 +68,35 @@ import com.google.gwt.user.client.ui.PopupPanel;
  */
 public class CmsPublishDialog extends CmsPopup {
 
+    /** 
+     * A type which represents the state of a publish action.<p>
+     */
+    public enum State {
+        /** The publish dialog was cancelled. */
+        cancel,
+
+        /** The publish dialog has failed. */
+        failure,
+
+        /** The publish dialog has succeeded. */
+        success;
+    }
+
     /**
      * The action for publishing and/or removing resources from the publish list.<p>
      */
-    private class CmsPublishAction extends CmsRpcAction<List<CmsPublishResource>> {
+    private class CmsPublishAction extends CmsRpcAction<CmsWorkflowResponse> {
 
         /** If true, try to ignore broken links when publishing. */
-        private boolean m_force;
+        private CmsWorkflowAction m_action;
 
         /** Creates a new instance of this action. 
          * 
-         * @param force if true, try to ignore broken links when publishing
+         * @param action the workflow action to execute
          */
-        public CmsPublishAction(boolean force) {
+        public CmsPublishAction(CmsWorkflowAction action) {
 
-            m_force = force;
+            m_action = action;
         }
 
         /**
@@ -86,38 +107,35 @@ public class CmsPublishDialog extends CmsPopup {
 
             setLoadingMessage(Messages.get().key(Messages.GUI_PUBLISHING_0));
             start(0, true);
-            List<CmsUUID> resourcesToPublish = new ArrayList<CmsUUID>(m_publishSelectPanel.getResourcesToPublish());
-            List<CmsUUID> resourcesToRemove = new ArrayList<CmsUUID>(m_publishSelectPanel.getResourcesToRemove());
-            getService().publishResources(resourcesToPublish, resourcesToRemove, m_force, this);
+            setLastAction(m_action);
+            CmsWorkflowActionParams actionParams = getWorkflowActionParams();
+            getService().executeAction(m_action, actionParams, this);
+
         }
 
         /**
          * @see org.opencms.gwt.client.rpc.CmsRpcAction#onResponse(java.lang.Object)
          */
         @Override
-        protected void onResponse(List<CmsPublishResource> result) {
+        protected void onResponse(CmsWorkflowResponse result) {
 
+            stop(false);
             onReceiveStatus(result);
-            stop(true);
+
         }
     }
 
     /**
      * The action for loading the publish list.<p>
      */
-    private class CmsPublishListAction extends CmsRpcAction<List<CmsPublishGroup>> {
-
-        /** The publish list options which should be used. */
-        private CmsPublishOptions m_options;
+    private class CmsPublishListAction extends CmsRpcAction<CmsPublishGroupList> {
 
         /**
-         * Creates a new publish list action.<p>
-         * 
-         * @param options the publish list options which should be used 
+         * Constructor.<p>
          */
-        public CmsPublishListAction(CmsPublishOptions options) {
+        protected CmsPublishListAction() {
 
-            m_options = options;
+            // nothing to do
         }
 
         /**
@@ -127,17 +145,18 @@ public class CmsPublishDialog extends CmsPopup {
         public void execute() {
 
             start(0, true);
-            getService().getPublishGroups(m_options, this);
+            getService().getResourceGroups(getSelectedWorkflow(), getPublishOptions(), this);
         }
 
         /**
          * @see org.opencms.gwt.client.rpc.CmsRpcAction#onResponse(java.lang.Object)
          */
         @Override
-        protected void onResponse(List<CmsPublishGroup> result) {
+        protected void onResponse(CmsPublishGroupList result) {
 
-            onReceivePublishList(result);
             stop(false);
+            onReceivePublishList(result);
+
         }
     }
 
@@ -149,6 +168,9 @@ public class CmsPublishDialog extends CmsPopup {
 
     /** The CSS bundle used for this widget. */
     private static final I_CmsPublishCss CSS = I_CmsPublishLayoutBundle.INSTANCE.publishCss();
+
+    /** Flag indicating if the CSS has been initialized. */
+    private static boolean CSS_INITIALIZED;
 
     /** The index of the "broken links" panel. */
     private static final int PANEL_BROKEN_LINKS = 1;
@@ -165,8 +187,26 @@ public class CmsPublishDialog extends CmsPopup {
     /** The panel for showing the links that would be broken by publishing. */
     private CmsBrokenLinksPanel m_brokenLinksPanel;
 
+    /** Stores a failure message. */
+    private String m_failureMessage;
+
+    /** Stores the last workflow action. */
+    private CmsWorkflowAction m_lastAction;
+
     /** The root panel of this dialog which contains both the selection panel and the panel for displaying broken links. */
     private DeckPanel m_panel = new DeckPanel();
+
+    /** The current publish list options. */
+    private CmsPublishOptions m_publishOptions;
+
+    /** Stores the state. */
+    private State m_state = State.cancel;
+
+    /** The id of the current workflow. */
+    private String m_workflowId;
+
+    /** The available workflows. */
+    private Map<String, CmsWorkflow> m_workflows;
 
     /**
      * Constructs a new publish dialog.<p>
@@ -175,14 +215,25 @@ public class CmsPublishDialog extends CmsPopup {
      */
     public CmsPublishDialog(CmsPublishData initData) {
 
-        super(Messages.get().key(Messages.GUI_PUBLISH_DIALOG_TITLE_0), 800);
+        super(800);
+        initCss();
         setGlassEnabled(true);
+        setPositionFixed();
         setAutoHideEnabled(false);
         setModal(true);
         addStyleName(CSS.publishDialog());
-
-        m_publishSelectPanel = new CmsPublishSelectPanel(this, initData.getProjects(), initData.getOptions());
-        m_brokenLinksPanel = new CmsBrokenLinksPanel(this, initData.isCanPublishBrokenRelations());
+        m_workflows = initData.getWorkflows();
+        m_workflowId = initData.getSelectedWorkflowId();
+        m_publishOptions = initData.getOptions();
+        int availableHeight = Window.getClientHeight() - 290;
+        m_publishSelectPanel = new CmsPublishSelectPanel(
+            this,
+            initData.getProjects(),
+            initData.getOptions(),
+            initData.getWorkflows(),
+            initData.getSelectedWorkflowId(),
+            availableHeight);
+        m_brokenLinksPanel = new CmsBrokenLinksPanel(this, availableHeight);
 
         addDialogClose(null);
 
@@ -190,8 +241,6 @@ public class CmsPublishDialog extends CmsPopup {
         m_panel.add(m_publishSelectPanel);
         m_panel.add(m_brokenLinksPanel);
         setMainContent(m_panel);
-
-        setPanel(PANEL_SELECT);
         onReceivePublishList(initData.getGroups());
     }
 
@@ -200,15 +249,33 @@ public class CmsPublishDialog extends CmsPopup {
      */
     public static void showPublishDialog() {
 
-        showPublishDialog(null);
+        showPublishDialog(new HashMap<String, String>(), null);
+    }
+
+    /**
+     * Shows the publish dialog.<p>
+     * 
+     * @param result the publish data
+     * @param handler the dialog close handler
+     */
+    public static void showPublishDialog(CmsPublishData result, CloseHandler<PopupPanel> handler) {
+
+        CmsPublishDialog publishDialog = new CmsPublishDialog(result);
+        if (handler != null) {
+            publishDialog.addCloseHandler(handler);
+        }
+        publishDialog.centerHorizontally(50);
+        // replace current notification widget by overlay
+        publishDialog.catchNotifications();
     }
 
     /**
      * Convenience method which opens a publish dialog.<p>
      * 
      * @param handler the close handler
+     * @param params the additional publish dialog parameters 
      */
-    public static void showPublishDialog(final CloseHandler<PopupPanel> handler) {
+    public static void showPublishDialog(final HashMap<String, String> params, final CloseHandler<PopupPanel> handler) {
 
         (new CmsRpcAction<CmsPublishData>() {
 
@@ -219,23 +286,17 @@ public class CmsPublishDialog extends CmsPopup {
             public void execute() {
 
                 start(0, true);
-                getService().getInitData(this);
+                getService().getInitData(params, this);
             }
 
             /**
              * @see org.opencms.gwt.client.rpc.CmsRpcAction#onResponse(java.lang.Object)
              */
             @Override
-            protected void onResponse(final CmsPublishData result) {
+            protected void onResponse(CmsPublishData result) {
 
-                CmsPublishDialog publishDialog = new CmsPublishDialog(result);
-                if (handler != null) {
-                    publishDialog.addCloseHandler(handler);
-                }
                 stop(false);
-                publishDialog.centerHorizontally(100);
-                // replace current notification widget by overlay
-                publishDialog.catchNotifications();
+                showPublishDialog(result, handler);
             }
         }).execute();
     }
@@ -256,11 +317,73 @@ public class CmsPublishDialog extends CmsPopup {
     }
 
     /**
-     * Ensures all style sheets are loaded.<p>
+     * Executes the specified action for the selected resources.<p>
+     * 
+     * @param actionKey the workflow action
      */
-    public void initCss() {
+    public void executeAction(CmsWorkflowAction actionKey) {
 
-        I_CmsPublishLayoutBundle.INSTANCE.publishCss().ensureInjected();
+        (new CmsPublishAction(actionKey)).execute();
+    }
+
+    /**
+     * Gets the failure message.<p>
+     * 
+     * @return the failure message 
+     */
+    public String getFailureMessage() {
+
+        return m_failureMessage;
+    }
+
+    /**
+     * Gets the last workflow action.<p>
+     * 
+     * @return the last workflow action 
+     */
+    public CmsWorkflowAction getLastAction() {
+
+        return m_lastAction;
+    }
+
+    /**
+     * Returns the current publish options.<p>
+     * 
+     * @return a publish options bean
+     */
+    public CmsPublishOptions getPublishOptions() {
+
+        return m_publishOptions;
+    }
+
+    /**
+     * Gets the publish dialog state.<p>
+     * 
+     * @return the publish dialog state 
+     */
+    public State getState() {
+
+        return m_state;
+    }
+
+    /**
+     * Checks whether the publish dialog has failed.<p>
+     * 
+     * @return checks whether the publish dialog has succeeded 
+     */
+    public boolean hasFailed() {
+
+        return m_state == State.failure;
+    }
+
+    /**
+     * Checks whether the publish dialog has succeeded.<p>
+     * 
+     * @return true if the publish dialog has succeeded 
+     */
+    public boolean hasSucceeded() {
+
+        return m_state == State.success;
     }
 
     /**
@@ -268,16 +391,33 @@ public class CmsPublishDialog extends CmsPopup {
      */
     public void onCancel() {
 
-        hide();
-    }
+        final List<CmsUUID> toRemove = m_publishSelectPanel.m_model.getIdsOfAlreadyPublishedResources();
+        if (toRemove.isEmpty()) {
+            hide();
+        } else {
+            CmsRpcAction<CmsWorkflowResponse> action = new CmsRpcAction<CmsWorkflowResponse>() {
 
-    /**
-     * Method which is called when the publish options are changed.<p>
-     */
-    public void onChangeOptions() {
+                @Override
+                public void execute() {
 
-        CmsPublishOptions options = m_publishSelectPanel.getPublishOptions();
-        (new CmsPublishListAction(options)).execute();
+                    start(0, true);
+                    CmsWorkflowActionParams params = getWorkflowActionParams();
+                    getService().executeAction(
+                        new CmsWorkflowAction(CmsWorkflowAction.ACTION_CANCEL, "", true),
+                        params,
+                        this);
+                }
+
+                @Override
+                protected void onResponse(CmsWorkflowResponse result) {
+
+                    stop(false);
+                    hide();
+
+                }
+            };
+            action.execute();
+        }
     }
 
     /**
@@ -293,9 +433,9 @@ public class CmsPublishDialog extends CmsPopup {
      * 
      * @param groups the groups of the publish list
      */
-    public void onReceivePublishList(List<CmsPublishGroup> groups) {
+    public void onReceivePublishList(CmsPublishGroupList groups) {
 
-        m_publishSelectPanel.setGroups(groups, true);
+        m_publishSelectPanel.setGroupList(groups, true);
         setPanel(PANEL_SELECT);
         if (!isVisible()) {
             center();
@@ -307,30 +447,41 @@ public class CmsPublishDialog extends CmsPopup {
      * 
      * @param brokenResources the list of broken resources
      */
-    public void onReceiveStatus(List<CmsPublishResource> brokenResources) {
+    public void onReceiveStatus(CmsWorkflowResponse brokenResources) {
 
-        if (brokenResources.isEmpty()) {
+        if (brokenResources.isSuccess()) {
+            succeed();
             hide();
+            CmsNotification.get().send(
+                CmsNotification.Type.NORMAL,
+                org.opencms.gwt.client.Messages.get().key(org.opencms.gwt.client.Messages.GUI_DONE_0));
+
         } else {
-            m_brokenLinksPanel.setEntries(brokenResources);
+            m_failureMessage = brokenResources.getMessage();
+            m_state = State.failure;
+            m_brokenLinksPanel.setEntries(brokenResources.getResources(), brokenResources.getAvailableActions());
             setPanel(PANEL_BROKEN_LINKS);
         }
     }
 
     /**
-     * Method which is called when the "force publish" button is pressed.<p>    
+     * Sets the include related resources option.<p>
+     * 
+     * @param includeRelated the include related option
      */
-    public void onRequestForcePublish() {
+    public void setIncludeRelated(boolean includeRelated) {
 
-        (new CmsPublishAction(true)).execute();
+        m_publishOptions.setIncludeRelated(includeRelated);
     }
 
     /**
-     * Method which is called when the publish button is pressed.<p>     
+     * Sets the include sibling resources option.<p>
+     * 
+     * @param includeSiblings the include siblings option
      */
-    public void onRequestPublish() {
+    public void setIncludeSiblings(boolean includeSiblings) {
 
-        (new CmsPublishAction(false)).execute();
+        m_publishOptions.setIncludeSiblings(includeSiblings);
     }
 
     /**
@@ -346,10 +497,104 @@ public class CmsPublishDialog extends CmsPopup {
             for (CmsPushButton button : m_publishSelectPanel.getButtons()) {
                 addButton(button);
             }
+            m_publishSelectPanel.updateDialogTitle();
         } else if (panelId == PANEL_BROKEN_LINKS) {
             for (CmsPushButton button : m_brokenLinksPanel.getButtons()) {
                 addButton(button);
             }
+            m_brokenLinksPanel.updateTitle();
         }
     }
+
+    /**
+     * Sets the selected project id.<p>
+     * 
+     * @param projectId the project id
+     */
+    public void setProjectId(CmsUUID projectId) {
+
+        m_publishOptions.setProjectId(projectId);
+    }
+
+    /**
+     * Sets the selected workflow id.<p>
+     * 
+     * @param workflowId the workflow id
+     */
+    public void setWorkflowId(String workflowId) {
+
+        m_workflowId = workflowId;
+        if (!m_workflows.containsKey(workflowId)) {
+            m_workflowId = "WORKFLOW_PUBLISH";
+        }
+    }
+
+    /**
+     * Sets the publish dialog state to 'success'.<p>
+     */
+    public void succeed() {
+
+        m_state = State.success;
+        CmsCoreProvider.get().fireEvent(new CmsPublishEvent());
+    }
+
+    /**
+     * Method which is called when the publish options are changed.<p>
+     */
+    public void updateResourceList() {
+
+        (new CmsPublishListAction()).execute();
+    }
+
+    /**
+     * Returns the selected workflow.<p>
+     * 
+     * @return the selected workflow
+     */
+    protected CmsWorkflow getSelectedWorkflow() {
+
+        return m_workflows.get(m_workflowId);
+    }
+
+    /**
+     * Gets the workflow action parameters to which the workflow action should be applied.<p>
+     * 
+     * @return the workflow action parameters 
+     */
+    protected CmsWorkflowActionParams getWorkflowActionParams() {
+
+        if (m_publishSelectPanel.isShowResources()) {
+            List<CmsUUID> resourcesToPublish = new ArrayList<CmsUUID>(m_publishSelectPanel.getResourcesToPublish());
+            List<CmsUUID> resourcesToRemove = new ArrayList<CmsUUID>(m_publishSelectPanel.getResourcesToRemove());
+            CmsWorkflowActionParams actionParams = new CmsWorkflowActionParams(resourcesToPublish, resourcesToRemove);
+            return actionParams;
+        } else {
+            CmsPublishOptions options = getPublishOptions();
+            CmsWorkflow workflow = getSelectedWorkflow();
+            return new CmsWorkflowActionParams(new CmsPublishListToken(workflow, options));
+
+        }
+    }
+
+    /**
+     * Sets the last workflow action.<p>
+     * 
+     * @param action a workflow action 
+     */
+    protected void setLastAction(CmsWorkflowAction action) {
+
+        m_lastAction = action;
+    }
+
+    /**
+     * Ensures all style sheets are loaded.<p>
+     */
+    private void initCss() {
+
+        if (!CSS_INITIALIZED) {
+            I_CmsPublishLayoutBundle.INSTANCE.publishCss().ensureInjected();
+            CSS_INITIALIZED = true;
+        }
+    }
+
 }

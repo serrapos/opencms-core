@@ -62,7 +62,7 @@ public class CmsImportFolder {
     private CmsObject m_cms;
 
     /** The names of resources that have been created or replaced during the import. */
-    private List<String> m_createdResourceNames;
+    private List<CmsResource> m_importedResources = new ArrayList<CmsResource>();
 
     /** The name of the import folder to load resources from. */
     private String m_importFolderName;
@@ -79,7 +79,7 @@ public class CmsImportFolder {
     /** The import resource ZIP stream to load resources from. */
     private ZipInputStream m_zipStreamIn;
 
-    /**
+    /** 
      * Default Constructor.<p>
      */
     public CmsImportFolder() {
@@ -119,13 +119,13 @@ public class CmsImportFolder {
     }
 
     /**
-     * Returns the names of resources that have been created or replaced during the import.<p>
-     *
-     * @return the names of resources that have been created or replaced during the import
+     * Returns the list of imported resources.<p>
+     * 
+     * @return the list of imported resources
      */
-    public List<String> getCreatedResourceNames() {
+    public List<CmsResource> getImportedResources() {
 
-        return m_createdResourceNames;
+        return m_importedResources;
     }
 
     /**
@@ -139,7 +139,7 @@ public class CmsImportFolder {
     public void importFolder(String importFolderName, String importPath, CmsObject cms) throws CmsException {
 
         try {
-            m_createdResourceNames = new ArrayList<String>();
+            m_importedResources = new ArrayList<CmsResource>();
             m_importFolderName = importFolderName;
             m_importPath = importPath;
             m_cms = cms;
@@ -177,7 +177,6 @@ public class CmsImportFolder {
      */
     public void importZip(byte[] content, String importPath, CmsObject cms, boolean noSubFolder) throws CmsException {
 
-        m_createdResourceNames = new ArrayList<String>();
         m_importPath = importPath;
         m_cms = cms;
         try {
@@ -240,7 +239,9 @@ public class CmsImportFolder {
 
             if (currentFile.isDirectory()) {
                 // create directory in cms
-                m_cms.createResource(importPath + currentFile.getName(), CmsResourceTypeFolder.RESOURCE_TYPE_ID);
+                m_importedResources.add(m_cms.createResource(
+                    importPath + currentFile.getName(),
+                    CmsResourceTypeFolder.RESOURCE_TYPE_ID));
                 importResources(currentFile, importPath + currentFile.getName() + "/");
             } else {
                 // import file into cms
@@ -248,14 +249,21 @@ public class CmsImportFolder {
                 byte[] content = CmsFileUtil.readFile(currentFile);
                 // create the file
                 try {
-                    m_cms.createResource(importPath + currentFile.getName(), type, content, null);
+                    m_importedResources.add(m_cms.createResource(
+                        importPath + currentFile.getName(),
+                        type,
+                        content,
+                        null));
                 } catch (CmsSecurityException e) {
                     // in case of not enough permissions, try to create a plain text file
                     int plainId = OpenCms.getResourceManager().getResourceType(CmsResourceTypePlain.getStaticTypeName()).getTypeId();
-                    m_cms.createResource(importPath + currentFile.getName(), plainId, content, null);
+                    m_importedResources.add(m_cms.createResource(
+                        importPath + currentFile.getName(),
+                        plainId,
+                        content,
+                        null));
                 }
                 content = null;
-                m_createdResourceNames.add(importPath + currentFile.getName());
             }
         }
     }
@@ -272,8 +280,7 @@ public class CmsImportFolder {
      */
     private void importZipResource(ZipInputStream zipStreamIn, String importPath, boolean noSubFolder) throws Exception {
 
-        int todo = 0;
-        // TODO: this method looks very crude, it should be re-written sometime...
+        // HACK: this method looks very crude, it should be re-written sometime...
 
         boolean isFolder = false;
         int j, r, stop, size;
@@ -317,7 +324,10 @@ public class CmsImportFolder {
             // now write the folders ...
             for (r = 0; r < stop; r++) {
                 try {
-                    m_cms.createResource(actImportPath + path[r], CmsResourceTypeFolder.RESOURCE_TYPE_ID);
+                    CmsResource createdFolder = m_cms.createResource(
+                        actImportPath + path[r],
+                        CmsResourceTypeFolder.RESOURCE_TYPE_ID);
+                    m_importedResources.add(createdFolder);
                 } catch (CmsException e) {
                     // of course some folders did already exist!
                 }
@@ -350,9 +360,11 @@ public class CmsImportFolder {
                     byte[] contents = file.getContents();
                     try {
                         m_cms.replaceResource(filename, res.getTypeId(), buffer, new ArrayList<CmsProperty>(0));
+                        m_importedResources.add(res);
                     } catch (CmsSecurityException e) {
                         // in case of not enough permissions, try to create a plain text file
                         m_cms.replaceResource(filename, plainId, buffer, new ArrayList<CmsProperty>(0));
+                        m_importedResources.add(res);
                     } catch (CmsDbSqlException sqlExc) {
                         // SQL error, probably the file is too large for the database settings, restore content
                         file.setContents(contents);
@@ -374,10 +386,10 @@ public class CmsImportFolder {
                     }
                     properties.add(titleProp);
                     try {
-                        m_cms.createResource(newResName, type, buffer, properties);
+                        m_importedResources.add(m_cms.createResource(newResName, type, buffer, properties));
                     } catch (CmsSecurityException e) {
                         // in case of not enough permissions, try to create a plain text file
-                        m_cms.createResource(newResName, plainId, buffer, properties);
+                        m_importedResources.add(m_cms.createResource(newResName, plainId, buffer, properties));
                     } catch (CmsDbSqlException sqlExc) {
                         // SQL error, probably the file is too large for the database settings, delete file
                         m_cms.lockResource(newResName);
@@ -385,7 +397,6 @@ public class CmsImportFolder {
                         throw sqlExc;
                     }
                 }
-                m_createdResourceNames.add(filename);
             }
 
             // close the entry ...

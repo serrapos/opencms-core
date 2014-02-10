@@ -257,7 +257,7 @@ public abstract class A_CmsAjaxGallery extends CmsDialog {
 
         try {
             // first get the class of the gallery
-            Class galleryClass = Class.forName(template.getResourceType().getFolderClassName());
+            Class<?> galleryClass = Class.forName(template.getResourceType().getFolderClassName());
             // create a new instance and cast to a gallery
             A_CmsAjaxGallery galleryInstance = (A_CmsAjaxGallery)galleryClass.newInstance();
             // set the type name and id
@@ -410,7 +410,7 @@ public abstract class A_CmsAjaxGallery extends CmsDialog {
             if (CmsStringUtil.isNotEmpty(getParamGalleryPath())) {
                 try {
                     // set last used gallery in settings to current gallery
-                    getSettings().setLastUsedGallery(getGalleryTypeId(), getParamGalleryPath());
+                    getSettings().setLastUsedGallery("" + getGalleryTypeId(), getParamGalleryPath());
                     CmsResourceFilter filter;
                     if (resTypeId == -1) {
                         // filter all resources that are files
@@ -783,7 +783,7 @@ public abstract class A_CmsAjaxGallery extends CmsDialog {
      */
     protected void buildJsonGalleryList() {
 
-        String lastUsed = getSettings().getLastUsedGallery(getGalleryTypeId());
+        String lastUsed = getSettings().getLastUsedGallery("" + getGalleryTypeId());
         // check the value of last Used, if gallery is opened for the first time
         if (CmsStringUtil.isEmpty(lastUsed)) {
             // start gallery settings for this gallery type for the current user
@@ -882,10 +882,12 @@ public abstract class A_CmsAjaxGallery extends CmsDialog {
             // 2: substituted file item url
             jsonObj.put("linkpath", getJsp().link(sitePath));
             // 3: file item title
-            jsonObj.put("title", CmsStringUtil.escapeJavaScript(getJsp().property(
-                CmsPropertyDefinition.PROPERTY_TITLE,
-                sitePath,
-                res.getName())));
+            jsonObj.put(
+                "title",
+                CmsStringUtil.escapeJavaScript(getJsp().property(
+                    CmsPropertyDefinition.PROPERTY_TITLE,
+                    sitePath,
+                    res.getName())));
             // 4: file size (in kb)
             jsonObj.put("size", (res.getLength() / 1024)
                 + " "
@@ -1168,7 +1170,7 @@ public abstract class A_CmsAjaxGallery extends CmsDialog {
         // set the dialog type
         setParamDialogtype(LISTMODE_GALLERY);
         if (CmsStringUtil.isEmpty(getParamGalleryPath())) {
-            String lastUsedGallery = getSettings().getLastUsedGallery(getGalleryTypeId());
+            String lastUsedGallery = getSettings().getLastUsedGallery("" + getGalleryTypeId());
             if (CmsStringUtil.isNotEmpty(lastUsedGallery)) {
                 // set the resourcepath of the last used gallery if the resource is not deleted
                 try {

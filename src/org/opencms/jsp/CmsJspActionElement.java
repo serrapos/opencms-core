@@ -628,7 +628,11 @@ public class CmsJspActionElement extends CmsJspBean {
      * @param editable flag to indicate if direct edit should be enabled for the element 
      * @param parameterMap a map of the request parameters
      */
+<<<<<<< HEAD
     public void includeSilent(String target, String element, boolean editable, Map<String, ?> parameterMap) {
+=======
+    public void includeSilent(String target, String element, boolean editable, Map<String, Object> parameterMap) {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
         try {
             include(target, element, editable, parameterMap);
@@ -649,7 +653,11 @@ public class CmsJspActionElement extends CmsJspBean {
      * @param element the element (template selector) to display from the target
      * @param parameterMap a map of the request parameters
      */
+<<<<<<< HEAD
     public void includeSilent(String target, String element, Map<String, ?> parameterMap) {
+=======
+    public void includeSilent(String target, String element, Map<String, Object> parameterMap) {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
         try {
             include(target, element, parameterMap);

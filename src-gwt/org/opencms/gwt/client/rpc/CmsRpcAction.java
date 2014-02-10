@@ -27,15 +27,15 @@
 
 package org.opencms.gwt.client.rpc;
 
-import org.opencms.gwt.CmsRpcException;
 import org.opencms.gwt.client.Messages;
 import org.opencms.gwt.client.ui.CmsErrorDialog;
 import org.opencms.gwt.client.ui.CmsNotification;
-import org.opencms.gwt.client.util.CmsClientStringUtil;
 
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.shared.UmbrellaException;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.rpc.StatusCodeException;
 
 /**
  * Consistently manages RPCs errors and 'loading' state.<p>
@@ -82,22 +82,15 @@ public abstract class CmsRpcAction<T> implements AsyncCallback<T> {
      */
     public void onFailure(Throwable t) {
 
-        String message;
-        StackTraceElement[] trace;
-        if (t instanceof CmsRpcException) {
-            CmsRpcException ex = (CmsRpcException)t;
-            message = ex.getOriginalMessage();
-            trace = ex.getOriginalStackTrace();
+        // a status code exception indicates the session is no longer valid
+        if ((t instanceof StatusCodeException) && (((StatusCodeException)t).getStatusCode() == 500)) {
+            CmsErrorDialog dialog = new CmsErrorDialog(Messages.get().key(Messages.GUI_SESSION_EXPIRED_0), null);
+            dialog.center();
         } else {
-            message = CmsClientStringUtil.getMessage(t);
-            trace = t.getStackTrace();
+            CmsErrorDialog.handleException(t);
         }
-        // send the ticket to the server
-        String ticket = CmsLog.log(message + "\n" + CmsClientStringUtil.getStackTraceAsString(trace, "\n"));
-
         // remove the overlay
         stop(false);
-        provideFeedback(ticket, t);
     }
 
     /**
@@ -111,8 +104,14 @@ public abstract class CmsRpcAction<T> implements AsyncCallback<T> {
         } catch (UmbrellaException exception) {
             Throwable wrappedException = exception.getCauses().iterator().next();
             onFailure(wrappedException);
+            if (!GWT.isProdMode()) {
+                throw exception;
+            }
         } catch (RuntimeException error) {
             onFailure(error);
+            if (!GWT.isProdMode()) {
+                throw error;
+            }
         }
     }
 
@@ -181,46 +180,6 @@ public abstract class CmsRpcAction<T> implements AsyncCallback<T> {
      * @see AsyncCallback#onSuccess(Object)
      */
     protected abstract void onResponse(T result);
-
-    /**
-     * Provides some feedback to the user in case of failure.<p>
-     * 
-     * @param ticket the generated ticket
-     * @param throwable the thrown error
-     */
-    protected void provideFeedback(String ticket, Throwable throwable) {
-
-        String message;
-        String cause = null;
-        String className;
-        StackTraceElement[] trace;
-        if (throwable instanceof CmsRpcException) {
-            CmsRpcException ex = (CmsRpcException)throwable;
-            message = ex.getOriginalMessage();
-            cause = ex.getOriginalCauseMessage();
-            className = ex.getOriginalClassName();
-            trace = ex.getOriginalStackTrace();
-        } else {
-            message = CmsClientStringUtil.getMessage(throwable);
-            if (throwable.getCause() != null) {
-                cause = CmsClientStringUtil.getMessage(throwable.getCause());
-            }
-            className = throwable.getClass().getName();
-            trace = throwable.getStackTrace();
-        }
-
-        String lineBreak = "<br />\n";
-        String errorMessage = message == null
-        ? className + ": " + Messages.get().key(Messages.GUI_NO_DESCIPTION_0)
-        : message;
-        if (cause != null) {
-            errorMessage += lineBreak + Messages.get().key(Messages.GUI_REASON_0) + ":" + cause;
-        }
-
-        String details = Messages.get().key(Messages.GUI_TICKET_MESSAGE_3, ticket, className, message)
-            + CmsClientStringUtil.getStackTraceAsString(trace, lineBreak);
-        new CmsErrorDialog(errorMessage, details).center();
-    }
 
     /**
      * Shows the 'loading message'.<p>

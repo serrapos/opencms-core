@@ -52,7 +52,7 @@ import org.apache.commons.logging.Log;
  * 
  * @since 6.1.3 
  */
-public class CmsDecorationMap implements Comparable {
+public class CmsDecorationMap implements Comparable<CmsDecorationMap> {
 
     /** The seperator for the CSV file. */
     public static final String CSV_SEPERATOR = "|";
@@ -61,7 +61,7 @@ public class CmsDecorationMap implements Comparable {
     private static final Log LOG = CmsLog.getLog(CmsDecorationMap.class);
 
     /** The map to store all elements in. */
-    private Map m_decorationMap;
+    private Map<String, CmsDecorationObject> m_decorationMap;
 
     /** The decorator defintion to be used for this decoration map. */
     private CmsDecorationDefintion m_decoratorDefinition;
@@ -84,7 +84,7 @@ public class CmsDecorationMap implements Comparable {
         m_decoratorDefinition = decDef;
         m_name = name;
         m_locale = locale;
-        m_decorationMap = new HashMap();
+        m_decorationMap = new HashMap<String, CmsDecorationObject>();
     }
 
     /**
@@ -108,18 +108,15 @@ public class CmsDecorationMap implements Comparable {
     /**
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
-    public int compareTo(Object o) {
+    public int compareTo(CmsDecorationMap o) {
 
-        int compValue = 0;
-        if (o instanceof CmsDecorationMap) {
-            compValue = m_name.compareTo(((CmsDecorationMap)o).getName());
-        }
-        return compValue;
+        return m_name.compareTo(o.getName());
     }
 
     /**
      * @see java.lang.Object#equals(java.lang.Object)
      */
+    @Override
     public boolean equals(Object obj) {
 
         if (obj == this) {
@@ -136,7 +133,7 @@ public class CmsDecorationMap implements Comparable {
      *
      * @return the decorationMap
      */
-    public Map getDecorationMap() {
+    public Map<String, CmsDecorationObject> getDecorationMap() {
 
         return m_decorationMap;
     }
@@ -164,6 +161,7 @@ public class CmsDecorationMap implements Comparable {
     /**
      * @see java.lang.Object#hashCode()
      */
+    @Override
     public int hashCode() {
 
         return m_name.hashCode();
@@ -174,7 +172,7 @@ public class CmsDecorationMap implements Comparable {
      *
      * @param decorationMap the decorationMap to set
      */
-    public void setDecorationMap(Map decorationMap) {
+    public void setDecorationMap(Map<String, CmsDecorationObject> decorationMap) {
 
         m_decorationMap = decorationMap;
     }
@@ -182,6 +180,7 @@ public class CmsDecorationMap implements Comparable {
     /**
      * @see java.lang.Object#toString()
      */
+    @Override
     public String toString() {
 
         StringBuffer buf = new StringBuffer();
@@ -224,7 +223,7 @@ public class CmsDecorationMap implements Comparable {
      * @return decoration map, using decoration as key and decoration description as value
      * @throws CmsException if something goes wrong
      */
-    private Map fillMap(CmsObject cms, CmsResource res) throws CmsException {
+    private Map<String, CmsDecorationObject> fillMap(CmsObject cms, CmsResource res) throws CmsException {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug(Messages.get().getBundle().key(
@@ -233,7 +232,7 @@ public class CmsDecorationMap implements Comparable {
                 m_decoratorDefinition));
         }
 
-        Map decMap = new HashMap();
+        Map<String, CmsDecorationObject> decMap = new HashMap<String, CmsDecorationObject>();
         // upgrade the resource to get the file content
         CmsFile file = cms.readFile(res);
         // get all the entries
@@ -255,7 +254,7 @@ public class CmsDecorationMap implements Comparable {
                 CmsStringUtil.escapeJavaScript(delimiter)));
         }
 
-        List entries = CmsStringUtil.splitAsList(unparsedContent, delimiter);
+        List<String> entries = CmsStringUtil.splitAsList(unparsedContent, delimiter);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug(Messages.get().getBundle().key(
@@ -263,10 +262,10 @@ public class CmsDecorationMap implements Comparable {
                 res.getName(),
                 entries));
         }
-        Iterator i = entries.iterator();
+        Iterator<String> i = entries.iterator();
         while (i.hasNext()) {
             try {
-                String entry = (String)i.next();
+                String entry = i.next();
                 // extract key and value
                 if (CmsStringUtil.isNotEmpty(entry)) {
                     int speratator = entry.indexOf(CSV_SEPERATOR);

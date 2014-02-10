@@ -1,4 +1,8 @@
+@external html-face;
+
 .popup, .popupContent{}
+
+
 
 .menuPanel{ /* the panel (table) the context menu is set as widget. */
 	background: value("constants.css.backgroundColorDialog");
@@ -16,6 +20,7 @@ div.cmsMenuBar { /* the outer menu bar */
 	border-style: solid;
 	border-width: 1px 0px 0px 0px;
 	border-color: value("constants.css.borderColor");
+	display: block;
 }
 .cmsMenuBar .cmsMenuItem:first-child {
 	border: 0;
@@ -26,22 +31,27 @@ div.cmsMenuBar { /* the outer menu bar */
 	background-position: 50% 50%;
 	height: auto;
 }
-.cmsMenuBar .cmsMenuItem.disabled { /* menu item disabled */
+.cmsMenuBar .cmsMenuItem.disabled, .cmsMenuBar .cmsMenuItem.disabled .label, .cmsMenuBar .cmsMenuItem.disabled .html-face { /* menu item disabled */
 	color: value("constants.css.textColorDisabled");
 	cursor: default;
 }
-.cmsMenuBar .cmsMenuItem .image { /* image for a menu item */
-	float: left;
-	margin: 3px 0px 0px 2px;
-	height: 16px;
-	width: 16px;
-	overflow: hidden;
-}
-.cmsMenuBar .cmsMenuItem .label { /* menu item label */
-	padding: 4px 4px 4px 0px;
-	margin: 0px 0px 0px 26px;
+.cmsMenuBar .cmsMenuItem .label, .cmsMenuBar .cmsMenuItem .html-face { /* menu item label */
+	padding: 4px;
+	margin: 0px 0px 0px 16px;
 	font-size: value("constants.css.fontSizeBig");
+	text-align: left;
 }
+
+.cmsMenuItem .iconBox { 
+	float: left;
+	width: 24px; 
+	padding-top: 4px;
+}
+
+.cmsMenuBar .cmsMenuItem .html-face > span{
+	margin-right: 6px;
+}
+
 .cmsMenuBar .cmsMenuItem .arrow { /* symbol for sub menus */
 	float: right;
 	margin-right: 2px;
@@ -61,28 +71,10 @@ div.cmsMenuBar { /* the outer menu bar */
 }
 div.menuInfoLabel {
 	background-color: value("constants.css.backgroundColorDialog");
-	padding: 4px;
+	font-size: value("constants.css.fontSizeBig");
+	padding: 8px 26px;
 	cursor: default;
 }
-
-.cmsMenuBar .cmsMenuItem .itemIcon {
-	float: left;
-	margin-top: 1px;
-}
-@if user.agent ie6 {
-	.cmsMenuBar .cmsMenuItem.disabled .itemIcon {
-		filter: literal("alpha(opacity = 50)");
-	}
-} @elif user.agent ie8 {
-	.cmsMenuBar .cmsMenuItem.disabled .itemIcon {
-		-ms-filter: "alpha(opacity = 50)";
-	}
-} @else {
-	.cmsMenuBar .cmsMenuItem.disabled .itemIcon {
-        opacity: 0.5;
-	}
-}
-
 
 @if user.agent ie6 { /* IE6 HACK for the separator */
 	.cmsMenuBar .menuItemSeparator {
@@ -101,3 +93,10 @@ div.menuInfoLabel {
 	border-top-left-radius: 8px;
 	border-top-right-radius: 8px;
 }
+<<<<<<< HEAD
+=======
+
+
+
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485

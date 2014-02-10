@@ -30,6 +30,7 @@ package org.opencms.synchronize;
 import org.opencms.db.CmsDbIoException;
 import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsProperty;
 import org.opencms.file.CmsResource;
 import org.opencms.file.CmsResourceFilter;
 import org.opencms.file.types.CmsResourceTypeFolder;
@@ -51,6 +52,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 
@@ -77,7 +79,7 @@ public class CmsSynchronize {
     private static final Log LOG = CmsLog.getLog(CmsSynchronize.class);
 
     /** List to store all file modification interface implementations. */
-    private static List m_synchronizeModifications = new ArrayList();
+    private static List<I_CmsSynchronizeModification> m_synchronizeModifications = new ArrayList<I_CmsSynchronizeModification>();
 
     /** The CmsObject. */
     private CmsObject m_cms;
@@ -89,13 +91,13 @@ public class CmsSynchronize {
     private String m_destinationPathInRfs;
 
     /** Hash map for the new synchronization list of the current sync process. */
-    private HashMap m_newSyncList;
+    private HashMap<String, CmsSynchronizeList> m_newSyncList;
 
     /** The report to write the output to. */
     private I_CmsReport m_report;
 
     /** Hash map for the synchronization list of the last sync process. */
-    private HashMap m_syncList;
+    private HashMap<String, CmsSynchronizeList> m_syncList;
 
     /**
      * Creates a new CmsSynchronize object which automatically start the 
@@ -145,18 +147,20 @@ public class CmsSynchronize {
 
             // create the sync list for this run
             m_syncList = readSyncList();
-            m_newSyncList = new HashMap();
+            m_newSyncList = new HashMap<String, CmsSynchronizeList>();
 
-            Iterator i = settings.getSourceListInVfs().iterator();
+            Iterator<String> i = settings.getSourceListInVfs().iterator();
             while (i.hasNext()) {
                 // iterate all source folders
-                String sourcePathInVfs = (String)i.next();
+                String sourcePathInVfs = i.next();
                 String destPath = m_destinationPathInRfs + sourcePathInVfs.replace('/', File.separatorChar);
 
-                report.println(org.opencms.workplace.threads.Messages.get().container(
-                    org.opencms.workplace.threads.Messages.RPT_SYNCHRONIZE_FOLDERS_2,
-                    sourcePathInVfs,
-                    destPath), I_CmsReport.FORMAT_HEADLINE);
+                report.println(
+                    org.opencms.workplace.threads.Messages.get().container(
+                        org.opencms.workplace.threads.Messages.RPT_SYNCHRONIZE_FOLDERS_2,
+                        sourcePathInVfs,
+                        destPath),
+                    I_CmsReport.FORMAT_HEADLINE);
                 // synchronize the VFS and the RFS
                 syncVfsToRfs(sourcePathInVfs);
             }
@@ -167,7 +171,7 @@ public class CmsSynchronize {
 
             while (i.hasNext()) {
                 // add new files from the RFS
-                copyFromRfs((String)i.next());
+                copyFromRfs(i.next());
             }
 
             // write the sync list
@@ -209,9 +213,11 @@ public class CmsSynchronize {
         } catch (CmsException e) {
             // the folder could not be read, so create it
             String foldername = translate(folder);
-            m_report.print(org.opencms.report.Messages.get().container(
-                org.opencms.report.Messages.RPT_SUCCESSION_1,
-                String.valueOf(m_count++)), I_CmsReport.FORMAT_NOTE);
+            m_report.print(
+                org.opencms.report.Messages.get().container(
+                    org.opencms.report.Messages.RPT_SUCCESSION_1,
+                    String.valueOf(m_count++)),
+                I_CmsReport.FORMAT_NOTE);
             m_report.print(Messages.get().container(Messages.RPT_IMPORT_FOLDER_0), I_CmsReport.FORMAT_NOTE);
             m_report.print(org.opencms.report.Messages.get().container(
                 org.opencms.report.Messages.RPT_ARGUMENT_1,
@@ -225,10 +231,10 @@ public class CmsSynchronize {
             CmsResource newFolder = m_cms.createResource(foldername, CmsResourceTypeFolder.RESOURCE_TYPE_ID);
             // now check if there is some external method to be called which 
             // should modify the imported resource in the VFS
-            Iterator i = m_synchronizeModifications.iterator();
+            Iterator<I_CmsSynchronizeModification> i = m_synchronizeModifications.iterator();
             while (i.hasNext()) {
                 try {
-                    ((I_CmsSynchronizeModification)i.next()).modifyVfs(m_cms, newFolder, fsFile);
+                    i.next().modifyVfs(m_cms, newFolder, fsFile);
                 } catch (CmsSynchronizeException e1) {
                     break;
                 }
@@ -255,6 +261,9 @@ public class CmsSynchronize {
 
             // now loop through all resources
             for (int i = 0; i < res.length; i++) {
+                if (isExcluded(res[i])) {
+                    continue;
+                }
                 // get the relative filename
                 String resname = res[i].getAbsolutePath();
                 resname = resname.substring(m_destinationPathInRfs.length());
@@ -325,9 +334,11 @@ public class CmsSynchronize {
 
         String resourcename = m_cms.getSitePath(res);
 
-        m_report.print(org.opencms.report.Messages.get().container(
-            org.opencms.report.Messages.RPT_SUCCESSION_1,
-            String.valueOf(m_count++)), I_CmsReport.FORMAT_NOTE);
+        m_report.print(
+            org.opencms.report.Messages.get().container(
+                org.opencms.report.Messages.RPT_SUCCESSION_1,
+                String.valueOf(m_count++)),
+            I_CmsReport.FORMAT_NOTE);
         if (res.isFile()) {
             m_report.print(Messages.get().container(Messages.RPT_DEL_FILE_0), I_CmsReport.FORMAT_NOTE);
         } else {
@@ -365,7 +376,7 @@ public class CmsSynchronize {
         // to get the name of the file in the FS, we must look it up in the
         // sync list. This is necessary, since the VFS could use a translated
         // filename.
-        CmsSynchronizeList sync = (CmsSynchronizeList)m_syncList.get(translate(m_cms.getSitePath(res)));
+        CmsSynchronizeList sync = m_syncList.get(translate(m_cms.getSitePath(res)));
         // if no entry in the sync list was found, its a new resource and we 
         // can use the name of the VFS resource.
         if (sync != null) {
@@ -378,7 +389,7 @@ public class CmsSynchronize {
             // make a lookup in the sync list to get its original 
             // non-translated name
             String parent = CmsResource.getParentFolder(resourcename);
-            CmsSynchronizeList parentSync = (CmsSynchronizeList)m_newSyncList.get(parent);
+            CmsSynchronizeList parentSync = m_newSyncList.get(parent);
             // use the non-translated pathname
             if (parentSync != null) {
                 resourcename = parentSync.getResName() + res.getName();
@@ -393,9 +404,11 @@ public class CmsSynchronize {
             // if the resource is marked for deletion, do not export it!
             if (!res.getState().isDeleted()) {
                 // if its a file, create export the file to the FS
-                m_report.print(org.opencms.report.Messages.get().container(
-                    org.opencms.report.Messages.RPT_SUCCESSION_1,
-                    String.valueOf(m_count++)), I_CmsReport.FORMAT_NOTE);
+                m_report.print(
+                    org.opencms.report.Messages.get().container(
+                        org.opencms.report.Messages.RPT_SUCCESSION_1,
+                        String.valueOf(m_count++)),
+                    I_CmsReport.FORMAT_NOTE);
                 if (res.isFile()) {
 
                     m_report.print(Messages.get().container(Messages.RPT_EXPORT_FILE_0), I_CmsReport.FORMAT_NOTE);
@@ -421,15 +434,17 @@ public class CmsSynchronize {
                     }
                     // now check if there is some external method to be called 
                     // which should modify the exported resource in the FS
-                    Iterator i = m_synchronizeModifications.iterator();
+                    Iterator<I_CmsSynchronizeModification> i = m_synchronizeModifications.iterator();
                     while (i.hasNext()) {
                         try {
-                            ((I_CmsSynchronizeModification)i.next()).modifyFs(m_cms, vfsFile, fsFile);
+                            i.next().modifyFs(m_cms, vfsFile, fsFile);
                         } catch (CmsSynchronizeException e) {
                             if (LOG.isWarnEnabled()) {
-                                LOG.warn(Messages.get().getBundle().key(
-                                    Messages.LOG_SYNCHRONIZE_EXPORT_FAILED_1,
-                                    res.getRootPath()), e);
+                                LOG.warn(
+                                    Messages.get().getBundle().key(
+                                        Messages.LOG_SYNCHRONIZE_EXPORT_FAILED_1,
+                                        res.getRootPath()),
+                                    e);
                             }
                             break;
                         }
@@ -519,9 +534,11 @@ public class CmsSynchronize {
             // create the file
             String filename = translate(fsFile.getName());
 
-            m_report.print(org.opencms.report.Messages.get().container(
-                org.opencms.report.Messages.RPT_SUCCESSION_1,
-                String.valueOf(m_count++)), I_CmsReport.FORMAT_NOTE);
+            m_report.print(
+                org.opencms.report.Messages.get().container(
+                    org.opencms.report.Messages.RPT_SUCCESSION_1,
+                    String.valueOf(m_count++)),
+                I_CmsReport.FORMAT_NOTE);
             if (fsFile.isFile()) {
                 m_report.print(Messages.get().container(Messages.RPT_IMPORT_FILE_0), I_CmsReport.FORMAT_NOTE);
             } else {
@@ -535,7 +552,11 @@ public class CmsSynchronize {
 
             // get the file type of the FS file
             int resType = OpenCms.getResourceManager().getDefaultTypeForName(resName).getTypeId();
-            CmsResource newFile = m_cms.createResource(translate(folder) + filename, resType, content, new ArrayList());
+            CmsResource newFile = m_cms.createResource(
+                translate(folder) + filename,
+                resType,
+                content,
+                new ArrayList<CmsProperty>());
 
             m_report.print(org.opencms.report.Messages.get().container(
                 org.opencms.report.Messages.RPT_ARGUMENT_1,
@@ -544,10 +565,10 @@ public class CmsSynchronize {
 
             // now check if there is some external method to be called which
             // should modify the imported resource in the VFS
-            Iterator i = m_synchronizeModifications.iterator();
+            Iterator<I_CmsSynchronizeModification> i = m_synchronizeModifications.iterator();
             while (i.hasNext()) {
                 try {
-                    ((I_CmsSynchronizeModification)i.next()).modifyVfs(m_cms, newFile, fsFile);
+                    i.next().modifyVfs(m_cms, newFile, fsFile);
                 } catch (CmsSynchronizeException e) {
                     break;
                 }
@@ -574,6 +595,34 @@ public class CmsSynchronize {
     }
 
     /**
+     * Determine if this file is to be excluded.<p>
+     * 
+     * @param file the file to check
+     * 
+     * @return <code>true</code> if the file should be excluded from synchronization
+     */
+    private boolean isExcluded(File file) {
+
+        ArrayList<Pattern> excludes = OpenCms.getWorkplaceManager().getSynchronizeExcludePatterns();
+        for (Pattern pattern : excludes) {
+            if (pattern.matcher(file.getName()).find()) {
+                m_report.print(
+                    org.opencms.report.Messages.get().container(
+                        org.opencms.report.Messages.RPT_SUCCESSION_1,
+                        String.valueOf(m_count++)),
+                    I_CmsReport.FORMAT_NOTE);
+                m_report.print(Messages.get().container(Messages.RPT_EXCLUDING_0), I_CmsReport.FORMAT_NOTE);
+                m_report.println(org.opencms.report.Messages.get().container(
+                    org.opencms.report.Messages.RPT_ARGUMENT_1,
+                    file.getAbsolutePath().replace("\\", "/")));
+
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Reads the synchronization list from the last sync process form the file
      * system and stores the information in a HashMap. <p>
      * 
@@ -581,9 +630,9 @@ public class CmsSynchronize {
      * @return HashMap with synchronization information of the last sync process
      * @throws CmsException if something goes wrong
      */
-    private HashMap readSyncList() throws CmsException {
+    private HashMap<String, CmsSynchronizeList> readSyncList() throws CmsException {
 
-        HashMap syncList = new HashMap();
+        HashMap<String, CmsSynchronizeList> syncList = new HashMap<String, CmsSynchronizeList>();
 
         // the sync list file in the server fs
         File syncListFile;
@@ -647,6 +696,9 @@ public class CmsSynchronize {
         res = rfsFile.listFiles();
         // now loop through all resources
         for (int i = 0; i < res.length; i++) {
+            if (isExcluded(res[i])) {
+                continue;
+            }
             // get the corresponding name in the VFS
             String vfsFile = getFilenameInVfs(res[i]);
             // recurse if it is an directory, we must go depth first to delete 
@@ -657,14 +709,16 @@ public class CmsSynchronize {
             // now check if this resource is still in the old sync list.
             // if so, then it does not exist in the FS anymore andm ust be 
             // deleted
-            CmsSynchronizeList sync = (CmsSynchronizeList)m_syncList.get(translate(vfsFile));
+            CmsSynchronizeList sync = m_syncList.get(translate(vfsFile));
 
             // there is an entry, so delete the resource
             if (sync != null) {
 
-                m_report.print(org.opencms.report.Messages.get().container(
-                    org.opencms.report.Messages.RPT_SUCCESSION_1,
-                    String.valueOf(m_count++)), I_CmsReport.FORMAT_NOTE);
+                m_report.print(
+                    org.opencms.report.Messages.get().container(
+                        org.opencms.report.Messages.RPT_SUCCESSION_1,
+                        String.valueOf(m_count++)),
+                    I_CmsReport.FORMAT_NOTE);
                 if (res[i].isFile()) {
                     m_report.print(Messages.get().container(Messages.RPT_DEL_FS_FILE_0), I_CmsReport.FORMAT_NOTE);
                 } else {
@@ -695,14 +749,16 @@ public class CmsSynchronize {
 
         // add the file to the new sync list...
         String resname = m_cms.getSitePath(res);
-        CmsSynchronizeList syncList = (CmsSynchronizeList)m_syncList.get(translate(resname));
+        CmsSynchronizeList syncList = m_syncList.get(translate(resname));
         m_newSyncList.put(translate(resname), syncList);
         // .. and remove it from the old one
         m_syncList.remove(translate(resname));
         // update the report
-        m_report.print(org.opencms.report.Messages.get().container(
-            org.opencms.report.Messages.RPT_SUCCESSION_1,
-            String.valueOf(m_count++)), I_CmsReport.FORMAT_NOTE);
+        m_report.print(
+            org.opencms.report.Messages.get().container(
+                org.opencms.report.Messages.RPT_SUCCESSION_1,
+                String.valueOf(m_count++)),
+            I_CmsReport.FORMAT_NOTE);
         m_report.print(Messages.get().container(Messages.RPT_SKIPPING_0), I_CmsReport.FORMAT_NOTE);
         m_report.println(org.opencms.report.Messages.get().container(
             org.opencms.report.Messages.RPT_ARGUMENT_1,
@@ -729,10 +785,10 @@ public class CmsSynchronize {
 
         int action = 0;
         //get all resources in the given folder
-        List resources = m_cms.getResourcesInFolder(folder, CmsResourceFilter.IGNORE_EXPIRATION);
+        List<CmsResource> resources = m_cms.getResourcesInFolder(folder, CmsResourceFilter.IGNORE_EXPIRATION);
         // now look through all resources in the folder
         for (int i = 0; i < resources.size(); i++) {
-            CmsResource res = (CmsResource)resources.get(i);
+            CmsResource res = resources.get(i);
             // test if the resource is marked as deleted. if so,
             // do nothing, the corresponding file in the FS will be removed later
             if (!res.getState().isDeleted()) {
@@ -798,7 +854,7 @@ public class CmsSynchronize {
 
         if (m_syncList.containsKey(translate(resourcename))) {
             // this resource was already used in a previous synchronization process
-            CmsSynchronizeList sync = (CmsSynchronizeList)m_syncList.get(translate(resourcename));
+            CmsSynchronizeList sync = m_syncList.get(translate(resourcename));
             // get the corresponding resource from the FS
             fsFile = getFileInRfs(sync.getResName());
             // now check what to do with this resource.
@@ -853,10 +909,10 @@ public class CmsSynchronize {
 
         String translation = null;
         // test if an external translation should be used
-        Iterator i = m_synchronizeModifications.iterator();
+        Iterator<I_CmsSynchronizeModification> i = m_synchronizeModifications.iterator();
         while (i.hasNext()) {
             try {
-                translation = ((I_CmsSynchronizeModification)i.next()).translate(m_cms, name);
+                translation = i.next().translate(m_cms, name);
             } catch (CmsSynchronizeException e) {
                 if (LOG.isInfoEnabled()) {
                     LOG.info(Messages.get().getBundle().key(Messages.LOG_EXTERNAL_TRANSLATION_1, name), e);
@@ -888,12 +944,14 @@ public class CmsSynchronize {
         // sync list. This is necessary, since the VFS could use a translated
         // filename.
         String resourcename = m_cms.getSitePath(res);
-        CmsSynchronizeList sync = (CmsSynchronizeList)m_syncList.get(translate(resourcename));
+        CmsSynchronizeList sync = m_syncList.get(translate(resourcename));
         File fsFile = getFileInRfs(sync.getResName());
 
-        m_report.print(org.opencms.report.Messages.get().container(
-            org.opencms.report.Messages.RPT_SUCCESSION_1,
-            String.valueOf(m_count++)), I_CmsReport.FORMAT_NOTE);
+        m_report.print(
+            org.opencms.report.Messages.get().container(
+                org.opencms.report.Messages.RPT_SUCCESSION_1,
+                String.valueOf(m_count++)),
+            I_CmsReport.FORMAT_NOTE);
         m_report.print(Messages.get().container(Messages.RPT_UPDATE_FILE_0), I_CmsReport.FORMAT_NOTE);
         m_report.print(org.opencms.report.Messages.get().container(
             org.opencms.report.Messages.RPT_ARGUMENT_1,
@@ -914,10 +972,10 @@ public class CmsSynchronize {
         // now check if there is some external method to be called which 
         // should modify
         // the updated resource in the VFS
-        Iterator i = m_synchronizeModifications.iterator();
+        Iterator<I_CmsSynchronizeModification> i = m_synchronizeModifications.iterator();
         while (i.hasNext()) {
             try {
-                ((I_CmsSynchronizeModification)i.next()).modifyVfs(m_cms, vfsFile, fsFile);
+                i.next().modifyVfs(m_cms, vfsFile, fsFile);
             } catch (CmsSynchronizeException e) {
                 if (LOG.isInfoEnabled()) {
                     LOG.info(
@@ -1009,11 +1067,11 @@ public class CmsSynchronize {
             pOut.println(CmsSynchronizeList.getFormatDescription());
 
             // get all keys from the hash map and make an iterator on it
-            Iterator values = m_newSyncList.values().iterator();
+            Iterator<CmsSynchronizeList> values = m_newSyncList.values().iterator();
             // loop through all values and write them to the sync list file in 
             // a human readable format
             while (values.hasNext()) {
-                CmsSynchronizeList sync = (CmsSynchronizeList)values.next();
+                CmsSynchronizeList sync = values.next();
                 //fOut.write(sync.toString().getBytes());
                 pOut.println(sync.toString());
             }

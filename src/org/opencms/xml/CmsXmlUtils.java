@@ -401,6 +401,24 @@ public final class CmsXmlUtils {
     }
 
     /**
+     * Removes all Xpath indices from the given path.<p>
+     * 
+     * Example:<br>
+     * <code>title</code> is left untouched<br>
+     * <code>title[1]</code> becomes <code>title</code><br>
+     * <code>title/subtitle</code> is left untouched<br>
+     * <code>title[1]/subtitle[1]</code> becomes <code>title/subtitle</code><p>
+     * 
+     * @param path the path to remove the Xpath index from
+     * 
+     * @return the path with all Xpath indices removed
+     */
+    public static String removeAllXpathIndices(String path) {
+
+        return path.replaceAll("\\[[0-9]+\\]", "");
+    }
+
+    /**
      * Removes the first Xpath element from the path.<p>
      * 
      * If the provided path does not contain a "/" character, 
@@ -452,7 +470,7 @@ public final class CmsXmlUtils {
             p = path.indexOf("\'", p + 1);
         }
         String parentPath = path.substring(0, pos);
-        if (count % 2 == 0) {
+        if ((count % 2) == 0) {
             // if substring is complete 
             return parentPath;
         }
@@ -673,9 +691,13 @@ public final class CmsXmlUtils {
             }
             return reader.read(source);
         } catch (DocumentException e) {
-            throw new CmsXmlException(Messages.get().container(Messages.ERR_UNMARSHALLING_XML_DOC_0), e);
+            throw new CmsXmlException(Messages.get().container(
+                Messages.ERR_UNMARSHALLING_XML_DOC_1,
+                "(systemId = " + source.getSystemId() + ")"), e);
         } catch (SAXException e) {
-            throw new CmsXmlException(Messages.get().container(Messages.ERR_UNMARSHALLING_XML_DOC_0), e);
+            throw new CmsXmlException(Messages.get().container(
+                Messages.ERR_UNMARSHALLING_XML_DOC_1,
+                "(systemId = " + source.getSystemId() + ")"), e);
         }
     }
 

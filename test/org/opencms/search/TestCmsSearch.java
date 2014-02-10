@@ -29,6 +29,7 @@ package org.opencms.search;
 
 import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsProperty;
 import org.opencms.file.types.CmsResourceTypeBinary;
 import org.opencms.file.types.CmsResourceTypeFolder;
 import org.opencms.i18n.CmsEncoder;
@@ -75,6 +76,72 @@ public class TestCmsSearch extends OpenCmsTestCase {
     }
 
     /**
+     * Prints the given list of search results to STDOUT.<p>
+     * 
+     * @param searchResult the list to print
+     * @param cms the current OpenCms user context
+     */
+    public static void printResults(List<CmsSearchResult> searchResult, CmsObject cms) {
+
+        printResults(searchResult, cms, false);
+    }
+
+    /**
+     * Prints the given list of search results to STDOUT.<p>
+     * 
+     * @param searchResult the list to print
+     * @param cms the current OpenCms user context
+     * @param showExcerpt if <code>true</code>, the generated excerpt is also displayed
+     */
+    public static void printResults(List<CmsSearchResult> searchResult, CmsObject cms, boolean showExcerpt) {
+
+        Iterator<CmsSearchResult> i = searchResult.iterator();
+        int count = 0;
+        int colPath = 0;
+        int colTitle = 0;
+        while (i.hasNext()) {
+            CmsSearchResult res = i.next();
+            String path = cms.getRequestContext().removeSiteRoot(res.getPath());
+            colPath = Math.max(colPath, path.length() + 3);
+            String title = res.getField(CmsSearchField.FIELD_TITLE);
+            if (title == null) {
+                title = "";
+            } else {
+                title = title.trim();
+            }
+            colTitle = Math.max(colTitle, title.length() + 3);
+        }
+        i = searchResult.iterator();
+        while (i.hasNext()) {
+            CmsSearchResult res = i.next();
+            count++;
+            System.out.print(CmsStringUtil.padRight("" + count, 4));
+            System.out.print(CmsStringUtil.padRight(cms.getRequestContext().removeSiteRoot(res.getPath()), colPath));
+            String title = res.getField(CmsSearchField.FIELD_TITLE);
+            if (title == null) {
+                title = "";
+            } else {
+                title = title.trim();
+            }
+            System.out.print(CmsStringUtil.padRight(title, colTitle));
+            String type = res.getDocumentType();
+            if (type == null) {
+                type = "";
+            }
+            System.out.print(CmsStringUtil.padRight(type, 10));
+            if (res.getDateLastModified() != null) {
+                System.out.print(CmsStringUtil.padRight(
+                    "" + CmsDateUtil.getDateTime(res.getDateLastModified(), DateFormat.SHORT, Locale.GERMAN),
+                    17));
+            }
+            System.out.println("score: " + res.getScore());
+            if (showExcerpt) {
+                System.out.println(res.getExcerpt());
+            }
+        }
+    }
+
+    /**
      * Test suite for this test class.<p>
      * 
      * @return the test suite
@@ -93,6 +160,7 @@ public class TestCmsSearch extends OpenCmsTestCase {
         suite.addTest(new TestCmsSearch("testIndexGeneration"));
         suite.addTest(new TestCmsSearch("testQueryEncoding"));
         suite.addTest(new TestCmsSearch("testSearchIssueWithSpecialFoldernames"));
+        suite.addTest(new TestCmsSearch("testShutdownWhileIndexing"));
 
         // This test is intended only for performance/resource monitoring
         // suite.addTest(new TestCmsSearch("testCmsSearchLargeResult"));
@@ -169,7 +237,7 @@ public class TestCmsSearch extends OpenCmsTestCase {
             "org/opencms/search/pdf-test-112.pdf",
             "/test/master.pdf",
             CmsResourceTypeBinary.getStaticTypeId(),
-            Collections.EMPTY_LIST);
+            Collections.<CmsProperty> emptyList());
 
         // create a copy
         cms.copyResource("/test/master.pdf", "/test/copy.pdf");
@@ -311,52 +379,6 @@ public class TestCmsSearch extends OpenCmsTestCase {
     }
 
     /**
-     * Internal helper for test with same name.<p>
-     * 
-     * @param cms the current users OpenCms context
-     * @param folderName the folder name to perform the test in
-     * @param expected the expected result size of the search
-     * 
-     * @throws Exception in case the test fails
-     */
-    private void testCmsSearchUppercaseFolderNameUtil(CmsObject cms, String folderName, int expected) throws Exception {
-
-        if (folderName != null) {
-            // create test folder
-            cms.createResource(folderName, CmsResourceTypeFolder.RESOURCE_TYPE_ID, null, null);
-            cms.unlockResource(folderName);
-
-            // create master resource
-            importTestResource(
-                cms,
-                "org/opencms/search/pdf-test-112.pdf",
-                folderName + "master.pdf",
-                CmsResourceTypeBinary.getStaticTypeId(),
-                Collections.EMPTY_LIST);
-
-            // publish the project and update the search index
-            I_CmsReport report = new CmsShellReport(cms.getRequestContext().getLocale());
-            OpenCms.getSearchManager().rebuildIndex(INDEX_OFFLINE, report);
-        }
-
-        // search for "pdf"
-        CmsSearch cmsSearchBean = new CmsSearch();
-        cmsSearchBean.init(cms);
-        cmsSearchBean.setIndex(INDEX_OFFLINE);
-        cmsSearchBean.setQuery("+Testfile +Struktur");
-
-        if (folderName != null) {
-            CmsSearchParameters parameters = cmsSearchBean.getParameters();
-            parameters.setSearchRoots(folderName);
-            cmsSearchBean.setParameters(parameters);
-        }
-
-        List<CmsSearchResult> results = cmsSearchBean.getSearchResult();
-        printResults(results, cms);
-        assertEquals(expected, results.size());
-    }
-
-    /**
      * Test the cms search indexer.<p>
      * 
      * @throws Throwable if something goes wrong
@@ -410,7 +432,7 @@ public class TestCmsSearch extends OpenCmsTestCase {
     public void testIndexGeneration() throws Throwable {
 
         CmsSearchIndex searchIndex = new CmsSearchIndex(INDEX_TEST);
-        searchIndex.setProjectName("Offline");
+        searchIndex.setProject("Offline");
         // important: use german locale for a special treat on term analyzing
         searchIndex.setLocale(Locale.GERMAN);
         searchIndex.setRebuildMode(CmsSearchIndex.REBUILD_MODE_AUTO);
@@ -453,7 +475,7 @@ public class TestCmsSearch extends OpenCmsTestCase {
     public void testQueryEncoding() {
 
         // without encoding
-        String query = "Ölmühlmäher";
+        String query = "ï¿½lmï¿½hlmï¿½her";
         CmsSearch test = new CmsSearch();
         test.setQuery(query);
         assertEquals(query, test.getQuery());
@@ -502,67 +524,61 @@ public class TestCmsSearch extends OpenCmsTestCase {
     }
 
     /**
-     * Prints the given list of search results to STDOUT.<p>
+     * Test the cms search indexer.<p>
      * 
-     * @param searchResult the list to print
-     * @param cms the current OpenCms user context
+     * @throws Throwable if something goes wrong
      */
-    public static void printResults(List<CmsSearchResult> searchResult, CmsObject cms) {
+    public void testShutdownWhileIndexing() throws Throwable {
 
-        printResults(searchResult, cms, false);
+        I_CmsReport report = new CmsShellReport(Locale.ENGLISH);
+        // this call does not throws the rebuild index event
+        OpenCms.getSearchManager().rebuildIndex(INDEX_OFFLINE, report);
+        OpenCms.getSearchManager().shutDown();
     }
 
     /**
-     * Prints the given list of search results to STDOUT.<p>
+     * Internal helper for test with same name.<p>
      * 
-     * @param searchResult the list to print
-     * @param cms the current OpenCms user context
-     * @param showExcerpt if <code>true</code>, the generated excerpt is also displayed
+     * @param cms the current users OpenCms context
+     * @param folderName the folder name to perform the test in
+     * @param expected the expected result size of the search
+     * 
+     * @throws Exception in case the test fails
      */
-    public static void printResults(List<CmsSearchResult> searchResult, CmsObject cms, boolean showExcerpt) {
+    private void testCmsSearchUppercaseFolderNameUtil(CmsObject cms, String folderName, int expected) throws Exception {
 
-        Iterator<CmsSearchResult> i = searchResult.iterator();
-        int count = 0;
-        int colPath = 0;
-        int colTitle = 0;
-        while (i.hasNext()) {
-            CmsSearchResult res = i.next();
-            String path = cms.getRequestContext().removeSiteRoot(res.getPath());
-            colPath = Math.max(colPath, path.length() + 3);
-            String title = res.getField(CmsSearchField.FIELD_TITLE);
-            if (title == null) {
-                title = "";
-            } else {
-                title = title.trim();
-            }
-            colTitle = Math.max(colTitle, title.length() + 3);
+        if (folderName != null) {
+            // create test folder
+            cms.createResource(folderName, CmsResourceTypeFolder.RESOURCE_TYPE_ID, null, null);
+            cms.unlockResource(folderName);
+
+            // create master resource
+            importTestResource(
+                cms,
+                "org/opencms/search/pdf-test-112.pdf",
+                folderName + "master.pdf",
+                CmsResourceTypeBinary.getStaticTypeId(),
+                Collections.<CmsProperty> emptyList());
+
+            // publish the project and update the search index
+            I_CmsReport report = new CmsShellReport(cms.getRequestContext().getLocale());
+            OpenCms.getSearchManager().rebuildIndex(INDEX_OFFLINE, report);
         }
-        i = searchResult.iterator();
-        while (i.hasNext()) {
-            CmsSearchResult res = i.next();
-            count++;
-            System.out.print(CmsStringUtil.padRight("" + count, 4));
-            System.out.print(CmsStringUtil.padRight(cms.getRequestContext().removeSiteRoot(res.getPath()), colPath));
-            String title = res.getField(CmsSearchField.FIELD_TITLE);
-            if (title == null) {
-                title = "";
-            } else {
-                title = title.trim();
-            }
-            System.out.print(CmsStringUtil.padRight(title, colTitle));
-            String type = res.getDocumentType();
-            if (type == null) {
-                type = "";
-            }
-            System.out.print(CmsStringUtil.padRight(type, 10));
-            if (res.getDateLastModified() != null) {
-                System.out.print(CmsStringUtil.padRight(""
-                    + CmsDateUtil.getDateTime(res.getDateLastModified(), DateFormat.SHORT, Locale.GERMAN), 17));
-            }
-            System.out.println("score: " + res.getScore());
-            if (showExcerpt) {
-                System.out.println(res.getExcerpt());
-            }
+
+        // search for "pdf"
+        CmsSearch cmsSearchBean = new CmsSearch();
+        cmsSearchBean.init(cms);
+        cmsSearchBean.setIndex(INDEX_OFFLINE);
+        cmsSearchBean.setQuery("+Testfile +Struktur");
+
+        if (folderName != null) {
+            CmsSearchParameters parameters = cmsSearchBean.getParameters();
+            parameters.setSearchRoots(folderName);
+            cmsSearchBean.setParameters(parameters);
         }
+
+        List<CmsSearchResult> results = cmsSearchBean.getSearchResult();
+        printResults(results, cms);
+        assertEquals(expected, results.size());
     }
 }

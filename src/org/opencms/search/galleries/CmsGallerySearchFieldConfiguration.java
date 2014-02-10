@@ -33,9 +33,11 @@ import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsResource;
 import org.opencms.file.types.CmsResourceTypeXmlContent;
 import org.opencms.main.OpenCms;
+import org.opencms.search.I_CmsSearchDocument;
 import org.opencms.search.extractors.I_CmsExtractionResult;
+import org.opencms.search.fields.CmsLuceneField;
+import org.opencms.search.fields.CmsLuceneFieldConfiguration;
 import org.opencms.search.fields.CmsSearchField;
-import org.opencms.search.fields.CmsSearchFieldConfiguration;
 import org.opencms.util.CmsStringUtil;
 
 import java.util.Iterator;
@@ -43,14 +45,14 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.Field;
 
 /**
  * Describes the search field configuration that is used by the gallery index.<p>
  * 
  * @since 8.0.0 
  */
-public class CmsGallerySearchFieldConfiguration extends CmsSearchFieldConfiguration {
+public class CmsGallerySearchFieldConfiguration extends CmsLuceneFieldConfiguration {
 
     /**
      * Default constructor.<p>
@@ -58,36 +60,6 @@ public class CmsGallerySearchFieldConfiguration extends CmsSearchFieldConfigurat
     public CmsGallerySearchFieldConfiguration() {
 
         // nothing special to do here
-    }
-
-    /**
-     * Returns the locale extended name for the given lookup String.<p>
-     * 
-     * @param lookup the lookup String
-     * @param locale the locale
-     * 
-     * @return the locale extended name for the given lookup String
-     */
-    public static final String getLocaleExtendedName(String lookup, Locale locale) {
-
-        return getLocaleExtendedName(lookup, locale.toString());
-    }
-
-    /**
-     * Returns the locale extended name for the given lookup String.<p>
-     * 
-     * @param lookup the lookup String
-     * @param locale the locale
-     * 
-     * @return the locale extended name for the given lookup String
-     */
-    public static final String getLocaleExtendedName(String lookup, String locale) {
-
-        StringBuffer result = new StringBuffer(32);
-        result.append(lookup);
-        result.append('_');
-        result.append(locale);
-        return result.toString();
     }
 
     /**
@@ -103,8 +75,8 @@ public class CmsGallerySearchFieldConfiguration extends CmsSearchFieldConfigurat
      * @return the document extended by the configured field mappings
      */
     @Override
-    protected Document appendFieldMappings(
-        Document document,
+    protected I_CmsSearchDocument appendFieldMappings(
+        I_CmsSearchDocument document,
         CmsObject cms,
         CmsResource resource,
         I_CmsExtractionResult extractionResult,
@@ -119,6 +91,7 @@ public class CmsGallerySearchFieldConfiguration extends CmsSearchFieldConfigurat
             if (CmsSearchField.FIELD_TITLE.equals(fieldConfig.getName())
                 || (CmsResourceTypeXmlContent.isXmlContent(resource) && (CmsSearchField.FIELD_CONTENT.equals(fieldConfig.getName())
                     || CmsSearchField.FIELD_TITLE_UNSTORED.equals(fieldConfig.getName())
+                    || CmsSearchField.FIELD_SORT_TITLE.equals(fieldConfig.getName())
                     || CmsSearchField.FIELD_DESCRIPTION.equals(fieldConfig.getName()) || CmsSearchField.FIELD_META.equals(fieldConfig.getName())))) {
                 appendMultipleFieldMapping(
                 // XML content and special multiple language mapping field
@@ -149,7 +122,7 @@ public class CmsGallerySearchFieldConfiguration extends CmsSearchFieldConfigurat
      * Extends the given document by the gallery index special multiple language filed mappings for the given field.<p>
      * 
      * @param document the document to extend
-     * @param fieldConfig the field to create the mappings for
+     * @param field the field to create the mappings for
      * @param cms the OpenCms context used for building the search index
      * @param resource the resource that is indexed
      * @param extractionResult the plain text extraction result from the resource
@@ -158,9 +131,9 @@ public class CmsGallerySearchFieldConfiguration extends CmsSearchFieldConfigurat
      * 
      * @return the document extended by the gallery index special multiple language filed mappings for the given field
      */
-    protected Document appendMultipleFieldMapping(
-        Document document,
-        CmsSearchField fieldConfig,
+    protected I_CmsSearchDocument appendMultipleFieldMapping(
+        I_CmsSearchDocument document,
+        CmsSearchField field,
         CmsObject cms,
         CmsResource resource,
         I_CmsExtractionResult extractionResult,
@@ -168,14 +141,14 @@ public class CmsGallerySearchFieldConfiguration extends CmsSearchFieldConfigurat
         List<CmsProperty> propertiesSearched) {
 
         String mappingName = null;
-        String fieldName = fieldConfig.getName();
+        String fieldName = field.getName();
         String value = null;
 
         if (CmsSearchField.FIELD_CONTENT.equals(fieldName)) {
             mappingName = CmsSearchField.FIELD_CONTENT;
         } else if (CmsSearchField.FIELD_TITLE_UNSTORED.equals(fieldName)) {
             mappingName = CmsSearchField.FIELD_TITLE_UNSTORED;
-        } else if (CmsSearchField.FIELD_TITLE.equals(fieldName)) {
+        } else if (CmsSearchField.FIELD_TITLE.equals(fieldName) || CmsSearchField.FIELD_SORT_TITLE.equals(fieldName)) {
             if (!CmsResourceTypeXmlContent.isXmlContent(resource)) {
                 // not an XML content - we need to read the property and map it to all fields
                 value = CmsProperty.get(CmsPropertyDefinition.PROPERTY_TITLE, properties).getValue();
@@ -191,7 +164,7 @@ public class CmsGallerySearchFieldConfiguration extends CmsSearchFieldConfigurat
         for (Locale locale : OpenCms.getLocaleManager().getAvailableLocales()) {
             // iterate all configured locales
 
-            if (mappingName != null) {
+            if ((mappingName != null) && (extractionResult != null)) {
                 // should be the case for XML contents only
                 if (mappingName == CmsSearchField.FIELD_META) {
                     // meta field - we can use == because the String has been initialized above
@@ -216,10 +189,16 @@ public class CmsGallerySearchFieldConfiguration extends CmsSearchFieldConfigurat
                 }
             }
 
-            if (value != null) {
+            if ((value != null) && (field instanceof CmsLuceneField)) {
+                // In order to search and sort case insensitive in the title field
+                // take the lower case value for the un-stored title field.
+                if (field.getName().equals(CmsSearchField.FIELD_TITLE_UNSTORED)
+                    || field.getName().equals(CmsSearchField.FIELD_SORT_TITLE)) {
+                    value = value.toLowerCase();
+                }
                 // localized content is available for this field
-                Fieldable field = fieldConfig.createField(getLocaleExtendedName(fieldName, locale), value);
-                document.add(field);
+                Field fieldable = ((CmsLuceneField)field).createField(getLocaleExtendedName(fieldName, locale), value);
+                ((Document)document.getDocument()).add(fieldable);
             }
         }
 

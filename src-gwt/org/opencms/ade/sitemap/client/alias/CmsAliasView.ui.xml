@@ -1,0 +1,166 @@
+<!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui" 
+	xmlns:cmsi="urn:import:org.opencms.gwt.client.ui.input"
+	xmlns:cms="urn:import:org.opencms.gwt.client.ui"
+	xmlns:input="urn:import:org.opencms.gwt.client.ui.input"
+	
+	>
+	<ui:with field="inputstyle" type="org.opencms.gwt.client.ui.css.I_CmsInputLayoutBundle" />
+	<ui:with field="resources" type="org.opencms.gwt.client.ui.css.I_CmsLayoutBundle" />
+	<ui:with field="msg" type="org.opencms.ade.sitemap.client.alias.CmsAliasMessages" />
+	
+	<ui:style>
+	
+		@def innerWidth 935px;
+		 
+		.standardInput {
+			border: 1px solid black; 
+		}
+		
+		.standardButton {
+			border: 1px solid black;
+		}
+		
+		.invisible {
+			display: none; 
+		}
+		
+		.topButtonBox {
+			margin-bottom: 5px;
+			margin-top: 10px;
+			width: innerWidth;
+		}
+		
+		.topButtonInnerBox {
+			width: 100%;
+		}
+		
+		.topTextBox1 {
+			width: 180px;
+		}
+		
+		.topTextBox2 {
+			width: 180px;
+		}
+		
+		.topModeSelector {	
+			min-width: 175px; 
+
+		 }
+		 
+		 
+@if user.agent ie6 { 
+		 .topNewButton {
+			margin-left: 50px; 
+			width: 100px
+	      }
+} @else {
+		 .topNewButton {
+			margin-left: 10px; 
+		 }
+}
+	      
+	      .tableContainer {
+				width: 910px;
+				max-height: 300px;
+				border: 1px solid gray; 
+			}
+			
+			.bottomButtonBox > * {
+				margin-right: 5px; 
+			}
+			
+			.actionButtonBox {
+				margin-bottom: 5px; 
+			}
+			
+			.actionButton {
+				float: right; 
+				margin-right: 5px;
+			} 
+			
+			.outerTableBox {
+				width: innerWidth;
+				margin-top: 5px; 
+			}
+			
+			.clearbox {
+				clear: both;
+			}
+			
+			.innerTableBox {
+				margin: 5px; 
+			}
+			
+			.topButtonBoxLabel {
+				font-weight: bold;
+				margin-left: 11px;
+				margin-right: 4px;
+				margin-top: 2px;
+			}
+			
+			.leftButton {
+				float: left; 
+			}
+			
+	</ui:style>
+	<g:VerticalPanel addStyleNames="{inputstyle.inputCss.highTextBoxes}">
+		<cms:CmsFieldSet addStyleNames="{style.topButtonBox}" legend="{msg.messageNewFieldsetLegend}">
+			<g:HorizontalPanel addStyleNames="{style.topButtonInnerBox}">
+				<g:Label addStyleNames="{style.topButtonBoxLabel}">
+					<ui:text from="{msg.messageNewAliasLabel}"/>
+				</g:Label>
+				<input:CmsTextBox addStyleNames="{style.topTextBox1}" ui:field="m_newAliasPath"></input:CmsTextBox>
+				<g:Label addStyleNames="{style.topButtonBoxLabel}" >
+					<ui:text from="{msg.messageNewAliasTargetLabel}"/>
+				</g:Label>
+				<input:CmsTextBox addStyleNames="{style.topTextBox2}" ui:field="m_newResourcePath"></input:CmsTextBox>
+				<g:Label addStyleNames="{style.topButtonBoxLabel}">
+					<ui:text from="{msg.messageNewAliasActionLabel}" />
+				</g:Label>			
+				<input:CmsSelectBox ui:field="m_newMode" addStyleNames="{style.topModeSelector}"/>
+				<cms:CmsPushButton ui:field="m_newButton" addStyleNames="{style.topNewButton}"></cms:CmsPushButton>
+			</g:HorizontalPanel>
+		</cms:CmsFieldSet>
+		<cms:CmsFieldSet addStyleNames="{style.outerTableBox}" legend="{msg.messageTableFieldsetLegend}">
+			<g:FlowPanel addStyleNames="{style.innerTableBox}" >
+				<g:FlowPanel addStyleNames="{style.actionButtonBox}">
+					<g:InlineLabel ui:field="m_countLabel" />
+					<cms:CmsPushButton  addStyleNames="{style.actionButton}"  ui:field="m_deleteButton" text="{msg.messageButtonDelete}"/>
+					<g:Label addStyleNames="{style.clearbox}" />
+				</g:FlowPanel>
+				<cms:CmsScrollPanel ui:field="m_tableContainer"  addStyleNames="{style.tableContainer} {resources.generalCss.cornerAll} {style.tableContainer}"> 
+				</cms:CmsScrollPanel>
+			</g:FlowPanel>
+		</cms:CmsFieldSet>
+		
+		<cms:CmsFieldSet addStyleNames="{style.topButtonBox}" legend="{msg.messageLegendNewRewrite}">
+			<g:HorizontalPanel addStyleNames="{style.topButtonInnerBox}">
+				<g:Label addStyleNames="{style.topButtonBoxLabel}" text="{msg.messageLabelRegex}" />
+				<input:CmsTextBox addStyleNames="{style.topTextBox1}" ui:field="m_newRewriteRegex"></input:CmsTextBox>
+				<g:Label addStyleNames="{style.topButtonBoxLabel}"  text="{msg.messageLabelReplacement}" />
+				<input:CmsTextBox addStyleNames="{style.topTextBox2}" ui:field="m_newRewriteReplacement"></input:CmsTextBox>
+				<g:Label addStyleNames="{style.topButtonBoxLabel}" text="{msg.messageNewAliasActionLabel}" />
+				<input:CmsSelectBox ui:field="m_newRewriteMode"  addStyleNames="{style.topModeSelector}"/>
+				<cms:CmsPushButton ui:field="m_newRewriteButton" addStyleNames="{style.topNewButton}"></cms:CmsPushButton>
+			</g:HorizontalPanel>
+		</cms:CmsFieldSet>
+		
+		<cms:CmsFieldSet addStyleNames="{style.outerTableBox}" legend="{msg.messageLegendRewriteTable}">
+			<g:FlowPanel addStyleNames="{style.innerTableBox}" >
+				<g:FlowPanel addStyleNames="{style.actionButtonBox}">
+					<cms:CmsPushButton  addStyleNames="{style.actionButton}"  ui:field="m_rewriteDeleteButton" text="{msg.messageButtonDelete}"/>
+					<g:Label addStyleNames="{style.clearbox}" />
+				</g:FlowPanel>
+				<cms:CmsScrollPanel ui:field="m_rewriteTableContainer"  addStyleNames="{style.tableContainer} {resources.generalCss.cornerAll} {style.tableContainer}" /> 
+			</g:FlowPanel>
+		</cms:CmsFieldSet>
+		<g:FlowPanel addStyleNames="{style.invisible}">
+			<cms:CmsPushButton ui:field="m_saveButton"  text="{msg.messageButtonSave}"  useMinWidth="true" />	
+			<cms:CmsPushButton ui:field="m_cancelButton" text="{msg.messageButtonCancel}"  useMinWidth="true" />
+			<cms:CmsPushButton  addStyleNames="{style.actionButton} {style.leftButton}"  ui:field="m_downloadButton" text="{msg.messageButtonDownload}" useMinWidth="true"/>
+			<cms:CmsPushButton  addStyleNames="{style.actionButton} {style.leftButton}"  ui:field="m_uploadButton" text="{msg.messageButtonSubmit}"  useMinWidth="true"/>
+		</g:FlowPanel>
+	</g:VerticalPanel>
+</ui:UiBinder>

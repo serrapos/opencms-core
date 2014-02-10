@@ -71,6 +71,9 @@ public class CmsSitemapChange implements IsSerializable, Comparable<CmsSitemapCh
     /** The changed clip-board data. */
     private CmsSitemapClipboardData m_clipBoardData;
 
+    /** The folder type to use when a subsitemap should be created, else null. */
+    private String m_createSitemapFolderType;
+
     /** The default file id. */
     private CmsUUID m_defaultFileId;
 
@@ -257,6 +260,19 @@ public class CmsSitemapChange implements IsSerializable, Comparable<CmsSitemapCh
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * Gets the folder type to use if a subsitemap should be created, else null.<p>
+     * 
+     * @return a resource type name 
+     */
+    public String getCreateSitemapFolderType() {
+
+        return m_createSitemapFolderType;
+    }
+
+    /**
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * Gets the default file id.<p>
      * 
      * @return the default file id 
@@ -516,6 +532,19 @@ public class CmsSitemapChange implements IsSerializable, Comparable<CmsSitemapCh
 
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * Sets the folder type name to use for creating a subsitemap.<p>
+     * 
+     * @param folderType a resource type name 
+     */
+    public void setCreateSitemapFolderType(String folderType) {
+
+        m_createSitemapFolderType = folderType;
+    }
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     /** 
      * Sets the default file id. <p>
      * 

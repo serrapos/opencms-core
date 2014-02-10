@@ -33,6 +33,8 @@ import org.opencms.db.CmsResourceState;
 import org.opencms.db.CmsSecurityManager;
 import org.opencms.db.log.CmsLogEntry;
 import org.opencms.db.log.CmsLogFilter;
+import org.opencms.db.urlname.CmsUrlNameMappingEntry;
+import org.opencms.db.urlname.CmsUrlNameMappingFilter;
 import org.opencms.file.history.CmsHistoryPrincipal;
 import org.opencms.file.history.CmsHistoryProject;
 import org.opencms.file.history.I_CmsHistoryResource;
@@ -1158,6 +1160,18 @@ public final class CmsObject {
 
         CmsResource res = readResource(resourceName, CmsResourceFilter.ALL);
         return m_securityManager.getAccessControlList(m_context, res, inheritedOnly);
+    }
+
+    /**
+     * Gets all access control entries for the current project.<p>
+     * 
+     * @return the list of all access control entries
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    public List<CmsAccessControlEntry> getAllAccessControlEntries() throws CmsException {
+
+        return m_securityManager.getAllAccessControlEntries(m_context);
     }
 
     /**
@@ -3149,6 +3163,40 @@ public final class CmsObject {
     }
 
     /**
+     * Reads all resources with the given resource id.<p>
+     * 
+     * @param resourceId the resource id for which we want the siblings 
+     * @param filter the resource filter used to read the resources 
+     * @return the siblings which share the given resource id 
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    public List<CmsResource> readSiblingsForResourceId(CmsUUID resourceId, CmsResourceFilter filter)
+    throws CmsException {
+
+        CmsResource pseudoResource = new CmsResource(
+            null,
+            resourceId,
+            null,
+            0,
+            false,
+            0,
+            null,
+            null,
+            0,
+            null,
+            0,
+            null,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0);
+        return readSiblings(pseudoResource, filter);
+    }
+
+    /**
      * Returns the parameters of a resource in the list of all published template resources.<p>
      * 
      * @param rfsName the rfs name of the resource
@@ -3176,6 +3224,19 @@ public final class CmsObject {
     public List<String> readStaticExportResources(int parameterResources, long timestamp) throws CmsException {
 
         return m_securityManager.readStaticExportResources(m_context, parameterResources, timestamp);
+    }
+
+    /**
+     * Reads the URL name mappings matching a given filter.<p>
+     * 
+     * @param filter the filter to match 
+     * @return the URL name mappings matching the filter 
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    public List<CmsUrlNameMappingEntry> readUrlNameMappings(CmsUrlNameMappingFilter filter) throws CmsException {
+
+        return m_securityManager.readUrlNameMappings(m_context, filter);
     }
 
     /**
@@ -3659,6 +3720,19 @@ public final class CmsObject {
     public void writeProject(CmsProject project) throws CmsException {
 
         m_securityManager.writeProject(m_context, project);
+    }
+
+    /**
+     * Writes the 'projectlastmodified' field of a resource record.<p>
+     * 
+     * @param resource the resource which should be modified 
+     * @param project the project whose id should be written into the resource record
+     * 
+     * @throws CmsException if something goes wrong 
+     */
+    public void writeProjectLastModified(CmsResource resource, CmsProject project) throws CmsException {
+
+        m_securityManager.writeResourceProjectLastModified(getRequestContext(), resource, project);
     }
 
     /**

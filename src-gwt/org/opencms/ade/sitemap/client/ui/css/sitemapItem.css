@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 @external vfsMode, navMode;
 
 .navMode{}
+=======
+@external cms_type_icon;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
 .contentHide * {
 	visibility: hidden;
@@ -44,7 +48,7 @@
 
 }
 
-.notInNavigationEntry{
+li.notInNavigationEntry{
 	display: none;
 }
 
@@ -55,6 +59,7 @@
 
 .expiredOrNotReleased div.itemTitle{
 	font-style: italic;
+<<<<<<< HEAD
 }
 
 div.itemTitle{
@@ -64,28 +69,58 @@ div.itemTitle{
 
 .vfsMode .notInNavigationEntry{
 	display: block;
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
+}
+div.expiredOrNotReleased{
+	background-color: value("constants.css.backgroundColorSitemapExpired");
 }
 
-.highlight {
-	background-image: none;
-	background-color: value("constants.css.backgroundColorSitemapHighlight");
+div.hiddenNavEntry{
+	opacity: 0.4;
 }
 
-
-
-@sprite .brokenLink {
-    gwt-image: "baseImages.bigIcons.brokenLinkBigIcon";
-    margin-right: 4px;
+div.itemTitle{
+	cursor: text;
 }
 
-.deletedEntryLabel {
-	text-decoration: line-through;
+.navMode .cms_type_icon, .vfsMode .cms_type_icon{
+	cursor: pointer;
 }
 
-.marker {
+@sprite div.cms_type_icon.navigationLevelIcon{
+	gwt-image: "baseImages.bigIcons.fileTypeNavLevel";
+} 
+
+.vfsMode li.notInNavigationEntry{
+	display: block;
+}
+
+div.marker {
 	position: absolute; 
 	visibility: visible !important;
 	font-weight: bold;
 	right: 100px;
 	top: 0px;
 }
+<<<<<<< HEAD
+=======
+
+.hasChildren {} 
+
+.hasNoChildren {} 
+
+.hasNavChildren {}
+
+.hasNoNavChildren {}
+
+.navMode .hasNoNavChildren .treeItemOpener {
+	display: none; 
+}
+
+.vfsMode .hasNoChildren .treeItemOpener {
+	display: none; 
+}
+
+ 
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485

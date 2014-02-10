@@ -27,11 +27,10 @@
 
 package org.opencms.ade.upload;
 
-import org.opencms.ade.upload.shared.CmsUploadData;
-import org.opencms.ade.upload.shared.I_CmsUploadConstants;
-import org.opencms.ade.upload.shared.rpc.I_CmsUploadService;
 import org.opencms.gwt.CmsGwtActionElement;
+import org.opencms.gwt.shared.I_CmsUploadConstants;
 import org.opencms.jsp.CmsJspActionElement;
+import org.opencms.main.OpenCms;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.workplace.CmsDialog;
 import org.opencms.workplace.CmsWorkplace;
@@ -73,9 +72,15 @@ public class CmsUploadActionElement extends CmsGwtActionElement {
         }
     }
 
-    /** The module name. */
-    public static final String MODULE_NAME = "upload";
+    /** The OpenCms module name. */
+    public static final String CMS_MODULE_NAME = "org.opencms.ade.upload";
 
+<<<<<<< HEAD
+=======
+    /** The GWT module name. */
+    public static final String GWT_MODULE_NAME = "upload";
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     /**
      * Constructor.<p>
      * 
@@ -94,12 +99,7 @@ public class CmsUploadActionElement extends CmsGwtActionElement {
     @Override
     public String export() throws Exception {
 
-        StringBuffer sb = new StringBuffer();
-        String prefetchedData = serialize(I_CmsUploadService.class.getMethod("prefetch"), getUploadData());
-        sb.append(CmsUploadData.DICT_NAME).append("='").append(prefetchedData).append("';");
-        sb.append(ClientMessages.get().export(getRequest()));
-        wrapScript(sb);
-        return sb.toString();
+        return ClientMessages.get().export(getRequest());
     }
 
     /**
@@ -113,7 +113,9 @@ public class CmsUploadActionElement extends CmsGwtActionElement {
         sb.append(export());
         sb.append(exportTargetFolder());
         sb.append(exportCloseLink());
-        sb.append(createNoCacheScript(MODULE_NAME));
+        sb.append(createNoCacheScript(
+            GWT_MODULE_NAME,
+            OpenCms.getModuleManager().getModule(CMS_MODULE_NAME).getVersion().toString()));
         return sb.toString();
     }
 
@@ -143,6 +145,7 @@ public class CmsUploadActionElement extends CmsGwtActionElement {
     }
 
     /**
+<<<<<<< HEAD
      * Returns the needed server data for client-side usage.<p> 
      *
      * @return the needed server data for client-side usage
@@ -153,6 +156,8 @@ public class CmsUploadActionElement extends CmsGwtActionElement {
     }
 
     /**
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * Returns a javascript tag that contains a variable deceleration that has the close link as value.<p>
      * 
      * @return a javascript tag that contains a variable deceleration that has the close link as value

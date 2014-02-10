@@ -27,6 +27,7 @@
 
 package org.opencms.jsp;
 
+import org.opencms.ade.sitemap.shared.CmsClientSitemapEntry;
 import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsResource;
 import org.opencms.i18n.CmsMessages;
@@ -49,15 +50,35 @@ import java.util.Map;
  */
 public class CmsJspNavElement implements Comparable<CmsJspNavElement> {
 
-    private String m_fileName;
-    private Boolean m_hasNav;
-    private int m_navTreeLevel = Integer.MIN_VALUE;
-    private float m_position;
-    private Map<String, String> m_properties;
-    private CmsResource m_resource;
-    private String m_sitePath;
-    private String m_text;
+    /** The navigation position has changed flag. */
     private boolean m_changedNavPos;
+
+    /** The file name. */
+    private String m_fileName;
+
+    /** The has navigation flag. */
+    private Boolean m_hasNav;
+
+    /** Flag indicating whether this is a hidden navigation entry. */
+    private Boolean m_isHiddenNavigationEntry;
+
+    /** The navigation tree level. */
+    private int m_navTreeLevel = Integer.MIN_VALUE;
+
+    /** The navigation position. */
+    private float m_position;
+
+    /** The properties. */
+    private Map<String, String> m_properties;
+
+    /** The resource. */
+    private CmsResource m_resource;
+
+    /** The site path. */
+    private String m_sitePath;
+
+    /** The navigation text. */
+    private String m_text;
 
     /**
      * Empty constructor required for every JavaBean, does nothing.<p>
@@ -366,6 +387,11 @@ public class CmsJspNavElement implements Comparable<CmsJspNavElement> {
         return m_properties.get(CmsPropertyDefinition.PROPERTY_TITLE);
     }
 
+    /**
+     * Returns if the navigation position has been changed since initialization.<p>
+     * 
+     * @return <code>true</code> if the navigation position has been changed since initialization
+     */
     public boolean hasChangedNavPosition() {
 
         return m_changedNavPos;
@@ -463,6 +489,31 @@ public class CmsJspNavElement implements Comparable<CmsJspNavElement> {
             m_hasNav = Boolean.valueOf(((o1 != null) || (o2 != null)) && !CmsResource.isTemporaryFileName(m_sitePath));
         }
         return m_hasNav.booleanValue();
+    }
+
+    /**
+     * Returns if this is a hidden navigation entry.<p>
+     *
+     * @return <code>true</code> if this is a hidden navigation entry
+     */
+    public boolean isHiddenNavigationEntry() {
+
+        if (m_isHiddenNavigationEntry == null) {
+            // use "lazy initializing"
+            String navInfo = m_properties.get(CmsPropertyDefinition.PROPERTY_NAVINFO);
+            m_isHiddenNavigationEntry = Boolean.valueOf(CmsClientSitemapEntry.HIDDEN_NAVIGATION_ENTRY.equals(navInfo));
+        }
+        return m_isHiddenNavigationEntry.booleanValue();
+    }
+
+    /**
+     * Returns if the navigation element represents a navigation level, linking to it's first sub-element.<p>
+     * 
+     * @return <code>true</code> if the navigation element represents a navigation level
+     */
+    public boolean isNavigationLevel() {
+
+        return CmsJspNavBuilder.NAVIGATION_LEVEL_FOLDER.equals(m_properties.get(CmsPropertyDefinition.PROPERTY_DEFAULT_FILE));
     }
 
     /**

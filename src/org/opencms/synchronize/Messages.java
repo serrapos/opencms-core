@@ -98,6 +98,9 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String RPT_DEL_FS_FOLDER_0 = "RPT_DEL_FS_FOLDER_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String RPT_EXCLUDING_0 = "RPT_EXCLUDING_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String RPT_EXPORT_FILE_0 = "RPT_EXPORT_FILE_0";
 
     /** Message constant for key in the resource bundle. */

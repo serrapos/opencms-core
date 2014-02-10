@@ -27,11 +27,11 @@
 
 package org.opencms.gwt.client.ui.input.form;
 
-import org.opencms.gwt.client.ui.input.CmsTextBox;
 import org.opencms.gwt.client.ui.input.I_CmsFormField;
 import org.opencms.gwt.client.ui.input.I_CmsFormWidget;
 import org.opencms.gwt.client.ui.input.I_CmsHasBlur;
 import org.opencms.gwt.client.ui.input.I_CmsStringModel;
+import org.opencms.gwt.client.util.CmsExtendedValueChangeEvent;
 import org.opencms.gwt.client.validation.CmsValidationController;
 import org.opencms.gwt.client.validation.I_CmsValidationHandler;
 import org.opencms.gwt.shared.CmsValidationResult;
@@ -51,8 +51,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.HasKeyPressHandlers;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyPressEvent;
@@ -60,8 +58,6 @@ import com.google.gwt.event.dom.client.KeyPressHandler;
 import com.google.gwt.event.logical.shared.HasValueChangeHandlers;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.Panel;
 
 /**
  * 
@@ -80,20 +76,11 @@ public class CmsForm {
     /** A map from field ids to the corresponding widgets. */
     protected Map<String, I_CmsFormField> m_fields = new LinkedHashMap<String, I_CmsFormField>();
 
-    /** A reference to the dialog this form is contained in. */
-    protected I_CmsFormDialog m_formDialog;
-
     /** The form handler. */
     protected I_CmsFormHandler m_formHandler;
 
     /** A flag which indicates whether the user has pressed enter in a widget. */
     protected boolean m_pressedEnter;
-
-    /** The tab for advanced form fields. */
-    private FlowPanel m_advancedTab = new FlowPanel();
-
-    /** The tab for basic form fields. */
-    private FlowPanel m_basicTab = new FlowPanel();
 
     /** A multimap from field groups to fields. */
     private Multimap<String, I_CmsFormField> m_fieldsByGroup = ArrayListMultimap.create();
@@ -250,6 +237,29 @@ public class CmsForm {
     }
 
     /**
+     * Passes this form's data to a form submit handler.<p>
+     *  
+     * @param handler the form submit handler
+     */
+    public void handleSubmit(I_CmsFormSubmitHandler handler) {
+
+        Map<String, String> values = collectValues();
+        Set<String> editedFields = new HashSet<String>(getEditedFields());
+        editedFields.retainAll(values.keySet());
+        handler.onSubmitForm(this, values, editedFields);
+    }
+
+    /**
+     * Checks that no fields are invalid.<p>
+     * 
+     * @return true if no fields are invalid. 
+     */
+    public boolean noFieldsInvalid() {
+
+        return noFieldsInvalid(m_fields.values());
+    }
+
+    /**
      * Returns true if none of the fields in a collection are marked as invalid.<p>
      *
      * @param fields the form fields
@@ -297,16 +307,6 @@ public class CmsForm {
 
         m_widget.rerenderFields(group, m_fieldsByGroup.get(group));
 
-    }
-
-    /**
-     * Sets the form dialog in which this form is being used.<p>
-     * 
-     * @param dialog the form dialog 
-     */
-    public void setFormDialog(I_CmsFormDialog dialog) {
-
-        m_formDialog = dialog;
     }
 
     /**
@@ -367,15 +367,7 @@ public class CmsForm {
                  */
                 public void onValidationFinished(boolean ok) {
 
-                    if (ok) {
-                        m_formDialog.closeDialog();
-                        Map<String, String> values = collectValues();
-                        Set<String> editedFields = new HashSet<String>(m_editedFields);
-                        editedFields.retainAll(values.keySet());
-                        m_formHandler.onSubmitForm(values, editedFields);
-                    } else {
-                        m_formDialog.setOkButtonEnabled(noFieldsInvalid(m_fields.values()));
-                    }
+                    m_formHandler.onSubmitValidationResult(CmsForm.this, ok);
                 }
 
                 /**
@@ -451,10 +443,11 @@ public class CmsForm {
      * Default handler for value change events of form fields.<p>
      *  
      * @param field the form field for which the event has been fired 
+     * @param inhibitValidation prevents validation of the edited field 
      * 
      * @param newValue the new value 
      */
-    protected void defaultHandleValueChange(I_CmsFormField field, String newValue) {
+    protected void defaultHandleValueChange(I_CmsFormField field, String newValue, boolean inhibitValidation) {
 
         m_editedFields.add(field.getId());
         I_CmsStringModel model = field.getModel();
@@ -466,7 +459,9 @@ public class CmsForm {
         // if the user presses enter, the keypressed event is fired before the change event,
         // so we use a flag to keep track of whether enter was pressed.
         if (!m_pressedEnter) {
-            validateField(field);
+            if (!inhibitValidation) {
+                validateField(field);
+            }
         } else {
             validateAndSubmit();
         }
@@ -482,18 +477,6 @@ public class CmsForm {
     protected Collection<I_CmsFormField> getFieldsByModelId(String modelId) {
 
         return m_fieldsByModelId.get(modelId);
-    }
-
-    /**
-     * Returns either the basic or advanced tab based on a boolean value.<p>
-     *  
-     * @param advanced if true, the advanced tab will be returned, else the basic tab
-     *  
-     * @return the basic or advanced tab 
-     */
-    protected Panel getPanel(boolean advanced) {
-
-        return advanced ? m_advancedTab : m_basicTab;
     }
 
     /**
@@ -558,7 +541,7 @@ public class CmsForm {
              */
             public void onValidationFinished(boolean ok) {
 
-                m_formDialog.setOkButtonEnabled(noFieldsInvalid(m_fields.values()));
+                m_formHandler.onValidationResult(CmsForm.this, noFieldsInvalid(m_fields.values()));
             }
 
             /**
@@ -578,7 +561,7 @@ public class CmsForm {
      * 
      * @param formField the form field whose widget should be initialized 
      */
-    @SuppressWarnings( {"rawtypes", "unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void initializeFormFieldWidget(final I_CmsFormField formField) {
 
         final I_CmsFormWidget widget = formField.getWidget();
@@ -590,7 +573,15 @@ public class CmsForm {
                  */
                 public void onValueChange(ValueChangeEvent event) {
 
-                    defaultHandleValueChange(formField, widget.getFormValueAsString());
+                    boolean inhibitValidation = false;
+                    if (event instanceof CmsExtendedValueChangeEvent) {
+                        CmsExtendedValueChangeEvent extEvent = (CmsExtendedValueChangeEvent)event;
+                        inhibitValidation = extEvent.isInhibitValidation();
+                    }
+                    if ((event.getValue() instanceof String) || (event.getValue() == null)) {
+                        // only makes sense for strings 
+                        defaultHandleValueChange(formField, (String)(event.getValue()), inhibitValidation);
+                    }
                 }
             });
         }
@@ -607,22 +598,6 @@ public class CmsForm {
                     defaultHandleKeyPress(formField, keyCode);
                 }
             });
-        }
-
-        if (widget instanceof CmsTextBox) {
-            final CmsTextBox textbox = (CmsTextBox)widget;
-            textbox.addClickHandler(new ClickHandler() {
-
-                /**
-                 * @see com.google.gwt.event.dom.client.ClickHandler#onClick(com.google.gwt.event.dom.client.ClickEvent)
-                 */
-                public void onClick(ClickEvent event) {
-
-                    //ghost mode will still be enabled when you click on the field, but the style will be set to normal
-                    textbox.setGhostStyleEnabled(false);
-                }
-            });
-
         }
     }
 

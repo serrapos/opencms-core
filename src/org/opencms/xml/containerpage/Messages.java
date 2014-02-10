@@ -53,6 +53,9 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String ERR_DUPLICATE_NAME_1 = "ERR_DUPLICATE_NAME_1";
 
     /** Message constant for key in the resource bundle. */
+    public static final String ERR_ELEMENT_GROUP_REFERENCES_ANOTHER_GROUP_2 = "ERR_ELEMENT_GROUP_REFERENCES_ANOTHER_GROUP_2";
+
+    /** Message constant for key in the resource bundle. */
     public static final String ERR_FORMATTER_JSP_DONT_EXIST_1 = "ERR_FORMATTER_JSP_DONT_EXIST_1";
 
     /** Message constant for key in the resource bundle. */
@@ -99,6 +102,9 @@ public final class Messages extends A_CmsMessageBundle {
 
     /** Message constant for key in the resource bundle. */
     public static final String LOG_DEBUG_CACHE_SET_ONLINE_2 = "LOG_DEBUG_CACHE_SET_ONLINE_2";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String LOG_WARN_ELEMENT_GROUP_INSIDE_ELEMENT_GROUP_0 = "LOG_WARN_ELEMENT_GROUP_INSIDE_ELEMENT_GROUP_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String LOG_WARN_NO_FORMATTERS_DEFINED_1 = "LOG_WARN_NO_FORMATTERS_DEFINED_1";

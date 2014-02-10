@@ -31,6 +31,7 @@ import org.opencms.main.CmsIllegalArgumentException;
 import org.opencms.main.OpenCms;
 import org.opencms.security.CmsOrganizationalUnit;
 import org.opencms.util.CmsResourceTranslator;
+import org.opencms.util.CmsUUID;
 import org.opencms.workplace.CmsWorkplace;
 
 import java.util.Hashtable;
@@ -63,6 +64,9 @@ public final class CmsRequestContext {
 
     /** The current project. */
     private CmsProject m_currentProject;
+
+    /** The detail content resource (possibly null). */
+    private CmsResource m_detailResource;
 
     /** Directory name translator. */
     private CmsResourceTranslator m_directoryTranslator;
@@ -273,6 +277,29 @@ public final class CmsRequestContext {
     }
 
     /**
+     * Gets the detail content structure id (or null if no detail content has been loaded).<p>
+     * 
+     * @return the detail content id 
+     */
+    public CmsUUID getDetailContentId() {
+
+        if (m_detailResource == null) {
+            return null;
+        }
+        return m_detailResource.getStructureId();
+    }
+
+    /**
+     * Gets the detail content resource (or null if no detail content has been loaded).<p>
+     * 
+     * @return the detail content resource 
+     */
+    public CmsResource getDetailResource() {
+
+        return m_detailResource;
+    }
+
+    /**
      * Returns the directory name translator this context was initialized with.<p>
      * 
      * The directory translator is used to translate old VFS path information 
@@ -471,6 +498,10 @@ public final class CmsRequestContext {
             && ((resourcename.length() == siteRoot.length()) || (resourcename.charAt(siteRoot.length()) == '/'))) {
             resourcename = resourcename.substring(siteRoot.length());
         }
+        if (resourcename.length() == 0) {
+            // input was a site root folder without trailing slash
+            resourcename = "/";
+        }
         return resourcename;
     }
 
@@ -502,6 +533,16 @@ public final class CmsRequestContext {
             m_currentProject = project;
         }
         return m_currentProject;
+    }
+
+    /**
+     * Sets the detail content resource.<p>
+     * 
+     * @param detailResource the detail content resource 
+     */
+    public void setDetailResource(CmsResource detailResource) {
+
+        m_detailResource = detailResource;
     }
 
     /**

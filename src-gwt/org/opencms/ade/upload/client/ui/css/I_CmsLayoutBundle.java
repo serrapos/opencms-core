@@ -56,28 +56,7 @@ public interface I_CmsLayoutBundle extends ClientBundle {
          * 
          * @return the CSS class name
          */
-        String dialogMessage();
-
-        /** 
-         * Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String dialogMessageImportant();
-
-        /** 
-         * Access method.<p>
-         * 
-         * @return the CSS class name
-         */
         String dragAndDropMessage();
-
-        /** 
-         * Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String fileInfoTable();
 
         /** 
          * Access method.<p>
@@ -91,35 +70,7 @@ public interface I_CmsLayoutBundle extends ClientBundle {
          * 
          * @return the CSS class name
          */
-        String loadingAnimation();
-
-        /** 
-         * Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String loadingPanel();
-
-        /** 
-         * Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String loadingText();
-
-        /** 
-         * Access method.<p>
-         * 
-         * @return the CSS class name
-         */
         String mainContentWidget();
-
-        /** 
-         * Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String progressInfo();
 
         /** 
          * Access method.<p>
@@ -133,35 +84,7 @@ public interface I_CmsLayoutBundle extends ClientBundle {
          * 
          * @return the CSS class name
          */
-        String uploadButton();
-
-        /** 
-         * Access method.<p>
-         * 
-         * @return the CSS class name
-         */
         String uploadDialogButton();
-
-        /** 
-         * Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String uploadFileInput();
-
-        /** 
-         * Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String warningIcon();
-
-        /** 
-         * Access method.<p>
-         * 
-         * @return the CSS class name
-         */
-        String warningMessage();
     }
 
     /** The bundle instance. */
@@ -188,4 +111,5 @@ public interface I_CmsLayoutBundle extends ClientBundle {
      */
     @Source("upload.css")
     I_CmsUploadCss uploadCss();
+
 }

@@ -69,11 +69,11 @@ public class CmsDetailPageResourceHandler implements I_CmsResourceInit {
     }
 
     /**
-     * Returns the current detail content UID, or <code>null</code> if this is not a request to a content detail page.<p>
+     * Returns the current detail content UUID, or <code>null</code> if this is not a request to a content detail page.<p>
      * 
      * @param req the current request
      * 
-     * @return the current detail content UID, or <code>null</code> if this is not a request to a content detail page
+     * @return the current detail content UUID, or <code>null</code> if this is not a request to a content detail page
      */
     public static CmsUUID getDetailId(ServletRequest req) {
 
@@ -99,10 +99,8 @@ public class CmsDetailPageResourceHandler implements I_CmsResourceInit {
     public CmsResource initResource(CmsResource resource, CmsObject cms, HttpServletRequest req, HttpServletResponse res)
     throws CmsResourceInitException, CmsSecurityException {
 
-        // check if the resource was already found
-        boolean abort = (resource != null);
-        // check if the resource comes from the /system/ folder
-        abort |= cms.getRequestContext().getUri().startsWith(CmsWorkplace.VFS_PATH_SYSTEM);
+        // check if the resource was already found or the path starts with '/system/'
+        boolean abort = (resource != null) || cms.getRequestContext().getUri().startsWith(CmsWorkplace.VFS_PATH_SYSTEM);
         if (abort) {
             // skip in all cases above 
             return resource;
@@ -134,6 +132,10 @@ public class CmsDetailPageResourceHandler implements I_CmsResourceInit {
                 if (res != null) {
                     // response will be null if this run through the init handler is only for determining the locale
                     req.setAttribute(ATTR_DETAIL_CONTENT_RESOURCE, detailRes);
+<<<<<<< HEAD
+=======
+                    cms.getRequestContext().setDetailResource(detailRes);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
                 }
                 // set the resource path
                 cms.getRequestContext().setUri(cms.getSitePath(detailPage));

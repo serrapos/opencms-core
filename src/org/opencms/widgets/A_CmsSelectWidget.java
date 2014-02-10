@@ -28,13 +28,19 @@
 package org.opencms.widgets;
 
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsResource;
+import org.opencms.i18n.CmsMessages;
 import org.opencms.util.CmsMacroResolver;
 import org.opencms.util.CmsStringUtil;
+import org.opencms.workplace.CmsDialog;
+import org.opencms.xml.content.I_CmsXmlContentHandler.DisplayType;
+import org.opencms.xml.types.A_CmsXmlContentValue;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Base class for select widgets.<p>
@@ -43,7 +49,13 @@ import java.util.List;
  * 
  * @see org.opencms.widgets.CmsSelectWidgetOption
  */
-public abstract class A_CmsSelectWidget extends A_CmsWidget {
+public abstract class A_CmsSelectWidget extends A_CmsWidget implements I_CmsADEWidget {
+
+    /** Configuration parameter to set the height from the select widget in pixel. */
+    public static final String CONFIGURATION_HEIGHT = "height";
+
+    /** The select widget height in pixel. */
+    private String m_height;
 
     /** Configuration parameter to set the height from the select widget in pixel. */
     public static final String CONFIGURATION_HEIGHT = "height";
@@ -119,6 +131,97 @@ public abstract class A_CmsSelectWidget extends A_CmsWidget {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * @see org.opencms.widgets.I_CmsADEWidget#getConfiguration(org.opencms.file.CmsObject, org.opencms.xml.types.A_CmsXmlContentValue, org.opencms.i18n.CmsMessages, org.opencms.file.CmsResource, java.util.Locale)
+     */
+    public String getConfiguration(
+        CmsObject cms,
+        A_CmsXmlContentValue schemaType,
+        CmsMessages messages,
+        CmsResource resource,
+        Locale contentLocale) {
+
+        String result = "";
+        CmsDummyWidgetDialog widgetDialog = new CmsDummyWidgetDialog(messages.getLocale(), messages);
+        widgetDialog.setResource(resource);
+        List<CmsSelectWidgetOption> options = parseSelectOptions(cms, widgetDialog, schemaType);
+        Iterator<CmsSelectWidgetOption> it = options.iterator();
+        int i = 0;
+        while (it.hasNext()) {
+            CmsSelectWidgetOption option = it.next();
+            if (i > 0) {
+                result += "|";
+            }
+            result += option.toString();
+            i++;
+        }
+        return result;
+    }
+
+    /**
+     * Returns a list of CSS resources required by the widget.<p>
+     * 
+     * @param cms the current OpenCms context
+     * 
+     * @return the required CSS resource links
+     */
+    public List<String> getCssResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getDefaultDisplayType()
+     */
+    public DisplayType getDefaultDisplayType() {
+
+        return DisplayType.singleline;
+    }
+
+    /**
+     * Returns the java script initialization call.<p>
+     * 
+     * @return the java script initialization call
+     */
+    public String getInitCall() {
+
+        return null;
+    }
+
+    /**
+     * Returns a list of java script resources required by the widget.<p>
+     * 
+     * @param cms the current OpenCms context
+     * 
+     * @return the required java script resource links
+     */
+    public List<String> getJavaScriptResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    public String getWidgetName() {
+
+        return A_CmsSelectWidget.class.getName();
+    }
+
+    /**
+     * Returns if this is an internal widget.<p>
+     * Only widgets belonging to the OpenCms core should be marked as internal.<p>
+     * 
+     * @return <code>true</code> if this is an internal widget
+     */
+    public boolean isInternal() {
+
+        return false;
+    }
+
+    /**
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * @see org.opencms.widgets.A_CmsWidget#setConfiguration(java.lang.String)
      */
     @Override
@@ -149,6 +252,30 @@ public abstract class A_CmsSelectWidget extends A_CmsWidget {
         return m_height;
     }
 
+<<<<<<< HEAD
+=======
+    /** 
+     * Gets the resource path for the given dialog.<p>
+     * @param cms TODO
+     * @param dialog the dialog 
+     * 
+     * @return the resource path 
+     */
+    protected String getResourcePath(CmsObject cms, I_CmsWidgetDialog dialog) {
+
+        String result = null;
+        if (dialog instanceof CmsDummyWidgetDialog) {
+            result = ((CmsDummyWidgetDialog)dialog).getResource().getRootPath();
+        } else if (dialog instanceof CmsDialog) {
+            result = ((CmsDialog)dialog).getParamResource();
+            if (result != null) {
+                result = cms.getRequestContext().addSiteRoot(result);
+            }
+        }
+        return result;
+    }
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     /**
      * Returns the currently selected value of the select widget.<p>
      * 
@@ -259,4 +386,5 @@ public abstract class A_CmsSelectWidget extends A_CmsWidget {
         m_selectOptions = new ArrayList<CmsSelectWidgetOption>();
         m_selectOptions.addAll(selectOptions);
     }
+
 }

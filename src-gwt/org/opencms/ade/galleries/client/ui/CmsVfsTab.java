@@ -1,4 +1,5 @@
 /*
+
  * This library is part of OpenCms -
  * the Open Source Content Management System
  *
@@ -29,30 +30,37 @@ package org.opencms.ade.galleries.client.ui;
 
 import org.opencms.ade.galleries.client.CmsVfsTabHandler;
 import org.opencms.ade.galleries.client.Messages;
-import org.opencms.ade.galleries.client.ui.css.I_CmsLayoutBundle;
 import org.opencms.ade.galleries.shared.CmsGallerySearchBean;
 import org.opencms.ade.galleries.shared.CmsVfsEntryBean;
+import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants;
 import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants.GalleryTabId;
+import org.opencms.file.CmsResource;
 import org.opencms.gwt.client.ui.CmsList;
-import org.opencms.gwt.client.ui.CmsListItemWidget;
 import org.opencms.gwt.client.ui.I_CmsListItem;
 import org.opencms.gwt.client.ui.input.CmsCheckBox;
+import org.opencms.gwt.client.ui.input.category.CmsDataValue;
 import org.opencms.gwt.client.ui.tree.A_CmsLazyOpenHandler;
 import org.opencms.gwt.client.ui.tree.CmsLazyTree;
 import org.opencms.gwt.client.ui.tree.CmsLazyTreeItem;
-import org.opencms.gwt.client.util.CmsCollectionUtil;
 import org.opencms.gwt.shared.CmsIconUtil;
-import org.opencms.gwt.shared.CmsListInfoBean;
-import org.opencms.util.CmsPair;
 import org.opencms.util.CmsStringUtil;
+import org.opencms.util.CmsUUID;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.logical.shared.CloseEvent;
+import com.google.gwt.event.logical.shared.CloseHandler;
+import com.google.gwt.event.logical.shared.OpenEvent;
+import com.google.gwt.event.logical.shared.OpenHandler;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 
 /**
@@ -80,6 +88,25 @@ public class CmsVfsTab extends A_CmsListTab {
 
             super(checkBox);
             m_vfsEntry = vfsEntry;
+            m_selectionHandlers.add(this);
+        }
+
+        /**
+         * @see org.opencms.ade.galleries.client.ui.A_CmsListTab.A_SelectionHandler#onClick(com.google.gwt.event.dom.client.ClickEvent)
+         */
+        @Override
+        public void onClick(ClickEvent event) {
+
+            if (isIncludeFiles()) {
+                super.onClick(event);
+            } else if (getTabHandler().hasSelectResource()) {
+                String selectPath = m_tabHandler.getSelectPath(m_vfsEntry);
+                getTabHandler().selectResource(
+                    selectPath,
+                    m_vfsEntry.getStructureId(),
+                    m_vfsEntry.getDisplayName(),
+                    I_CmsGalleryProviderConstants.RESOURCE_TYPE_FOLDER);
+            }
         }
 
         /**
@@ -88,36 +115,64 @@ public class CmsVfsTab extends A_CmsListTab {
         @Override
         protected void onSelectionChange() {
 
-            getTabHandler().onSelectFolder(m_vfsEntry.getSitePath(), getCheckBox().isChecked());
+            if (isIncludeFiles()) {
+                getTabHandler().onSelectFolder(m_vfsEntry.getRootPath(), getCheckBox().isChecked());
+            }
+        }
+
+        /**
+         * @see org.opencms.ade.galleries.client.ui.A_CmsListTab.A_SelectionHandler#selectBeforeGoingToResultTab()
+         */
+        @Override
+        protected void selectBeforeGoingToResultTab() {
+
+            for (SelectionHandler otherHandler : m_selectionHandlers) {
+                if ((otherHandler != this)
+                    && (otherHandler.getCheckBox() != null)
+                    && otherHandler.getCheckBox().isChecked()) {
+                    otherHandler.getCheckBox().setChecked(false);
+                    otherHandler.onSelectionChange();
+                }
+            }
+            getCheckBox().setChecked(true);
+            onSelectionChange();
         }
     }
 
     /** Text metrics key. */
-    private static final String TM_CATEGORY_TAB = "VfsTab";
-
-    /** A map from tree items to the corresponding data beans. */
-    protected IdentityHashMap<CmsLazyTreeItem, CmsVfsEntryBean> m_entryMap = new IdentityHashMap<CmsLazyTreeItem, CmsVfsEntryBean>();
+    private static final String TM_VFS_TAB = "VfsTab";
 
     /** The tab handler. */
     protected CmsVfsTabHandler m_tabHandler;
 
+    /** The selection handlers for the current tab. */
+    List<SelectionHandler> m_selectionHandlers = new ArrayList<SelectionHandler>();
+
+    /** Flag indicating files are included. */
+    private boolean m_includeFiles;
+
+    /** Flag which indicates whether the tab has been initialized. */
+    private boolean m_initialized;
+
     /** A map of tree items indexed by VFS path. */
     private Map<String, CmsLazyTreeItem> m_itemsByPath = new HashMap<String, CmsLazyTreeItem>();
 
-    /** The search parameter panel for this tab. */
-    private CmsSearchParamPanel m_paramPanel;
+    /** The list of tree items. */
+    private List<CmsLazyTreeItem> m_treeItems = new ArrayList<CmsLazyTreeItem>();
 
     /**
      * Constructor.<p>
      * 
      * @param tabHandler the tab handler 
+     * @param includeFiles the include files flag
      */
-    public CmsVfsTab(CmsVfsTabHandler tabHandler) {
+    public CmsVfsTab(CmsVfsTabHandler tabHandler, boolean includeFiles) {
 
         super(GalleryTabId.cms_tab_vfstree);
-        m_scrollList.truncate(TM_CATEGORY_TAB, CmsGalleryDialog.DIALOG_WIDTH);
+        m_scrollList.truncate(TM_VFS_TAB, CmsGalleryDialog.DIALOG_WIDTH);
         m_tabHandler = tabHandler;
-        addStyleName(I_CmsLayoutBundle.INSTANCE.galleryDialogCss().listOnlyTab());
+        m_includeFiles = includeFiles;
+        init();
     }
 
     /**
@@ -132,50 +187,62 @@ public class CmsVfsTab extends A_CmsListTab {
             CmsLazyTreeItem item = createItem(entry);
             addWidgetToList(item);
         }
+        m_initialized = true;
     }
 
     /**
-     * @see org.opencms.ade.galleries.client.ui.A_CmsTab#getParamPanel(org.opencms.ade.galleries.shared.CmsGallerySearchBean)
+     * @see org.opencms.ade.galleries.client.ui.A_CmsTab#getParamPanels(org.opencms.ade.galleries.shared.CmsGallerySearchBean)
      */
     @Override
-    public CmsSearchParamPanel getParamPanel(CmsGallerySearchBean searchObj) {
+    public List<CmsSearchParamPanel> getParamPanels(CmsGallerySearchBean searchObj) {
 
-        if (m_paramPanel == null) {
-            m_paramPanel = new CmsSearchParamPanel(Messages.get().key(Messages.GUI_PARAMS_LABEL_FOLDERS_0), this);
+        List<CmsSearchParamPanel> result = new ArrayList<CmsSearchParamPanel>();
+        for (String folder : searchObj.getFolders()) {
+            CmsSearchParamPanel panel = new CmsSearchParamPanel(
+                Messages.get().key(Messages.GUI_PARAMS_LABEL_FOLDERS_0),
+                this);
+            panel.setContent(folder, folder);
+            result.add(panel);
         }
-        String content = getVfsParams(new ArrayList<String>(searchObj.getFolders()));
-        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(content)) {
-            m_paramPanel.setContent(content);
-            return m_paramPanel;
-        }
-        return null;
+        return result;
     }
 
     /**
-     * Returns a user-readable string representing the selected VFS folders.<p>
+     * Checks if the tab is initialized.<p>
      * 
-     * @param selectedFolders the list of selected folders 
-     * 
-     * @return a user-readable string representing the selected VFS folder 
+     * @return true if the tab is initialized 
      */
-    public String getVfsParams(List<String> selectedFolders) {
+    public boolean isInitialized() {
 
-        if (CmsCollectionUtil.isEmptyOrNull(selectedFolders)) {
-            return null;
-        }
-        return CmsStringUtil.listAsString(selectedFolders, ", ");
+        return m_initialized;
     }
 
     /**
-     * Unchecks the checkboxes for each folder passed in the <code>folders</code> parameter.<p>
+     * This method is called when the VFS tree preload data is received.<p>
      * 
-     * @param folders the folders for which the checkboxes should be unchecked 
+     * @param vfsPreloadData the VFS tree preload data 
+     */
+    public void onReceiveVfsPreloadData(CmsVfsEntryBean vfsPreloadData) {
+
+        fillInitially(Collections.singletonList(vfsPreloadData));
+        String siteRoot = vfsPreloadData.getSiteRoot();
+        if (siteRoot != null) {
+            selectSite(siteRoot);
+        }
+    }
+
+    /**
+     * Un-checks the check boxes for each folder passed in the <code>folders</code> parameter.<p>
+     * 
+     * @param folders the folders for which the check boxes should be unchecked 
      */
     public void uncheckFolders(Collection<String> folders) {
 
         for (String folder : folders) {
             CmsLazyTreeItem item = m_itemsByPath.get(folder);
-            item.getCheckBox().setChecked(false);
+            if (item != null) {
+                item.getCheckBox().setChecked(false);
+            }
         }
     }
 
@@ -185,8 +252,8 @@ public class CmsVfsTab extends A_CmsListTab {
     protected void clear() {
 
         clearList();
-        m_entryMap = new IdentityHashMap<CmsLazyTreeItem, CmsVfsEntryBean>();
-
+        m_selectionHandlers.clear();
+        m_treeItems.clear();
     }
 
     /**
@@ -198,26 +265,64 @@ public class CmsVfsTab extends A_CmsListTab {
      */
     protected CmsLazyTreeItem createItem(final CmsVfsEntryBean vfsEntry) {
 
-        CmsListInfoBean info = new CmsListInfoBean();
-        info.setTitle(vfsEntry.getDisplayName());
-        info.setSubTitle(vfsEntry.getSitePath());
-        // info.setSubTitle("...");
-        CmsListItemWidget liWidget = new CmsListItemWidget(info);
-        liWidget.setIcon(CmsIconUtil.getResourceIconClasses("folder", false));
+        String name = null;
+        String rootPath = vfsEntry.getRootPath();
+        if (rootPath.equals("/") || rootPath.equals("")) {
+            name = "/";
+        } else {
+            name = CmsResource.getName(vfsEntry.getRootPath());
+
+            if (name.endsWith("/")) {
+                name = name.substring(0, name.length() - 1);
+            }
+        }
+        CmsDataValue dataValue = new CmsDataValue(600, 3, CmsIconUtil.getResourceIconClasses(
+            I_CmsGalleryProviderConstants.RESOURCE_TYPE_FOLDER,
+            true), name, vfsEntry.getDisplayName());
+        dataValue.setUnselectable();
         if (vfsEntry.isEditable()) {
-            liWidget.addButton(createUploadButtonForTarget(vfsEntry.getSitePath()));
+            dataValue.addButton(createUploadButtonForTarget(vfsEntry.getRootPath(), true));
+        }
+        CmsLazyTreeItem result;
+        SelectionHandler selectionHandler;
+        CmsCheckBox checkbox = null;
+        if (isIncludeFiles()) {
+            checkbox = new CmsCheckBox();
+            result = new CmsLazyTreeItem(checkbox, dataValue, true);
+            selectionHandler = new SelectionHandler(vfsEntry, checkbox);
+            checkbox.addClickHandler(selectionHandler);
+            dataValue.addClickHandler(selectionHandler);
+            dataValue.addButton(createSelectButton(selectionHandler));
+        } else {
+            result = new CmsLazyTreeItem(dataValue, true);
+            selectionHandler = new SelectionHandler(vfsEntry, null);
+        }
+        // we need this in a final variable to access it in the click handler 
+        if (getTabHandler().hasSelectResource()) {
+            String selectPath = m_tabHandler.getSelectPath(vfsEntry);
+            dataValue.addButton(createSelectResourceButton(
+                selectPath,
+                vfsEntry.getStructureId(),
+                vfsEntry.getDisplayName(),
+                I_CmsGalleryProviderConstants.RESOURCE_TYPE_FOLDER));
+        }
+        result.setData(vfsEntry);
+        m_itemsByPath.put(vfsEntry.getRootPath(), result);
+        result.setLeafStyle(false);
+        result.setSmallView(true);
+        m_treeItems.add(result);
+        if (vfsEntry.getChildren() != null) {
+            for (CmsVfsEntryBean child : vfsEntry.getChildren()) {
+                result.addChild(createItem(child));
+            }
+            result.onFinishLoading();
+            result.setOpen(true, false);
+            if (vfsEntry.getChildren().isEmpty()) {
+                result.setLeafStyle(true);
+            }
         }
 
-        final CmsCheckBox checkbox = new CmsCheckBox();
-        CmsLazyTreeItem result = new CmsLazyTreeItem(checkbox, liWidget, true);
-        SelectionHandler selectionHandler = new SelectionHandler(vfsEntry, checkbox);
-        checkbox.addClickHandler(selectionHandler);
-        liWidget.addDoubleClickHandler(selectionHandler);
-        m_entryMap.put(result, vfsEntry);
-        m_itemsByPath.put(vfsEntry.getSitePath(), result);
-        result.setLeafStyle(false);
         return result;
-
     }
 
     /**
@@ -226,53 +331,76 @@ public class CmsVfsTab extends A_CmsListTab {
     @Override
     protected CmsList<? extends I_CmsListItem> createScrollList() {
 
-        return new CmsLazyTree<CmsLazyTreeItem>(new A_CmsLazyOpenHandler<CmsLazyTreeItem>() {
+        CmsLazyTree<CmsLazyTreeItem> tree = new CmsLazyTree<CmsLazyTreeItem>(
+            new A_CmsLazyOpenHandler<CmsLazyTreeItem>() {
 
-            /**
-             * @see org.opencms.gwt.client.ui.tree.I_CmsLazyOpenHandler#load(org.opencms.gwt.client.ui.tree.CmsLazyTreeItem)
-             */
-            public void load(final CmsLazyTreeItem target) {
+                /**
+                 * @see org.opencms.gwt.client.ui.tree.I_CmsLazyOpenHandler#load(org.opencms.gwt.client.ui.tree.CmsLazyTreeItem)
+                 */
+                public void load(final CmsLazyTreeItem target) {
 
-                CmsVfsEntryBean entry = m_entryMap.get(target);
-                String path = entry.getSitePath();
-                AsyncCallback<List<CmsVfsEntryBean>> callback = new AsyncCallback<List<CmsVfsEntryBean>>() {
+                    CmsVfsEntryBean entry = target.getData();
+                    String path = entry.getRootPath();
+                    AsyncCallback<List<CmsVfsEntryBean>> callback = new AsyncCallback<List<CmsVfsEntryBean>>() {
 
-                    /**
-                     * @see com.google.gwt.user.client.rpc.AsyncCallback#onFailure(java.lang.Throwable)
-                     */
-                    public void onFailure(Throwable caught) {
+                        /**
+                         * @see com.google.gwt.user.client.rpc.AsyncCallback#onFailure(java.lang.Throwable)
+                         */
+                        public void onFailure(Throwable caught) {
 
-                        // should never be called 
+                            // should never be called 
 
-                    }
-
-                    /**
-                     * @see com.google.gwt.user.client.rpc.AsyncCallback#onSuccess(java.lang.Object)
-                     */
-                    public void onSuccess(List<CmsVfsEntryBean> result) {
-
-                        for (CmsVfsEntryBean childEntry : result) {
-                            CmsLazyTreeItem item = createItem(childEntry);
-                            target.addChild(item);
                         }
-                        target.onFinishLoading();
-                        // 
-                    }
-                };
 
-                m_tabHandler.getSubFolders(path, callback);
+                        /**
+                         * @see com.google.gwt.user.client.rpc.AsyncCallback#onSuccess(java.lang.Object)
+                         */
+                        public void onSuccess(List<CmsVfsEntryBean> result) {
 
+                            for (CmsVfsEntryBean childEntry : result) {
+                                CmsLazyTreeItem item = createItem(childEntry);
+                                target.addChild(item);
+                            }
+                            target.onFinishLoading();
+                        }
+                    };
+
+                    m_tabHandler.getSubFolders(path, callback);
+
+                }
+            });
+        tree.addOpenHandler(new OpenHandler<CmsLazyTreeItem>() {
+
+            public void onOpen(OpenEvent<CmsLazyTreeItem> event) {
+
+                Set<CmsUUID> ids = getOpenElementIds();
+                CmsVfsEntryBean entry = event.getTarget().getData();
+                ids.add(entry.getStructureId());
+                getTabHandler().onChangeTreeState(ids);
             }
+
         });
+        tree.addCloseHandler(new CloseHandler<CmsLazyTreeItem>() {
+
+            public void onClose(CloseEvent<CmsLazyTreeItem> event) {
+
+                Set<CmsUUID> ids = getOpenElementIds();
+                CmsVfsEntryBean entry = event.getTarget().getData();
+                ids.remove(entry.getStructureId());
+                getTabHandler().onChangeTreeState(ids);
+            }
+
+        });
+        return tree;
     }
 
     /**
      * @see org.opencms.ade.galleries.client.ui.A_CmsListTab#getSortList()
      */
     @Override
-    protected List<CmsPair<String, String>> getSortList() {
+    protected LinkedHashMap<String, String> getSortList() {
 
-        return null;
+        return m_tabHandler.getSortList();
     }
 
     /**
@@ -285,12 +413,53 @@ public class CmsVfsTab extends A_CmsListTab {
     }
 
     /**
-     * @see org.opencms.ade.galleries.client.ui.A_CmsListTab#hasQuickFilter()
+     * Returns if files are included.<p>
+     * 
+     * @return <code>true</code> if files are included
      */
-    @Override
-    protected boolean hasQuickFilter() {
+    protected boolean isIncludeFiles() {
 
-        // quick filter not available for this tab
-        return false;
+        return m_includeFiles;
     }
+
+    /**
+     * Collects the structure ids belonging to open tree entries.<p>
+     * 
+     * @return the structure ids for  the open tree entries 
+     */
+    Set<CmsUUID> getOpenElementIds() {
+
+        Set<CmsUUID> ids = new HashSet<CmsUUID>();
+        for (CmsLazyTreeItem item : m_treeItems) {
+            CmsVfsEntryBean entry = item.getData();
+            if (item.isOpen()) {
+                ids.add(entry.getStructureId());
+            }
+        }
+        return ids;
+    }
+
+    /**
+     * Selects a specific site.<p>
+     * 
+     * @param siteRoot the site root 
+     */
+    private void selectSite(String siteRoot) {
+
+        if (m_sortSelectBox == null) {
+            return;
+        }
+        Map<String, String> options = m_sortSelectBox.getItems();
+        String option = null;
+        for (Map.Entry<String, String> entry : options.entrySet()) {
+            if (CmsStringUtil.comparePaths(entry.getKey(), siteRoot)) {
+                option = entry.getKey();
+                break;
+            }
+        }
+        if (option != null) {
+            m_sortSelectBox.setFormValue(option, false);
+        }
+    }
+
 }

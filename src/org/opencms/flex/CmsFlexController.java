@@ -27,12 +27,16 @@
 
 package org.opencms.flex;
 
+import org.opencms.ade.detailpage.CmsDetailPageResourceHandler;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsResource;
 import org.opencms.main.CmsLog;
 import org.opencms.util.CmsRequestUtil;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 
 import javax.servlet.ServletRequest;
@@ -54,6 +58,9 @@ public class CmsFlexController {
 
     /** The log object for this class. */
     private static final Log LOG = CmsLog.getLog(CmsFlexController.class);
+
+    /** Set of uncacheable attributes. */
+    private static Set<String> uncacheableAttributes = new HashSet<String>();
 
     /** The CmsFlexCache where the result will be cached in, required for the dispatcher. */
     private CmsFlexCache m_cache;
@@ -279,6 +286,16 @@ public class CmsFlexController {
     }
 
     /**
+     * Tells the flex controller to never cache the given attribute.<p>
+     * 
+     * @param attributeName the attribute which shouldn't be cached 
+     */
+    public static void registerUncacheableAttribute(String attributeName) {
+
+        uncacheableAttributes.add(attributeName);
+    }
+
+    /**
      * Removes the controller attribute from a request.<p>
      * 
      * @param req the request to remove the controller from
@@ -356,6 +373,8 @@ public class CmsFlexController {
         } else {
             // this resource can not be optimized for "last modified", use current time as header
             res.setDateHeader(CmsRequestUtil.HEADER_LAST_MODIFIED, System.currentTimeMillis());
+            // avoiding issues with IE8+
+            res.setHeader(CmsRequestUtil.HEADER_CACHE_CONTROL, "public, max-age=0");
         }
     }
 
@@ -600,6 +619,20 @@ public class CmsFlexController {
         m_flexResponseList.add(res);
         m_flexContextInfoList.add(new CmsFlexRequestContextInfo());
         updateRequestContextInfo();
+    }
+
+    /**
+     * Removes request attributes which shouldn't be cached in flex cache entries from a map.<p>
+     * 
+     * @param attributeMap the map of attributes 
+     */
+    public void removeUncacheableAttributes(Map<String, Object> attributeMap) {
+
+        for (String uncacheableAttribute : uncacheableAttributes) {
+            attributeMap.remove(uncacheableAttribute);
+        }
+        attributeMap.remove(CmsFlexController.ATTRIBUTE_NAME);
+        attributeMap.remove(CmsDetailPageResourceHandler.ATTR_DETAIL_CONTENT_RESOURCE);
     }
 
     /**

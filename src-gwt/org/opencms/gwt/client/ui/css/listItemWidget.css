@@ -27,11 +27,17 @@ li div.itemContainer.cmsHovering{
 	font-size: value("constants.css.fontSize");
 	line-height: 16px;
 }
+@url editCursorGifUrl coreImages.editCursorGif;
+@url editCursorIcoUrl coreImages.editCursorIco;
 
+.inlineEditable, .inlineEditable:hover, .inlineEditable:focus{
+	cursor: editCursorIcoUrl, editCursorGifUrl, crosshair;
+}
 .itemContainer .titleInput{
 	font-weight: bold;
 	font-family: value("constants.css.fontFamily");
 	font-size: value("constants.css.fontSize");
+	display: inline-block; 
 }
 
 @external navMode;
@@ -68,11 +74,19 @@ li div.itemContainer.cmsHovering{
 }
 
 .lockIcon{
-    left: 16px;
     position: absolute;
+    left: 16px;
     top: 16px;
     z-index: value("constants.css.zIndexInline");
 }
+
+.topRightIcon {
+	position: absolute;
+	left: 16px;
+	top: 0ßx;
+	z-index: value("constants.css.zIndexInline");
+}
+
 
 @sprite .lockClosed, .lockSharedClosed{
 	gwt-image: "gwtImages.lockOtherImage";
@@ -82,9 +96,18 @@ li div.itemContainer.cmsHovering{
 	gwt-image: "gwtImages.lockUserImage";
 }
 
+@sprite .copyModel {
+	gwt-image: "gwtImages.addImage"; 
+}
+
 @sprite .lockSharedOpen{
 	gwt-image: "gwtImages.lockSharedImage";
 }
+
+@sprite .changed { 
+	gwt-image: "gwtImages.changedIcon";
+}
+
 
 
 @sprite div.itemContent {
@@ -135,6 +158,7 @@ div.itemIcon{
 	font-weight: bold;
     vertical-align: middle;
     white-space: nowrap;
+    display: inline;
 }
 .titleRow{}
 @if user.agent ie6 {
@@ -205,3 +229,18 @@ li.dragging, div.dragging{
 .cmsState-down{}
 .cmsState-down-hovering{}
 .cmsState-down-disabled{}
+
+.unselectable  * {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-o-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+
+.itemContainer .titleDeleted { 
+	text-decoration: line-through; 
+}

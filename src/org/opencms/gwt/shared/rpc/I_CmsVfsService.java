@@ -33,12 +33,21 @@ import org.opencms.gwt.shared.CmsDeleteResourceBean;
 import org.opencms.gwt.shared.CmsListInfoBean;
 import org.opencms.gwt.shared.CmsLockReportInfo;
 import org.opencms.gwt.shared.CmsPrepareEditResponse;
+import org.opencms.gwt.shared.CmsPreviewInfo;
+import org.opencms.gwt.shared.CmsRenameInfoBean;
+import org.opencms.gwt.shared.CmsReplaceInfo;
+import org.opencms.gwt.shared.CmsResourceStatusBean;
+import org.opencms.gwt.shared.CmsRestoreInfoBean;
 import org.opencms.gwt.shared.CmsVfsEntryBean;
+import org.opencms.gwt.shared.alias.CmsAliasBean;
 import org.opencms.gwt.shared.property.CmsPropertiesBean;
 import org.opencms.gwt.shared.property.CmsPropertyChangeSet;
 import org.opencms.util.CmsUUID;
+import org.opencms.xml.content.CmsXmlContentProperty;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 
@@ -48,6 +57,24 @@ import com.google.gwt.user.client.rpc.RemoteService;
  * @since 8.0.0
  */
 public interface I_CmsVfsService extends RemoteService {
+
+    /**
+     * Creates a new property definition.<p>
+     * 
+     * @param propDef the name of the property
+     *  
+     * @throws CmsRpcException if something goes wrong 
+     */
+    void createPropertyDefinition(String propDef) throws CmsRpcException;
+
+    /**
+     * Deletes a resource from the VFS.<p>
+     * 
+     * @param structureId the structure id of the resource to delete
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    void deleteResource(CmsUUID structureId) throws CmsRpcException;
 
     /**
      * Deletes a resource from the VFS.<p>
@@ -66,6 +93,17 @@ public interface I_CmsVfsService extends RemoteService {
      * @throws CmsRpcException if something goes wrong
      */
     void forceUnlock(CmsUUID structureId) throws CmsRpcException;
+
+    /**
+     * Fetches the aliases for a given page.<p>
+     * 
+     * @param uuid the structure id of the page 
+     * 
+     * @return the lists of aliases for the page
+     * 
+     * @throws CmsRpcException if something goes wrong
+     */
+    List<CmsAliasBean> getAliasesForPage(CmsUUID uuid) throws CmsRpcException;
 
     /**
      * Returns a {@link CmsAvailabilityInfoBean} for a given resource.<p>
@@ -92,6 +130,17 @@ public interface I_CmsVfsService extends RemoteService {
     /**
      * Returns a list of potentially broken links, if the given resource was deleted.<p>
      * 
+     * @param structureId the resource structure id
+     * 
+     * @return a list of potentially broken links
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    CmsDeleteResourceBean getBrokenLinks(CmsUUID structureId) throws CmsRpcException;
+
+    /**
+     * Returns a list of potentially broken links, if the given resource was deleted.<p>
+     * 
      * @param sitePath the resource site-path
      * 
      * @return a list of potentially broken links
@@ -110,6 +159,37 @@ public interface I_CmsVfsService extends RemoteService {
      * @throws CmsRpcException if something goes wrong 
      */
     List<CmsVfsEntryBean> getChildren(String path) throws CmsRpcException;
+
+    /**
+     * Gets the default property configurations for the given structure ids.<p>
+     * 
+     * @param structureIds the structure ids for which the property configurations should be fetched 
+     * @return a map from the given structure ids to their default property configurations
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    Map<CmsUUID, Map<String, CmsXmlContentProperty>> getDefaultProperties(List<CmsUUID> structureIds)
+    throws CmsRpcException;
+
+    /**
+     * Gets the names of defined properties.<p>
+     * 
+     * @return the list of names for all defined properties
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    ArrayList<String> getDefinedProperties() throws CmsRpcException;
+
+    /**
+     * Returns the file replace info.<p>
+     * 
+     * @param structureId the structure id of the file to replace
+     * 
+     * @return the file replace info
+     * 
+     * @throws CmsRpcException if the RPC call goes wrong
+     */
+    CmsReplaceInfo getFileReplaceInfo(CmsUUID structureId) throws CmsRpcException;
 
     /**
      * Returns the lock report info.<p>
@@ -145,11 +225,74 @@ public interface I_CmsVfsService extends RemoteService {
     CmsListInfoBean getPageInfo(String vfsPath) throws CmsRpcException;
 
     /**
+     * Returns the preview info for the given resource.<p>
+     * 
+     * @param structureId the resource structure id
+     * @param locale the requested locale
+     * 
+     * @return the preview info
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    CmsPreviewInfo getPreviewInfo(CmsUUID structureId, String locale) throws CmsRpcException;
+
+    /**
+     * Returns the preview info for the given resource.<p>
+     * 
+     * @param sitePath the resource site path
+     * @param locale the requested locale
+     * 
+     * @return the preview info
+     * 
+     * @throws CmsRpcException if something goes wrong
+     */
+    CmsPreviewInfo getPreviewInfo(String sitePath, String locale) throws CmsRpcException;
+
+    /***
+     * Gets the information necessary for the rename dialog.<p>
+     *  
+     * @param structureId the structure id of the resource to rename
+     *  
+     * @return the information needed for the rename dialog
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    CmsRenameInfoBean getRenameInfo(CmsUUID structureId) throws CmsRpcException;
+
+    /**
+     * Gets a bean containing status information for a given resource.<p>
+     * 
+     * @param structureId the structure id of a resource
+     * @param locale the locale for which we want the resource information
+     * @param includeTargets true if relation targets should also be fetched 
+     * @param additionalTargetIds structure ids of resources to add to the relation targets returned 
+     *  
+     * @return the resource status
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    CmsResourceStatusBean getResourceStatus(
+        CmsUUID structureId,
+        String locale,
+        boolean includeTargets,
+        List<CmsUUID> additionalTargetIds) throws CmsRpcException;
+
+    /**
+     * Gets the information which is necessary for opening the 'Restore' dialog for a resource.<p>
+     * 
+     * @param structureId the structure id of the resource 
+     * @return the information for the resource 
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    CmsRestoreInfoBean getRestoreInfo(CmsUUID structureId) throws CmsRpcException;
+
+    /**
      * Returns the root entries of the VFS.<p>
      * 
      * @return a list of root entries
      * 
-     * @throws CmsRpcException if something goes wrong 
+     * @throws CmsRpcException if something goes wrong  
      */
     List<CmsVfsEntryBean> getRootEntries() throws CmsRpcException;
 
@@ -185,6 +328,28 @@ public interface I_CmsVfsService extends RemoteService {
     CmsPrepareEditResponse prepareEdit(CmsUUID currentPage, String fileNameWithMacros) throws CmsRpcException;
 
     /**
+     * Renames a resource.<p>
+     *  
+     * @param structureId the structure id of the resource to rename 
+     * @param newName the new resource name
+     *  
+     * @return null or an error message
+     *  
+     * @throws CmsRpcException if something goes wrong  
+     */
+    String renameResource(CmsUUID structureId, String newName) throws CmsRpcException;
+
+    /**
+     * Saves aliases for a page.<p>
+     * 
+     * @param structureId the structure id of the page 
+     * 
+     * @param aliases the aliases which should be saved for the page 
+     * @throws CmsRpcException 
+     */
+    void saveAliases(CmsUUID structureId, List<CmsAliasBean> aliases) throws CmsRpcException;
+
+    /**
      * Saves  a set of property changes.<p>
      * 
      * @param changes a set of property changes
@@ -204,4 +369,36 @@ public interface I_CmsVfsService extends RemoteService {
      * @throws CmsRpcException if something goes wrong processing the request
      */
     String substituteLinkForRootPath(String currentSiteRoot, String rootPath) throws CmsRpcException;
+
+    /**
+     * Deletes a resource from the VFS.<p>
+     * 
+     * @param structureId the structure id of the resource to delete
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    void syncDeleteResource(CmsUUID structureId) throws CmsRpcException;
+
+    /**
+     * Undoes the changes to a given resource, i.e. restores its online content to its offline version.<p>
+     * 
+     * @param structureId the structure id of the resource to undo 
+     * @param undoMove true if move operations should be undone
+     *  
+     * @throws CmsRpcException if something goes wrong 
+     */
+    void undoChanges(CmsUUID structureId, boolean undoMove) throws CmsRpcException;
+
+    /**
+     * Validates alias paths for a page.<p>
+     * 
+     * @param uuid the structure id of the page 
+     * @param aliasPaths a map from (arbitrary) id strings to alias paths 
+     * 
+     * @return a map which maps the same id strings to validation results
+     *  
+     * @throws CmsRpcException if something goes wrong 
+     */
+    Map<String, String> validateAliases(CmsUUID uuid, Map<String, String> aliasPaths) throws CmsRpcException;
+
 }

@@ -48,6 +48,7 @@ import org.opencms.gwt.client.ui.input.CmsLabel;
 import org.opencms.gwt.client.ui.input.CmsLabel.I_TitleGenerator;
 import org.opencms.gwt.client.ui.tree.CmsLazyTreeItem;
 import org.opencms.gwt.client.ui.tree.CmsTreeItem;
+import org.opencms.gwt.client.util.CmsMessages;
 import org.opencms.gwt.client.util.CmsStyleVariable;
 import org.opencms.gwt.shared.CmsAdditionalInfoBean;
 import org.opencms.gwt.shared.CmsListInfoBean;
@@ -60,7 +61,6 @@ import org.opencms.util.CmsUUID;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -130,6 +130,12 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
     /** Style variable for opener. */
     private CmsStyleVariable m_openerForNonNavigationStyle;
 
+    /** Style variable for switching between 'children / no children' styles. */
+    private CmsStyleVariable m_styleHasChildren = new CmsStyleVariable(this);
+
+    /** Style variable for switching between 'navigation children / no navigation children' styles. */
+    private CmsStyleVariable m_styleHasNavChildren = new CmsStyleVariable(this);
+
     /**
      * Default constructor.<p>
      * 
@@ -138,10 +144,20 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
     public CmsSitemapTreeItem(CmsClientSitemapEntry entry) {
 
         super(generateItemWidget(entry), false);
+<<<<<<< HEAD
         m_entryId = entry.getId();
         m_decoratedPanel.addDecorationBoxStyle(CSS.sitemapEntryDecoration());
         m_detailPageLabelTitleGenerator = new DetailPageLabelTitleGenerator();
         getListItemWidget().getSubTitleSuffix().setTitleGenerator(m_detailPageLabelTitleGenerator);
+=======
+        m_opener.addStyleName(CSS.treeItemOpener());
+        m_styleHasChildren.setValue(CSS.hasChildren());
+        m_styleHasNavChildren.setValue(CSS.hasNavChildren());
+        m_entryId = entry.getId();
+        m_decoratedPanel.addDecorationBoxStyle(CSS.sitemapEntryDecoration());
+        m_detailPageLabelTitleGenerator = new DetailPageLabelTitleGenerator();
+        getListItemWidget().setUnselectable();
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         getListItemWidget().addOpenHandler(new OpenHandler<CmsListItemWidget>() {
 
             public void onOpen(OpenEvent<CmsListItemWidget> event) {
@@ -158,6 +174,19 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
                 if (sitemapEntry != null) {
                     if (sitemapEntry.isSubSitemapType()) {
                         controller.openSiteMap(sitemapEntry.getSitePath());
+<<<<<<< HEAD
+=======
+                    } else if (sitemapEntry.isNavigationLevelType()) {
+                        if (!sitemapEntry.getSubEntries().isEmpty()) {
+                            CmsClientSitemapEntry subEntry = sitemapEntry.getSubEntries().get(0);
+                            if (!subEntry.isNavigationLevelType()) {
+                                controller.leaveEditor(subEntry.getSitePath());
+                                return;
+                            }
+                        }
+                        getListItemWidget().setIconTitle(
+                            Messages.get().key(Messages.GUI_NAVIGATION_LEVEL_UNKOWN_TARGET_0));
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
                     } else {
                         controller.leaveEditor(sitemapEntry.getSitePath());
                     }
@@ -217,9 +246,15 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
                                 true);
                             propChanges.add(titleMod);
                         }
+<<<<<<< HEAD
                         controller.editAndChangeName(editEntry, urlName, propChanges, true, CmsReloadMode.none);
                     } else {
                         controller.edit(editEntry, propChanges, CmsReloadMode.none);
+=======
+                        controller.editAndChangeName(editEntry, urlName, propChanges, true, CmsReloadMode.reloadEntry);
+                    } else {
+                        controller.edit(editEntry, propChanges, CmsReloadMode.reloadEntry);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
                     }
                 }
                 titleLabel.setVisible(true);
@@ -239,6 +274,7 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
     }
 
     /**
+<<<<<<< HEAD
      * Generates the list item widget for the tree item.<p>
      * 
      * @param entry the sitemap entry
@@ -255,16 +291,35 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
         : Messages.get().key(Messages.GUI_HOVERBAR_GOTO_0));
         setExpiredStyle(entry, itemWidget);
         return itemWidget;
+=======
+     * Helper method to add an additional info bean to a list.<p>
+     * 
+     * @param infos the list of additional info beans 
+     * @param label the label for the new bean 
+     * @param value the value for the new bean 
+     */
+    protected static void addInfo(List<CmsAdditionalInfoBean> infos, String label, String value) {
+
+        infos.add(new CmsAdditionalInfoBean(label, value, null));
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
      * Returns the list info bean for the given entry.<p>
      * 
      * @param entry the sitemap entry
+<<<<<<< HEAD
      * 
      * @return the list info bean
      */
     private static CmsListInfoBean getInfoBean(CmsClientSitemapEntry entry) {
+=======
+     * @param navMode a flag indicating whether we want the info bean for navigation mode or VFS mode 
+     * 
+     * @return the list info bean
+     */
+    static CmsListInfoBean getInfoBean(CmsClientSitemapEntry entry, boolean navMode) {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
         CmsListInfoBean infoBean = new CmsListInfoBean();
         infoBean.setTitle(entry.getTitle());
@@ -274,6 +329,7 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
         ? entry.getDefaultFileType()
         : entry.getResourceTypeName());
         infoBean.setResourceState(entry.getResourceState());
+<<<<<<< HEAD
 
         List<CmsAdditionalInfoBean> infos = new ArrayList<CmsAdditionalInfoBean>();
         infos.add(new CmsAdditionalInfoBean(Messages.get().key(Messages.GUI_NAME_0), entry.getName(), null));
@@ -284,10 +340,37 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
                 titleProperty.getEffectiveValue(),
                 null));
         }
+=======
+        CmsMessages msg = Messages.get();
+        List<CmsAdditionalInfoBean> infos = new ArrayList<CmsAdditionalInfoBean>();
+        addInfo(infos, msg.key(Messages.GUI_NAME_0), entry.getName());
+
+        boolean isTitleSet = false;
+        if (navMode) {
+            // in nav mode, display the title of the page rather than that of the folder, if available 
+            Map<String, CmsClientProperty> defaultFileProps = entry.getDefaultFileProperties();
+            CmsClientProperty titleProperty = defaultFileProps == null
+            ? null
+            : defaultFileProps.get(CmsClientProperty.PROPERTY_TITLE);
+            if ((titleProperty != null) && !titleProperty.isEmpty()) {
+                addInfo(infos, msg.key(Messages.GUI_TITLE_PROPERTY_0), titleProperty.getEffectiveValue());
+                isTitleSet = true;
+            }
+        }
+        if (!isTitleSet) {
+            CmsClientProperty titleProperty = entry.getOwnProperties().get(CmsClientProperty.PROPERTY_TITLE);
+            if ((titleProperty != null) && !titleProperty.isEmpty()) {
+                addInfo(infos, msg.key(Messages.GUI_TITLE_PROPERTY_0), titleProperty.getEffectiveValue());
+                isTitleSet = true;
+            }
+        }
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         String shownPath = entry.getVfsPath();
         if (CmsStringUtil.isEmptyOrWhitespaceOnly(shownPath)) {
             shownPath = "-";
         }
+<<<<<<< HEAD
         infos.add(new CmsAdditionalInfoBean(Messages.get().key(Messages.GUI_VFS_PATH_0), shownPath, null));
         if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(entry.getDateReleased())) {
             infos.add(new CmsAdditionalInfoBean(
@@ -306,18 +389,68 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
                 Messages.get().key(Messages.GUI_LABEL_TARGET_0),
                 entry.getRedirectTarget(),
                 null));
+=======
+        addInfo(infos, msg.key(Messages.GUI_VFS_PATH_0), shownPath);
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(entry.getDateReleased())) {
+            addInfo(infos, msg.key(Messages.GUI_LABEL_DATE_RELEASED_0), entry.getDateReleased());
+
+        }
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(entry.getDateExpired())) {
+            addInfo(infos, msg.key(Messages.GUI_LABEL_DATE_EXPIRED_0), entry.getDateExpired());
+
+        }
+        if (entry.getEntryType() == EntryType.redirect) {
+            addInfo(infos, msg.key(Messages.GUI_LABEL_TARGET_0), entry.getRedirectTarget());
+
+        }
+        if (entry.getAliases() != null) {
+            int counter = 1;
+            for (String aliasPath : entry.getAliases()) {
+                addInfo(infos, msg.key(Messages.GUI_LABEL_ALIAS_1, counter + ""), aliasPath);
+                counter += 1;
+            }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         }
         infoBean.setAdditionalInfo(infos);
         return infoBean;
     }
 
     /**
+<<<<<<< HEAD
      * Sets the expired item style if appropriate.<p>
+=======
+     * Generates the list item widget for the tree item.<p>
+     * 
+     * @param entry the sitemap entry
+     * 
+     * @return the list item widget
+     */
+    private static CmsListItemWidget generateItemWidget(final CmsClientSitemapEntry entry) {
+
+        CmsListInfoBean infoBean = getInfoBean(entry, true);
+        final CmsListItemWidget itemWidget = new CmsListItemWidget(infoBean);
+        itemWidget.setUnselectable();
+        itemWidget.setIcon(CmsSitemapView.getInstance().getIconForEntry(entry));
+        itemWidget.setTopRightIcon(null, "");
+        itemWidget.setIconTitle(entry.isSubSitemapType()
+        ? Messages.get().key(Messages.GUI_HOVERBAR_GOTO_SUB_0)
+        : Messages.get().key(Messages.GUI_HOVERBAR_GOTO_0));
+        setAdditionalStyles(entry, itemWidget);
+        return itemWidget;
+    }
+
+    /**
+     * Sets the additional style to mark expired entries or those that have the hide in navigation property set.<p>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * 
      * @param entry the sitemap entry
      * @param itemWidget the item widget
      */
+<<<<<<< HEAD
     private static void setExpiredStyle(CmsClientSitemapEntry entry, CmsListItemWidget itemWidget) {
+=======
+    private static void setAdditionalStyles(CmsClientSitemapEntry entry, CmsListItemWidget itemWidget) {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
         if (!entry.isResleasedAndNotExpired()) {
             itemWidget.getContentPanel().addStyleName(
@@ -326,6 +459,16 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
             itemWidget.getContentPanel().removeStyleName(
                 I_CmsSitemapLayoutBundle.INSTANCE.sitemapItemCss().expiredOrNotReleased());
         }
+<<<<<<< HEAD
+=======
+        if (entry.isHiddenNavigationEntry()) {
+            itemWidget.getContentPanel().addStyleName(
+                I_CmsSitemapLayoutBundle.INSTANCE.sitemapItemCss().hiddenNavEntry());
+        } else {
+            itemWidget.getContentPanel().removeStyleName(
+                I_CmsSitemapLayoutBundle.INSTANCE.sitemapItemCss().hiddenNavEntry());
+        }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
@@ -378,6 +521,30 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * @see org.opencms.gwt.client.ui.CmsListItem#getMoveHandle()
+     */
+    @Override
+    public I_CmsDragHandle getMoveHandle() {
+
+        CmsSitemapHoverbar hoverbar = getHoverbar();
+        if (hoverbar != null) {
+            int count = hoverbar.getWidgetCount();
+            if (count > 0) {
+                for (int i = 0; i < count; i++) {
+                    Widget w = hoverbar.getWidget(i);
+                    if (w instanceof I_CmsDragHandle) {
+                        return (I_CmsDragHandle)w;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
      * @see org.opencms.gwt.client.ui.tree.CmsTreeItem#getPath()
      */
     @Override
@@ -462,7 +629,12 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
     @Override
     public boolean isDropEnabled() {
 
+<<<<<<< HEAD
         return getSitemapEntry().isInNavigation() && getSitemapEntry().isFolderType() && super.isDropEnabled();
+=======
+        CmsClientSitemapEntry entry = getSitemapEntry();
+        return entry.isEditable() && entry.isInNavigation() && entry.isFolderType() && super.isDropEnabled();
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
@@ -573,9 +745,15 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
         }
         m_detailPageLabelTitleGenerator.setDetailPageTitle(suffixTitle);
         getListItemWidget().updateTruncation();
+<<<<<<< HEAD
         CmsLabel label = getListItemWidget().getSubTitleSuffix();
         label.addStyleName(I_CmsInputLayoutBundle.INSTANCE.inputCss().subtitleSuffix());
         getListItemWidget().setSubtitleSuffixText(text);
+=======
+        Widget label = getListItemWidget().getShortExtraInfoLabel();
+        label.addStyleName(I_CmsInputLayoutBundle.INSTANCE.inputCss().subtitleSuffix());
+        getListItemWidget().setExtraInfo(text);
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
@@ -599,13 +777,21 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
     public void updateEntry(CmsClientSitemapEntry entry) {
 
         getListItemWidget().setTitleLabel(entry.getTitle());
+<<<<<<< HEAD
         getListItemWidget().reInitAdditionalInfo(getInfoBean(entry));
+=======
+        getListItemWidget().reInitAdditionalInfo(getInfoBean(entry, CmsSitemapView.getInstance().isNavigationMode()));
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         updateSitePath(entry.getSitePath());
         updateDetailPageStatus();
         updateLock(entry);
         updateInNavigation(entry);
         getListItemWidget().setIcon(CmsSitemapView.getInstance().getIconForEntry(entry));
+<<<<<<< HEAD
         setExpiredStyle(entry, getListItemWidget());
+=======
+        setAdditionalStyles(entry, getListItemWidget());
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         setDropEnabled(getSitemapEntry().isFolderType() && !getSitemapEntry().hasForeignFolderLock());
         if (entry.isSubSitemapType() || entry.isLeafType()) {
             hideOpeners();
@@ -647,7 +833,11 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
     public void updateSitePath(String sitePath) {
 
         String newSubTitle = getDisplayedUrl(sitePath);
+<<<<<<< HEAD
 
+=======
+        removeInvalidChildren();
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         getListItemWidget().setSubtitleLabel(newSubTitle);
         String name = getName(sitePath);
         setId(name);
@@ -655,50 +845,37 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
         if (getLoadState() == LoadState.LOADED) {
             for (int i = 0; i < getChildCount(); i++) {
                 CmsSitemapTreeItem item = (CmsSitemapTreeItem)getChild(i);
+<<<<<<< HEAD
                 if (item.getSitemapEntry() != null) {
+=======
+                if ((item != null)
+                    && (CmsSitemapView.getInstance().getController().getEntryById(item.getEntryId()) != null)) {
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
                     String path = CmsStringUtil.joinPaths(sitePath, CmsResource.getName(item.getSitePath()));
                     item.updateSitePath(path);
                 }
             }
         }
         getListItemWidget().updateTruncation();
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     }
 
     /**
-     * Helper method for adding the marker widget.<p>
-     * 
-     * @param text the text for the marker widget 
-     * 
-     * @return the new marker widget 
-     */
+    * Helper method for adding the marker widget.<p>
+    * 
+    * @param text the text for the marker widget 
+    * 
+    * @return the new marker widget 
+    */
     protected Widget addMarker(String text) {
 
         Label label = new Label(text);
         label.addStyleName(CSS.marker());
         getListItemWidget().addButton(label);
         return label;
-    }
-
-    /**
-     * @see org.opencms.gwt.client.ui.CmsListItem#getMoveHandle()
-     */
-    @Override
-    protected I_CmsDragHandle getMoveHandle() {
-
-        CmsSitemapHoverbar hoverbar = getHoverbar();
-        if (hoverbar != null) {
-            int count = hoverbar.getWidgetCount();
-            if (count > 0) {
-                for (int i = 0; i < count; i++) {
-                    Widget w = hoverbar.getWidget(i);
-                    if (w instanceof I_CmsDragHandle) {
-                        return (I_CmsDragHandle)w;
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     /**
@@ -725,22 +902,46 @@ public class CmsSitemapTreeItem extends CmsLazyTreeItem {
     protected void onChangeChildren() {
 
         super.onChangeChildren();
+
         if (m_openerForNonNavigationStyle == null) {
             // happens when initializing
             return;
         }
-        Iterator<Widget> childIt = m_children.iterator();
-        while (childIt.hasNext()) {
-            Widget childWidget = childIt.next();
+        removeInvalidChildren();
+        boolean hasChildren = false;
+        boolean hasNavChildren = false;
+        for (Widget childWidget : m_children) {
             if (childWidget instanceof CmsSitemapTreeItem) {
+                hasChildren = true;
                 CmsSitemapTreeItem treeItem = (CmsSitemapTreeItem)childWidget;
                 if (treeItem.getSitemapEntry().isInNavigation()) {
-                    m_openerForNonNavigationStyle.setValue(null);
-                    return;
+                    hasNavChildren = true;
+                    break; // both flags set to true, no more iterations needed
                 }
             }
         }
-        m_openerForNonNavigationStyle.setValue(CSS.notInNavigationEntry());
+        m_styleHasChildren.setValue(hasChildren ? CSS.hasChildren() : CSS.hasNoChildren());
+        m_styleHasNavChildren.setValue(hasNavChildren ? CSS.hasNavChildren() : CSS.hasNoNavChildren());
+    }
+
+    /**
+    * Helper method to remove invalid children that don't have a corresponding CmsSitemapClientEntry.
+    */
+    protected void removeInvalidChildren() {
+
+        if (getLoadState() == LoadState.LOADED) {
+            List<CmsSitemapTreeItem> toDelete = new ArrayList<CmsSitemapTreeItem>();
+            for (int i = 0; i < getChildCount(); i++) {
+                CmsSitemapTreeItem item = (CmsSitemapTreeItem)getChild(i);
+                CmsUUID id = item.getEntryId();
+                if ((id != null) && (CmsSitemapView.getInstance().getController().getEntryById(id) == null)) {
+                    toDelete.add(item);
+                }
+            }
+            for (CmsSitemapTreeItem deleteItem : toDelete) {
+                m_children.removeItem(deleteItem);
+            }
+        }
     }
 
     /**

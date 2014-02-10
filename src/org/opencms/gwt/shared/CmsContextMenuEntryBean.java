@@ -41,8 +41,8 @@ public class CmsContextMenuEntryBean implements IsSerializable {
     /** Signals if the menu entry is active. */
     private boolean m_active;
 
-    /** Stores the image path for the icon in front of the label. */
-    private String m_imagePath;
+    /** The CSS class for the icon. */
+    private String m_iconClass;
 
     /** Stores the JSP path for the JSP that is called by the command. */
     private String m_jspPath;
@@ -81,7 +81,6 @@ public class CmsContextMenuEntryBean implements IsSerializable {
      * 
      * @param active signals if this menu entry is active
      * @param visible signals if this menu entry is visible
-     * @param imagePath the image path for the icon in front of the label
      * @param jspPath the JSP path for the command 
      * @param label the label for the menu entry
      * @param name the name for the menu entry
@@ -92,7 +91,6 @@ public class CmsContextMenuEntryBean implements IsSerializable {
     public CmsContextMenuEntryBean(
         boolean active,
         boolean visible,
-        String imagePath,
         String jspPath,
         String label,
         String name,
@@ -102,7 +100,6 @@ public class CmsContextMenuEntryBean implements IsSerializable {
 
         m_active = active;
         m_visible = visible;
-        m_imagePath = imagePath;
         m_jspPath = jspPath;
         m_label = label;
         m_name = name;
@@ -111,14 +108,14 @@ public class CmsContextMenuEntryBean implements IsSerializable {
         m_subMenu = subMenu;
     }
 
-    /**
-     * Returns the image path of the menu entry.<p>
+    /** 
+     * Gets the CSS class used to display an item.<p>
      * 
-     * @return the image path
+     * @return the CSS class for the icon 
      */
-    public String getImagePath() {
+    public String getIconClass() {
 
-        return m_imagePath;
+        return m_iconClass;
     }
 
     /**
@@ -231,14 +228,14 @@ public class CmsContextMenuEntryBean implements IsSerializable {
         m_active = active;
     }
 
-    /**
-     * Sets the imagePath.<p>
-     *
-     * @param imagePath the imagePath to set
+    /** 
+     * Sets CSS class to display an icon.<p>
+     * 
+     * @param iconClass the CSS class for the icon 
      */
-    public void setImagePath(String imagePath) {
+    public void setIconClass(String iconClass) {
 
-        m_imagePath = imagePath;
+        m_iconClass = iconClass;
     }
 
     /**

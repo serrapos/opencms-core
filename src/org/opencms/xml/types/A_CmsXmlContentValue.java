@@ -31,6 +31,7 @@ import org.opencms.file.CmsObject;
 import org.opencms.i18n.CmsEncoder;
 import org.opencms.main.CmsLog;
 import org.opencms.main.CmsRuntimeException;
+import org.opencms.relations.CmsRelationType;
 import org.opencms.util.CmsFileUtil;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.widgets.I_CmsWidgetParameter;
@@ -291,6 +292,10 @@ public abstract class A_CmsXmlContentValue implements I_CmsXmlContentValue, I_Cm
      */
     public String getId() {
 
+        if (m_element == null) {
+            return null;
+        }
+
         StringBuffer result = new StringBuffer(128);
         result.append(getTypeName());
         result.append('.');
@@ -390,6 +395,9 @@ public abstract class A_CmsXmlContentValue implements I_CmsXmlContentValue, I_Cm
      */
     public String getPath() {
 
+        if (m_element == null) {
+            return "";
+        }
         String path = m_element.getUniquePath();
         // must remove the first 2 nodes because these are not required for XML content values
         int pos = path.indexOf('/', path.indexOf('/', 1) + 1) + 1;
@@ -552,6 +560,26 @@ public abstract class A_CmsXmlContentValue implements I_CmsXmlContentValue, I_Cm
     public boolean validateValue(String value) {
 
         return true;
+    }
+
+    /**
+     * Returns the relation type for the given path.<p>
+     * 
+     * @param path the element path
+     * 
+     * @return the relation type
+     */
+    protected CmsRelationType getRelationType(String path) {
+
+        CmsRelationType result = getContentDefinition().getContentHandler().getRelationType(path);
+        I_CmsXmlDocument document = getDocument();
+        if (document != null) {
+            // the relations set in the main content definition override relations set in the nested definition
+            result = document.getContentDefinition().getContentHandler().getRelationType(getPath(), result);
+        } else {
+            LOG.warn("Missing document while evaluating relation type for " + path);
+        }
+        return result;
     }
 
     /**

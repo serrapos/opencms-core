@@ -145,8 +145,7 @@ public class CmsXmlVarLinkValue extends A_CmsXmlContentValue {
             if (linkElement == null) {
                 setStringValue(cms, m_element.getText());
             } else {
-                CmsLinkUpdateUtil.updateType(linkElement, getContentDefinition().getContentHandler().getRelationType(
-                    getPath()));
+                CmsLinkUpdateUtil.updateType(linkElement, getRelationType(getPath()));
                 CmsLink link = new CmsLink(linkElement);
                 if (link.isInternal()) {
                     // link management check
@@ -182,7 +181,7 @@ public class CmsXmlVarLinkValue extends A_CmsXmlContentValue {
 
         // the schema definition is located in a separate file for easier editing
         if (m_schemaDefinition == null) {
-            m_schemaDefinition = readSchemaDefinition("org/opencms/xml/types/XmlVfsFileValue.xsd");
+            m_schemaDefinition = readSchemaDefinition("org/opencms/xml/types/XmlVarLinkValue.xsd");
         }
         return m_schemaDefinition;
     }
@@ -239,6 +238,7 @@ public class CmsXmlVarLinkValue extends A_CmsXmlContentValue {
             // no valid value given
             return;
         }
+
         String path = value;
         if (cms != null) {
             String siteRoot = OpenCms.getSiteManager().getSiteRoot(value);
@@ -276,7 +276,7 @@ public class CmsXmlVarLinkValue extends A_CmsXmlContentValue {
         boolean internal = (path != null);
         CmsRelationType type;
         if (internal) {
-            type = getContentDefinition().getContentHandler().getRelationType(getPath());
+            type = getRelationType(getPath());
         } else {
             // use original value for external links
             path = value;

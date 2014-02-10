@@ -280,30 +280,6 @@ HasClickHandlers, HasMouseMoveHandlers, MouseDownHandler, MouseUpHandler, MouseM
     }
 
     /**
-     * Sets the selection area.<p>
-     * 
-     * @param relative <code>true</code> if provided position is relative to the select area, not absolute to the page
-     * @param pos the area position to select
-     */
-    public void setAreaPosition(boolean relative, CmsPositionBean pos) {
-
-        if (pos == null) {
-            return;
-        }
-        m_state = State.SELECTED;
-        showSelect(true);
-        m_currentSelection = new CmsPositionBean();
-        m_firstX = pos.getLeft();
-        m_firstY = pos.getTop();
-        if (!relative) {
-            m_firstX -= getElement().getAbsoluteLeft();
-            m_firstY -= getElement().getAbsoluteTop();
-        }
-        //        setSelectPosition(m_firstX, m_firstY, 0, 0);
-        setSelectPosition(m_firstX, m_firstY, pos.getHeight(), pos.getWidth());
-    }
-
-    /**
      * @see com.google.gwt.user.client.ui.IndexedPanel#getWidget(int)
      */
     public Widget getWidget(int index) {
@@ -598,6 +574,38 @@ HasClickHandlers, HasMouseMoveHandlers, MouseDownHandler, MouseUpHandler, MouseM
     }
 
     /**
+     * Resets the select area ratio.<p>
+     */
+    public void resetRatio() {
+
+        m_heightToWidth = 0;
+    }
+
+    /**
+     * Sets the selection area.<p>
+     * 
+     * @param relative <code>true</code> if provided position is relative to the select area, not absolute to the page
+     * @param pos the area position to select
+     */
+    public void setAreaPosition(boolean relative, CmsPositionBean pos) {
+
+        if (pos == null) {
+            return;
+        }
+        m_state = State.SELECTED;
+        showSelect(true);
+        m_currentSelection = new CmsPositionBean();
+        m_firstX = pos.getLeft();
+        m_firstY = pos.getTop();
+        if (!relative) {
+            m_firstX -= getElement().getAbsoluteLeft();
+            m_firstY -= getElement().getAbsoluteTop();
+        }
+        //        setSelectPosition(m_firstX, m_firstY, 0, 0);
+        setSelectPosition(m_firstX, m_firstY, pos.getHeight(), pos.getWidth());
+    }
+
+    /**
      * Sets if the value change event will always be fired, or only when a select/resize/move operation is finished.<p>
      *
      * @param isFireAll <code>true</code> to always be fire the value change event
@@ -631,6 +639,8 @@ HasClickHandlers, HasMouseMoveHandlers, MouseDownHandler, MouseUpHandler, MouseM
 
     /**
      * Fires the value change event.<p>
+     * 
+     * @param alwaysFire <code>true</code> to always fire the change event, ignoring the fire all flag 
      */
     private void fireChangeEvent(boolean alwaysFire) {
 
@@ -651,7 +661,7 @@ HasClickHandlers, HasMouseMoveHandlers, MouseDownHandler, MouseUpHandler, MouseM
 
         int width = (int)Math.floor((newY - m_firstY) / m_heightToWidth);
         int result = m_firstX + width;
-        if ((m_firstX - newX) * (m_firstX - result) < 0) {
+        if (((m_firstX - newX) * (m_firstX - result)) < 0) {
             result = m_firstX - width;
         }
         return result;
@@ -669,7 +679,7 @@ HasClickHandlers, HasMouseMoveHandlers, MouseDownHandler, MouseUpHandler, MouseM
 
         int height = (int)Math.floor((newX - m_firstX) * m_heightToWidth);
         int result = m_firstY + height;
-        if ((m_firstY - newY) * (m_firstY - result) < 0) {
+        if (((m_firstY - newY) * (m_firstY - result)) < 0) {
             result = m_firstY - height;
         }
         return result;
@@ -683,9 +693,9 @@ HasClickHandlers, HasMouseMoveHandlers, MouseDownHandler, MouseUpHandler, MouseM
      */
     private void moveTo(int posX, int posY) {
 
-        posX = (posX < 0) ? 0 : ((posX + m_currentSelection.getWidth() >= m_elementWidth) ? m_elementWidth
+        posX = (posX < 0) ? 0 : (((posX + m_currentSelection.getWidth()) >= m_elementWidth) ? m_elementWidth
             - m_currentSelection.getWidth() : posX);
-        posY = (posY < 0) ? 0 : ((posY + m_currentSelection.getHeight() >= m_elementHeight) ? m_elementHeight
+        posY = (posY < 0) ? 0 : (((posY + m_currentSelection.getHeight()) >= m_elementHeight) ? m_elementHeight
             - m_currentSelection.getHeight() : posY);
 
         m_markerStyle.setTop(posY, Unit.PX);
@@ -722,7 +732,7 @@ HasClickHandlers, HasMouseMoveHandlers, MouseDownHandler, MouseUpHandler, MouseM
     /**
      * Setting a new top/height value for the selection.<p>
      * 
-     * @param secondX the cursor Y offset to the selection area
+     * @param secondY the cursor Y offset to the selection area
      */
     private void positionY(int secondY) {
 

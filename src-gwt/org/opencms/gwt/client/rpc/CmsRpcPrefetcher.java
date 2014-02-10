@@ -46,23 +46,36 @@ public final class CmsRpcPrefetcher {
     }
 
     /**
-     * Deserializes the prefetched RPC data with the given name.<p>
+     * Deserializes the prefetched RPC data with the given dictionary name.<p>
      * 
      * @param asyncService the RPC service instance
-     * @param name the global variable name
+     * @param dictionaryName the global variable name
      * 
      * @return the prefetched RPC data
+     * 
+     * @throws SerializationException if the deserialization fails 
      */
-    public static Object getSerializedObject(Object asyncService, String name) {
+    public static Object getSerializedObjectFromDictionary(Object asyncService, String dictionaryName)
+    throws SerializationException {
 
-        try {
-            SerializationStreamFactory ssf = (SerializationStreamFactory)asyncService;
-            return ssf.createStreamReader(getString(name)).readObject();
-        } catch (SerializationException e) {
-            // should never happen
-            CmsLog.log(e.getLocalizedMessage());
-        }
-        return null;
+        return getSerializedObjectFromString(asyncService, getString(dictionaryName));
+    }
+
+    /**
+     * Deserializes the prefetched RPC data.<p>
+     * 
+     * @param asyncService the RPC service instance
+     * @param serializedData the serialized object data
+     * 
+     * @return the prefetched RPC data
+     * 
+     * @throws SerializationException if the deserialization fails 
+     */
+    public static Object getSerializedObjectFromString(Object asyncService, String serializedData)
+    throws SerializationException {
+
+        SerializationStreamFactory ssf = (SerializationStreamFactory)asyncService;
+        return ssf.createStreamReader(serializedData).readObject();
     }
 
     /**
@@ -73,6 +86,13 @@ public final class CmsRpcPrefetcher {
      * @return the variable's value
      */
     private static native String getString(String name) /*-{
-        return $wnd[name];
+        var metas = $wnd.document.getElementsByTagName('META');
+        var i;
+        for (i = 0; i < metas.length; i++) {
+            if (metas[i].getAttribute('NAME') == name) {
+                break;
+            }
+        }
+        return metas[i].getAttribute("CONTENT");
     }-*/;
 }

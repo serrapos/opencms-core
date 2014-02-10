@@ -35,20 +35,16 @@ import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
 import org.opencms.search.CmsSearchIndex;
+import org.opencms.search.I_CmsSearchDocument;
 import org.opencms.search.extractors.CmsExtractionResult;
 import org.opencms.search.extractors.I_CmsExtractionResult;
 import org.opencms.search.fields.CmsSearchField;
-import org.opencms.search.fields.CmsSearchFieldConfiguration;
 
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
-import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 
 /**
  * Base document factory class for a VFS <code>{@link org.opencms.file.CmsResource}</code>, 
@@ -63,9 +59,7 @@ public abstract class A_CmsVfsDocument implements I_CmsDocumentFactory {
     /** The log object for this class. */
     private static final Log LOG = CmsLog.getLog(A_CmsVfsDocument.class);
 
-    /**
-     * Name of the documenttype.
-     */
+    /** Name of the document type. */
     protected String m_name;
 
     /** The cache used for storing extracted documents. */
@@ -95,7 +89,7 @@ public abstract class A_CmsVfsDocument implements I_CmsDocumentFactory {
     public static String getDocumentKey(String type, String mimeType) {
 
         StringBuffer result = new StringBuffer(16);
-        result.append(CmsSearchFieldConfiguration.VFS_DOCUMENT_KEY_PREFIX);
+        result.append(I_CmsSearchDocument.VFS_DOCUMENT_KEY_PREFIX);
         result.append('_');
         result.append(type);
         if (mimeType != null) {
@@ -109,9 +103,9 @@ public abstract class A_CmsVfsDocument implements I_CmsDocumentFactory {
      * Generates a new lucene document instance from contents of the given resource for the provided index.<p>
      * 
      * @see org.opencms.search.documents.I_CmsDocumentFactory#createDocument(CmsObject, CmsResource, CmsSearchIndex)
-     * @see org.opencms.search.fields.CmsSearchFieldConfiguration#createDocument(CmsObject, CmsResource, CmsSearchIndex, I_CmsExtractionResult)
      */
-    public Document createDocument(CmsObject cms, CmsResource resource, CmsSearchIndex index) throws CmsException {
+    public I_CmsSearchDocument createDocument(CmsObject cms, CmsResource resource, CmsSearchIndex index)
+    throws CmsException {
 
         // extract the content from the resource
         I_CmsExtractionResult content = null;
@@ -127,7 +121,8 @@ public abstract class A_CmsVfsDocument implements I_CmsDocumentFactory {
                 // because the index will also store the content as a blob
                 cacheName = cache.getCacheName(
                     resource,
-                    isLocaleDependend() ? index.getLocaleForResource(cms, resource, null) : null);
+                    isLocaleDependend() ? index.getLocaleForResource(cms, resource, null) : null,
+                    getName());
                 content = cache.getCacheObject(cacheName);
             }
 
@@ -135,29 +130,18 @@ public abstract class A_CmsVfsDocument implements I_CmsDocumentFactory {
                 // extraction result has not been found in the cache
                 // compare "date of last modification of content" from Lucene index and OpenCms VFS
                 // if this is identical, then the data from the Lucene index can be re-used 
+<<<<<<< HEAD
                 Document oldDoc = index.getDocument(CmsSearchField.FIELD_PATH, resource.getRootPath());
+=======
+                I_CmsSearchDocument oldDoc = index.getDocument(CmsSearchField.FIELD_PATH, resource.getRootPath());
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
                 // first check if the document is already in the index
-                if (oldDoc != null) {
-                    // first obtain content date from Lucene index
-                    Fieldable fieldContentDate = oldDoc.getFieldable(CmsSearchField.FIELD_DATE_CONTENT);
-                    long contentDateIndex = 0;
-                    if (fieldContentDate != null) {
-                        String contentDate = fieldContentDate.stringValue();
-                        try {
-                            contentDateIndex = DateTools.stringToTime(contentDate);
-                        } catch (ParseException e) {
-                            // ignore
-                        }
-                        // now compare the date with the date stored in the resource
-                        if (contentDateIndex == resource.getDateContent()) {
-                            // date of content is identical, re-use existing content
-                            Fieldable fieldContentBlob = oldDoc.getFieldable(CmsSearchField.FIELD_CONTENT_BLOB);
-                            if (fieldContentBlob != null) {
-                                // extract stored content blob from Lucene index
-                                byte[] oldContent = fieldContentBlob.getBinaryValue();
-                                content = CmsExtractionResult.fromBytes(oldContent);
-                            }
-                        }
+                if ((oldDoc != null) && (oldDoc.getFieldValueAsDate(CmsSearchField.FIELD_DATE_CONTENT) != null)) {
+                    long contentDateIndex = oldDoc.getFieldValueAsDate(CmsSearchField.FIELD_DATE_CONTENT).getTime();
+                    // now compare the date with the date stored in the resource
+                    if (contentDateIndex == resource.getDateContent()) {
+                        // extract stored content blob from index
+                        content = CmsExtractionResult.fromBytes(oldDoc.getContentBlob());
                     }
                 }
             }
@@ -170,6 +154,11 @@ public abstract class A_CmsVfsDocument implements I_CmsDocumentFactory {
                         // save extracted content to the cache
                         cache.saveCacheObject(cacheName, content);
                     }
+                } catch (CmsIndexNoContentException e) {
+                    // there was no content found for the resource 
+                    LOG.info(Messages.get().getBundle().key(Messages.ERR_TEXT_EXTRACTION_1, resource.getRootPath())
+                        + " "
+                        + e.getMessage());
                 } catch (Exception e) {
                     // text extraction failed for document - continue indexing meta information only
                     LOG.error(Messages.get().getBundle().key(Messages.ERR_TEXT_EXTRACTION_1, resource.getRootPath()), e);

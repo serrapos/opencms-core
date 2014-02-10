@@ -127,6 +127,9 @@ public final class CmsRequestUtil {
     /** HTTP Header value "no-cache" (for "Cache-Control"). */
     public static final String HEADER_VALUE_NO_CACHE = "no-cache";
 
+    /** HTTP Header value "no-store" (for "Cache-Control"). */
+    public static final String HEADER_VALUE_NO_STORE = "no-store";
+
     /** HTTP Header "WWW-Authenticate". */
     public static final String HEADER_WWW_AUTHENTICATE = "WWW-Authenticate";
 
@@ -499,6 +502,19 @@ public final class CmsRequestUtil {
     public static String getCookieValue(CmsJspActionElement jsp, String name) {
 
         Cookie[] cookies = jsp.getRequest().getCookies();
+        return getCookieValue(cookies, name);
+    }
+
+    /**
+     * Gets the value of a specific cookie from an array of cookies.<p>
+     * 
+     * @param cookies the cookie array 
+     * @param name the name of the cookie we want 
+     * 
+     * @return the cookie value, or null if cookie with the given name wasn't found 
+     */
+    public static String getCookieValue(Cookie[] cookies, String name) {
+
         for (int i = 0; (cookies != null) && (i < cookies.length); i++) {
             if (name.equalsIgnoreCase(cookies[i].getName())) {
                 return cookies[i].getValue();
@@ -803,6 +819,8 @@ public final class CmsRequestUtil {
 
         res.setHeader(CmsRequestUtil.HEADER_CACHE_CONTROL, CmsRequestUtil.HEADER_VALUE_MAX_AGE + "0");
         res.addHeader(CmsRequestUtil.HEADER_CACHE_CONTROL, CmsRequestUtil.HEADER_VALUE_MUST_REVALIDATE);
+        res.addHeader(CmsRequestUtil.HEADER_CACHE_CONTROL, CmsRequestUtil.HEADER_VALUE_NO_CACHE);
+        res.addHeader(CmsRequestUtil.HEADER_CACHE_CONTROL, CmsRequestUtil.HEADER_VALUE_NO_STORE);
         res.setHeader(CmsRequestUtil.HEADER_PRAGMA, CmsRequestUtil.HEADER_VALUE_NO_CACHE);
     }
 

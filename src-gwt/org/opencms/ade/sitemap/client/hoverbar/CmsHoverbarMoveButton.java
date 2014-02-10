@@ -36,7 +36,11 @@ import org.opencms.gwt.client.dnd.I_CmsDragHandle;
 import org.opencms.gwt.client.dnd.I_CmsDraggable;
 import org.opencms.gwt.client.ui.CmsPushButton;
 import org.opencms.gwt.client.ui.I_CmsButton.ButtonStyle;
+<<<<<<< HEAD
 import org.opencms.util.CmsUUID;
+=======
+import org.opencms.util.CmsStringUtil;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
 import com.google.gwt.event.shared.HandlerRegistration;
 
@@ -71,7 +75,11 @@ public class CmsHoverbarMoveButton extends CmsPushButton implements I_CmsDragHan
              */
             public void onShow(CmsHoverbarShowEvent event) {
 
+<<<<<<< HEAD
                 m_entryId = hoverbar.getEntry().getId();
+=======
+                m_sitePath = hoverbar.getEntry().getSitePath();
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
                 final CmsSitemapController controller = hoverbar.getController();
                 CmsClientSitemapEntry entry = hoverbar.getEntry();
                 if (CmsSitemapView.getInstance().isNavigationMode() && (entry != null)) {
@@ -80,6 +88,9 @@ public class CmsHoverbarMoveButton extends CmsPushButton implements I_CmsDragHan
                         CmsHoverbarMoveButton.this.setVisible(false);
                     } else if (controller.isRoot(hoverbar.getEntry().getSitePath())) {
                         disable(Messages.get().key(Messages.GUI_DISABLED_ROOT_ITEM_0));
+                        CmsHoverbarMoveButton.this.setVisible(true);
+                    } else if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(entry.getNoEditReason())) {
+                        disable(entry.getNoEditReason());
                         CmsHoverbarMoveButton.this.setVisible(true);
                     } else if (entry.hasForeignFolderLock()) {
                         disable(Messages.get().key(Messages.GUI_DISABLED_PARENT_LOCK_0));

@@ -37,16 +37,18 @@ import org.opencms.gwt.client.dnd.CmsDNDHandler;
 import org.opencms.gwt.client.ui.CmsListItem;
 import org.opencms.gwt.client.ui.CmsListItemWidget;
 import org.opencms.gwt.client.ui.input.CmsCheckBox;
-import org.opencms.gwt.client.util.CmsCollectionUtil;
 import org.opencms.gwt.shared.CmsIconUtil;
 import org.opencms.gwt.shared.CmsListInfoBean;
-import org.opencms.util.CmsPair;
 import org.opencms.util.CmsStringUtil;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.google.common.collect.Lists;
 
 /**
  * Provides the widget for the types tab.<p>
@@ -75,6 +77,7 @@ public class CmsTypesTab extends A_CmsListTab {
 
             super(checkBox);
             m_resourceType = resourceType;
+            m_selectionHandlers.add(this);
         }
 
         /**
@@ -89,16 +92,34 @@ public class CmsTypesTab extends A_CmsListTab {
                 getTabHandler().deselectType(m_resourceType);
             }
         }
+
+        /**
+         * @see org.opencms.ade.galleries.client.ui.A_CmsListTab.A_SelectionHandler#selectBeforeGoingToResultTab()
+         */
+        @Override
+        protected void selectBeforeGoingToResultTab() {
+
+            for (SelectionHandler otherHandler : m_selectionHandlers) {
+                if ((otherHandler != this)
+                    && (otherHandler.getCheckBox() != null)
+                    && otherHandler.getCheckBox().isChecked()) {
+                    otherHandler.getCheckBox().setChecked(false);
+                    otherHandler.onSelectionChange();
+                }
+            }
+            getCheckBox().setChecked(true);
+            onSelectionChange();
+        }
     }
 
     /** Text metrics key. */
     private static final String TM_TYPE_TAB = "TypeTab";
 
+    /** The list of selection handlers. */
+    List<SelectionHandler> m_selectionHandlers = Lists.newArrayList();
+
     /** The reference to the drag handler for the list elements. */
     private CmsDNDHandler m_dndHandler;
-
-    /** The search parameter panel for this tab. */
-    private CmsSearchParamPanel m_paramPanel;
 
     /** The reference to the handler of this tab. */
     private CmsTypesTabHandler m_tabHandler;
@@ -118,6 +139,7 @@ public class CmsTypesTab extends A_CmsListTab {
         m_tabHandler = tabHandler;
         m_dndHandler = dndHandler;
         m_scrollList.truncate(TM_TYPE_TAB, CmsGalleryDialog.DIALOG_WIDTH);
+        init();
     }
 
     /**
@@ -131,6 +153,7 @@ public class CmsTypesTab extends A_CmsListTab {
         if (m_types == null) {
             m_types = new HashMap<String, CmsResourceTypeBean>();
         }
+        clearList();
         m_types.clear();
         for (CmsResourceTypeBean typeBean : typeInfos) {
             m_types.put(typeBean.getType(), typeBean);
@@ -138,63 +161,45 @@ public class CmsTypesTab extends A_CmsListTab {
             CmsListInfoBean infoBean = new CmsListInfoBean(typeBean.getTitle(), typeBean.getDescription(), null);
             listItemWidget = new CmsListItemWidget(infoBean);
             listItemWidget.setIcon(CmsIconUtil.getResourceIconClasses(typeBean.getType(), false));
+            listItemWidget.setUnselectable();
             CmsCheckBox checkBox = new CmsCheckBox();
-            SelectionHandler selectionHendler = new SelectionHandler(typeBean.getType(), checkBox);
-            checkBox.addClickHandler(selectionHendler);
-            listItemWidget.addDoubleClickHandler(selectionHendler);
+            SelectionHandler selectionHandler = new SelectionHandler(typeBean.getType(), checkBox);
+            checkBox.addClickHandler(selectionHandler);
+            listItemWidget.addClickHandler(selectionHandler);
             if ((selectedTypes != null) && selectedTypes.contains(typeBean.getType())) {
                 checkBox.setChecked(true);
             }
+            listItemWidget.addButton(createSelectButton(selectionHandler));
             CmsListItem listItem = new CmsListItem(checkBox, listItemWidget);
             listItem.setId(typeBean.getType());
             if (typeBean.isCreatableType() && (m_dndHandler != null)) {
-                listItem.initMoveHandle(m_dndHandler);
+                listItem.initMoveHandle(m_dndHandler, true);
+                listItem.getMoveHandle().setTitle(Messages.get().key(Messages.GUI_TAB_TYPES_CREATE_NEW_0));
             }
             addWidgetToList(listItem);
         }
     }
 
     /**
-     * @see org.opencms.ade.galleries.client.ui.A_CmsTab#getParamPanel(org.opencms.ade.galleries.shared.CmsGallerySearchBean)
+     * @see org.opencms.ade.galleries.client.ui.A_CmsTab#getParamPanels(org.opencms.ade.galleries.shared.CmsGallerySearchBean)
      */
     @Override
-    public CmsSearchParamPanel getParamPanel(CmsGallerySearchBean searchObj) {
+    public List<CmsSearchParamPanel> getParamPanels(CmsGallerySearchBean searchObj) {
 
-        if (m_paramPanel == null) {
-            m_paramPanel = new CmsSearchParamPanel(Messages.get().key(Messages.GUI_PARAMS_LABEL_TYPES_0), this);
-        }
-        String content = getTypesParams(searchObj.getTypes());
-        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(content)) {
-            m_paramPanel.setContent(content);
-            return m_paramPanel;
-        }
-        return null;
-    }
-
-    /**
-     * Returns the content of the types search parameter.<p>
-     *  
-     * @param selectedTypes the list of selected resource types
-     * 
-     * @return the selected types
-     */
-    public String getTypesParams(List<String> selectedTypes) {
-
-        if (CmsCollectionUtil.isEmptyOrNull(selectedTypes)) {
-            return null;
-        }
-        StringBuffer result = new StringBuffer();
-        for (String type : selectedTypes) {
-
+        List<CmsSearchParamPanel> result = new ArrayList<CmsSearchParamPanel>();
+        for (String type : searchObj.getTypes()) {
             CmsResourceTypeBean typeBean = m_types.get(type);
             String title = typeBean.getTitle();
             if (CmsStringUtil.isEmptyOrWhitespaceOnly(title)) {
                 title = typeBean.getType();
             }
-            result.append(title).append(", ");
+            CmsSearchParamPanel panel = new CmsSearchParamPanel(
+                Messages.get().key(Messages.GUI_PARAMS_LABEL_TYPES_0),
+                this);
+            panel.setContent(title, type);
+            result.add(panel);
         }
-        result.delete(result.length() - 2, result.length());
-        return result.toString();
+        return result;
     }
 
     /**
@@ -202,11 +207,13 @@ public class CmsTypesTab extends A_CmsListTab {
      * 
      * @param types the categories to deselect
      */
-    public void uncheckTypes(List<String> types) {
+    public void uncheckTypes(Collection<String> types) {
 
         for (String type : types) {
             CmsListItem item = (CmsListItem)m_scrollList.getItem(type);
-            item.getCheckBox().setChecked(false);
+            if (item != null) {
+                item.getCheckBox().setChecked(false);
+            }
         }
     }
 
@@ -226,13 +233,11 @@ public class CmsTypesTab extends A_CmsListTab {
      * @see org.opencms.ade.galleries.client.ui.A_CmsListTab#getSortList()
      */
     @Override
-    protected List<CmsPair<String, String>> getSortList() {
+    protected LinkedHashMap<String, String> getSortList() {
 
-        ArrayList<CmsPair<String, String>> list = new ArrayList<CmsPair<String, String>>();
-        list.add(new CmsPair<String, String>(SortParams.title_asc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_TITLE_ASC_0)));
-        list.add(new CmsPair<String, String>(SortParams.title_desc.name(), Messages.get().key(
-            Messages.GUI_SORT_LABEL_TITLE_DECS_0)));
+        LinkedHashMap<String, String> list = new LinkedHashMap<String, String>();
+        list.put(SortParams.title_asc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_TITLE_ASC_0));
+        list.put(SortParams.title_desc.name(), Messages.get().key(Messages.GUI_SORT_LABEL_TITLE_DECS_0));
 
         return list;
     }
@@ -247,12 +252,12 @@ public class CmsTypesTab extends A_CmsListTab {
     }
 
     /**
-     * @see org.opencms.ade.galleries.client.ui.A_CmsListTab#hasQuickFilter()
+     * @see org.opencms.ade.galleries.client.ui.A_CmsListTab#hasQuickSearch()
      */
     @Override
-    protected boolean hasQuickFilter() {
+    protected boolean hasQuickSearch() {
 
         // quick filter not available for this tab
-        return false;
+        return true;
     }
 }

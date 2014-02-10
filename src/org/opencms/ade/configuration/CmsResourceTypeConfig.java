@@ -37,6 +37,7 @@ import org.opencms.file.CmsVfsResourceNotFoundException;
 import org.opencms.file.types.CmsResourceTypeFolder;
 import org.opencms.file.types.I_CmsResourceType;
 import org.opencms.lock.CmsLock;
+import org.opencms.lock.CmsLockException;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
@@ -44,7 +45,6 @@ import org.opencms.security.CmsPermissionSet;
 import org.opencms.security.CmsRole;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.workplace.explorer.CmsExplorerTypeSettings;
-import org.opencms.xml.containerpage.CmsFormatterConfiguration;
 import org.opencms.xml.containerpage.CmsXmlDynamicFunctionHandler;
 
 import java.util.ArrayList;
@@ -65,6 +65,9 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
     /** The CMS object used for VFS operations. */
     protected CmsObject m_cms;
 
+    /** Flag which controls whether adding elements of this type using ADE is disabled. */
+    private boolean m_addDisabled;
+
     /** The flag for disabling detail pages. */
     private boolean m_detailPagesDisabled;
 
@@ -73,9 +76,6 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
 
     /** A reference to a folder of folder name. */
     private CmsFolderOrName m_folderOrName;
-
-    /** The formatter configuration. */
-    private CmsFormatterConfiguration m_formatterConfig;
 
     /** The name pattern .*/
     private String m_namePattern;
@@ -93,16 +93,10 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
      * @param disabled true if this is a disabled configuration 
      * @param folder the folder reference 
      * @param pattern the name pattern 
-     * @param formatterConfig the formatter configuration 
      */
-    public CmsResourceTypeConfig(
-        String typeName,
-        boolean disabled,
-        CmsFolderOrName folder,
-        String pattern,
-        CmsFormatterConfiguration formatterConfig) {
+    public CmsResourceTypeConfig(String typeName, boolean disabled, CmsFolderOrName folder, String pattern) {
 
-        this(typeName, disabled, folder, pattern, formatterConfig, false, I_CmsConfigurationObject.DEFAULT_ORDER);
+        this(typeName, disabled, folder, pattern, false, false, I_CmsConfigurationObject.DEFAULT_ORDER);
     }
 
     /** 
@@ -112,8 +106,8 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
      * @param disabled true if this is a disabled configuration 
      * @param folder the folder reference 
      * @param pattern the name pattern 
-     * @param formatterConfig the formatter configuration 
      * @param detailPagesDisabled true if detail page creation should be disabled for this type
+     * @param addDisabled true if adding elements of this type via ADE should be disabled 
      * @param order the number used for sorting resource types from modules  
      */
     public CmsResourceTypeConfig(
@@ -121,16 +115,16 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
         boolean disabled,
         CmsFolderOrName folder,
         String pattern,
-        CmsFormatterConfiguration formatterConfig,
         boolean detailPagesDisabled,
+        boolean addDisabled,
         int order) {
 
         m_typeName = typeName;
         m_disabled = disabled;
         m_folderOrName = folder;
         m_namePattern = pattern;
-        m_formatterConfig = formatterConfig;
         m_detailPagesDisabled = detailPagesDisabled;
+        m_addDisabled = addDisabled;
         m_order = order;
     }
 
@@ -141,18 +135,11 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
      * @param disabled true if this is a disabled configuration 
      * @param folder the folder reference 
      * @param pattern the name pattern 
-     * @param formatterConfig the formatter configuration 
      * @param order the number used for sorting resource types from modules 
      */
-    public CmsResourceTypeConfig(
-        String typeName,
-        boolean disabled,
-        CmsFolderOrName folder,
-        String pattern,
-        CmsFormatterConfiguration formatterConfig,
-        int order) {
+    public CmsResourceTypeConfig(String typeName, boolean disabled, CmsFolderOrName folder, String pattern, int order) {
 
-        this(typeName, disabled, folder, pattern, formatterConfig, false, order);
+        this(typeName, disabled, folder, pattern, false, false, order);
     }
 
     /** 
@@ -170,6 +157,9 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
             || "".equals(cms.getRequestContext().getSiteRoot())) {
             return false;
         }
+        if (OpenCms.getRoleManager().hasRole(cms, CmsRole.ROOT_ADMIN)) {
+            return true;
+        }
         if (CmsXmlDynamicFunctionHandler.TYPE_FUNCTION.equals(m_typeName)) {
             return OpenCms.getRoleManager().hasRole(cms, CmsRole.DEVELOPER);
         }
@@ -184,6 +174,9 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
         try {
             CmsResource permissionCheckFolder = cms.readResource(folderPath);
             CmsExplorerTypeSettings settings = OpenCms.getWorkplaceManager().getExplorerTypeSetting(m_typeName);
+            if (settings == null) {
+                return false;
+            }
             boolean editable = settings.isEditable(cms, permissionCheckFolder);
             boolean controlPermission = settings.getAccess().getPermissions(cms, permissionCheckFolder).requiresControlPermission();
             boolean hasWritePermission = cms.hasPermissions(
@@ -199,27 +192,6 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
             return false;
         } finally {
             cms.getRequestContext().setSiteRoot(oldSiteRoot);
-        }
-    }
-
-    /**
-     * Checks if a resource type is viewable for the current user. 
-     * If not, this resource type should not be available at all within the ADE 'add-wizard'.<p>
-     * 
-     * @param cms the current CMS context 
-     * @param referenceUri the resource URI to check permissions for
-     * 
-     * @return <code>true</code> if the resource type is viewable 
-     */
-    public boolean checkViewable(CmsObject cms, String referenceUri) {
-
-        try {
-            CmsExplorerTypeSettings settings = OpenCms.getWorkplaceManager().getExplorerTypeSetting(m_typeName);
-            CmsResource siteRoot = cms.readResource(referenceUri);
-            return settings.getAccess().getPermissions(cms, siteRoot).requiresViewPermission();
-        } catch (CmsException e) {
-            LOG.error(e.getLocalizedMessage(), e);
-            return false;
         }
     }
 
@@ -241,6 +213,31 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
 
         if (cms.getRequestContext().getCurrentProject().isOnlineProject()) {
             throw new IllegalStateException();
+        }
+    }
+
+    /**
+     * Checks if a resource type is viewable for the current user. 
+     * If not, this resource type should not be available at all within the ADE 'add-wizard'.<p>
+     * 
+     * @param cms the current CMS context 
+     * @param referenceUri the resource URI to check permissions for
+     * 
+     * @return <code>true</code> if the resource type is viewable 
+     */
+    public boolean checkViewable(CmsObject cms, String referenceUri) {
+
+        try {
+            CmsExplorerTypeSettings settings = OpenCms.getWorkplaceManager().getExplorerTypeSetting(m_typeName);
+            CmsResource siteRoot = cms.readResource(referenceUri);
+            if (settings == null) {
+                // no explorer type
+                return false;
+            }
+            return settings.getAccess().getPermissions(cms, siteRoot).requiresViewPermission();
+        } catch (CmsException e) {
+            LOG.error(e.getLocalizedMessage(), e);
+            return false;
         }
     }
 
@@ -312,7 +309,9 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
         checkInitialized();
         CmsObject rootCms = rootCms(userCms);
         String folderPath = getFolderPath(userCms);
-        createFolder(m_cms, folderPath);
+        CmsObject folderCreateCms = OpenCms.initCmsObject(m_cms);
+        folderCreateCms.getRequestContext().setCurrentProject(userCms.getRequestContext().getCurrentProject());
+        createFolder(folderCreateCms, folderPath);
         String destination = CmsStringUtil.joinPaths(folderPath, getNamePattern(true));
         String creationPath = OpenCms.getResourceManager().getNameGenerator().getNewFileName(rootCms, destination, 5);
         // set the content locale
@@ -328,6 +327,12 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
             getType().getTypeId(),
             null,
             new ArrayList<CmsProperty>(0));
+        try {
+            rootCms.unlockResource(creationPath);
+        } catch (CmsLockException e) {
+            // probably the parent folder is locked 
+            LOG.info(e.getLocalizedMessage(), e);
+        }
         return createdResource;
     }
 
@@ -346,7 +351,7 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
         } else {
             return CmsStringUtil.joinPaths(
                 cms.getRequestContext().getSiteRoot(),
-                CmsADEConfigData.CONTENT_FOLDER_NAME,
+                CmsADEManager.CONTENT_FOLDER_NAME,
                 m_typeName);
         }
     }
@@ -372,7 +377,7 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
             return m_namePattern;
         }
         if (useDefaultIfEmpty) {
-            return m_typeName + "-%(number).html";
+            return m_typeName + "-%(number).xml";
         }
         return null;
     }
@@ -421,6 +426,16 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
     }
 
     /**
+     * Returns true if adding elements of this type via ADE should be disabled.<p>
+     * 
+     * @return true if elements of this type shouldn't be added to the page 
+     */
+    public boolean isAddDisabled() {
+
+        return m_addDisabled;
+    }
+
+    /**
      * True if the detail page creation should be disabled for this resource type.<p>
      * 
      * @return true if detail page creation should be disabled for this type 
@@ -445,17 +460,8 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
 
         CmsFolderOrName folderOrName = childConfig.m_folderOrName != null ? childConfig.m_folderOrName : m_folderOrName;
         String namePattern = childConfig.m_namePattern != null ? childConfig.m_namePattern : m_namePattern;
-        CmsFormatterConfiguration formatterConfig = childConfig.m_formatterConfig != null
-        ? childConfig.m_formatterConfig
-        : m_formatterConfig;
-        return new CmsResourceTypeConfig(
-            m_typeName,
-            false,
-            folderOrName,
-            namePattern,
-            formatterConfig,
-            isDetailPagesDisabled() || childConfig.isDetailPagesDisabled(),
-            m_order);
+        return new CmsResourceTypeConfig(m_typeName, false, folderOrName, namePattern, isDetailPagesDisabled()
+            || childConfig.isDetailPagesDisabled(), childConfig.isAddDisabled(), m_order);
 
     }
 
@@ -471,8 +477,8 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
             m_disabled,
             getFolderOrName(),
             m_namePattern,
-            m_formatterConfig,
             m_detailPagesDisabled,
+            isAddDisabled(),
             m_order);
     }
 
@@ -486,16 +492,6 @@ public class CmsResourceTypeConfig implements I_CmsConfigurationObject<CmsResour
     protected CmsFolderOrName getFolderOrName() {
 
         return m_folderOrName;
-    }
-
-    /**
-     * Gets the formatter configuration of this resource type.<p>
-     * 
-     * @return the formatter configuration of this resource type 
-     */
-    protected CmsFormatterConfiguration getFormatterConfiguration() {
-
-        return m_formatterConfig;
     }
 
     /**

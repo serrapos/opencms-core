@@ -30,6 +30,8 @@ package org.opencms.ade.galleries.client.ui;
 import org.opencms.ade.galleries.client.A_CmsTabHandler;
 import org.opencms.ade.galleries.shared.CmsGallerySearchBean;
 
+import java.util.List;
+
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HasText;
 
@@ -42,6 +44,9 @@ public abstract class A_CmsTab extends Composite {
 
     /** The tab text accessor. */
     protected HasText m_tabTextAccessor;
+
+    /** Flag indicating that the tab is currently selected. */
+    private boolean m_isSelected;
 
     /** The tab id. */
     private String m_tabId;
@@ -71,7 +76,7 @@ public abstract class A_CmsTab extends Composite {
      * 
      * @return the parameter panel
      */
-    public abstract CmsSearchParamPanel getParamPanel(CmsGallerySearchBean searchObj);
+    public abstract List<CmsSearchParamPanel> getParamPanels(CmsGallerySearchBean searchObj);
 
     /**
      * Returns the tab id.<p>
@@ -84,11 +89,22 @@ public abstract class A_CmsTab extends Composite {
     }
 
     /**
+     * Returns if the tab is currently selected.<p>
+     * 
+     * @return <code>true</code> if the tab is currently selected
+     */
+    public boolean isSelected() {
+
+        return m_isSelected;
+    }
+
+    /**
      * Will be triggered when a tab is deselected.<p>
      */
     public void onDeselection() {
 
         getTabHandler().onDeselection();
+        m_isSelected = false;
     }
 
     /**
@@ -97,6 +113,17 @@ public abstract class A_CmsTab extends Composite {
     public void onSelection() {
 
         getTabHandler().onSelection();
+        m_isSelected = true;
+    }
+
+    /**
+     * Removes the parameter with the given key from the tab.<p>
+     * 
+     * @param paramKey the parameter key
+     */
+    public void removeParam(String paramKey) {
+
+        getTabHandler().removeParam(paramKey);
     }
 
     /**

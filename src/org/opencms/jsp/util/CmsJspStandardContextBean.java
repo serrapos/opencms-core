@@ -28,26 +28,37 @@
 package org.opencms.jsp.util;
 
 import org.opencms.ade.configuration.CmsADEConfigData;
+import org.opencms.ade.configuration.CmsADEManager;
 import org.opencms.ade.configuration.CmsFunctionReference;
 import org.opencms.ade.detailpage.CmsDetailPageInfo;
 import org.opencms.ade.detailpage.CmsDetailPageResourceHandler;
+import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsPropertyDefinition;
 import org.opencms.file.CmsRequestContext;
 import org.opencms.file.CmsResource;
 import org.opencms.flex.CmsFlexController;
+import org.opencms.flex.CmsFlexRequest;
 import org.opencms.jsp.CmsJspBean;
+import org.opencms.jsp.CmsJspTagEditable;
 import org.opencms.jsp.Messages;
+import org.opencms.loader.CmsTemplateContextManager;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.CmsRuntimeException;
 import org.opencms.main.OpenCms;
+import org.opencms.util.CmsCollectionsGenericWrapper;
+import org.opencms.util.CmsStringUtil;
 import org.opencms.util.CmsUUID;
 import org.opencms.xml.containerpage.CmsContainerBean;
 import org.opencms.xml.containerpage.CmsContainerElementBean;
 import org.opencms.xml.containerpage.CmsContainerPageBean;
 import org.opencms.xml.containerpage.CmsDynamicFunctionBean;
 import org.opencms.xml.containerpage.CmsDynamicFunctionParser;
+import org.opencms.xml.containerpage.CmsFormatterConfiguration;
+import org.opencms.xml.containerpage.I_CmsFormatterBean;
 import org.opencms.xml.content.CmsXmlContent;
+import org.opencms.xml.content.CmsXmlContentFactory;
 
 import java.util.List;
 import java.util.Locale;
@@ -55,10 +66,8 @@ import java.util.Map;
 
 import javax.servlet.ServletRequest;
 
+import org.apache.commons.collections.Transformer;
 import org.apache.commons.logging.Log;
-
-import com.google.common.base.Function;
-import com.google.common.collect.MapMaker;
 
 /**
  * Allows convenient access to the most important OpenCms functions on a JSP page,
@@ -69,6 +78,103 @@ import com.google.common.collect.MapMaker;
  * @since 8.0
  */
 public final class CmsJspStandardContextBean {
+
+    /**
+     * Bean containing a template name and URI.<p>
+     */
+    public static class TemplateBean {
+
+        /** True if the template context was manually selected. */
+        private boolean m_forced;
+
+        /** The template name. */
+        private String m_name;
+
+        /** The template resource. */
+        private CmsResource m_resource;
+
+        /** The template uri, if no resource is set. */
+        private String m_uri;
+
+        /**
+         * Creates a new instance.<p>
+         * 
+         * @param name the template name 
+         * @param resource the template resource 
+         */
+        public TemplateBean(String name, CmsResource resource) {
+
+            m_resource = resource;
+            m_name = name;
+        }
+
+        /**
+         * Creates a new instance with an URI instead of a resoure.<p>
+         * 
+         * @param name the template name 
+         * @param uri the template uri 
+         */
+        public TemplateBean(String name, String uri) {
+
+            m_name = name;
+            m_uri = uri;
+        }
+
+        /**
+         * Gets the template name.<p>
+         * 
+         * @return the template name 
+         */
+        public String getName() {
+
+            return m_name;
+        }
+
+        /**
+         * Gets the template resource.<p>
+         * 
+         * @return the template resource 
+         */
+        public CmsResource getResource() {
+
+            return m_resource;
+        }
+
+        /**
+         * Gets the template uri.<p>
+         * 
+         * @return the template URI.
+         */
+        public String getUri() {
+
+            if (m_resource != null) {
+                return m_resource.getRootPath();
+            } else {
+                return m_uri;
+            }
+        }
+
+        /**
+         * Returns true if the template context was manually selected.<p>
+         * 
+         * @return true if the template context was manually selected 
+         */
+        public boolean isForced() {
+
+            return m_forced;
+        }
+
+        /**
+         * Sets the 'forced' flag to a new value.<p>
+         * 
+         * @param forced the new value 
+         */
+        public void setForced(boolean forced) {
+
+            m_forced = forced;
+        }
+
+    }
 
     /** The attribute name of the cms object.*/
     public static final String ATTRIBUTE_CMS_OBJECT = "__cmsObject";
@@ -88,6 +194,9 @@ public final class CmsJspStandardContextBean {
     /** The current detail content resource if available. */
     private CmsResource m_detailContentResource;
 
+    /** The detail only page references containers that are only displayed in detail view. */
+    private CmsContainerPageBean m_detailOnlyPage;
+
     /** Flag to indicate if element was just edited. */
     private boolean m_edited;
 
@@ -99,6 +208,9 @@ public final class CmsJspStandardContextBean {
 
     /** The currently displayed container page. */
     private CmsContainerPageBean m_page;
+
+    /** The current request. */
+    private ServletRequest m_request;
 
     /** The VFS content access bean. */
     private CmsJspVfsAccessBean m_vfsBean;
@@ -119,6 +231,7 @@ public final class CmsJspStandardContextBean {
     private CmsJspStandardContextBean(ServletRequest req) {
 
         CmsFlexController controller = CmsFlexController.getController(req);
+        m_request = req;
         CmsObject cms;
         if (controller != null) {
             cms = controller.getCmsObject();
@@ -237,6 +350,16 @@ public final class CmsJspStandardContextBean {
         : m_cms.getSitePath(m_detailContentResource);
     }
 
+    /**
+     * Returns the detail only page.<p>
+     *
+     * @return the detail only page
+     */
+    public CmsContainerPageBean getDetailOnlyPage() {
+
+        return m_detailOnlyPage;
+    }
+
     /**    
      * Returns the currently rendered element.<p>
      * 
@@ -259,13 +382,12 @@ public final class CmsJspStandardContextBean {
         if (m_function != null) {
             return m_function;
         }
-        MapMaker mm = new MapMaker();
-        m_function = mm.makeComputingMap(new Function<String, Object>() {
+        Transformer transformer = new Transformer() {
 
-            public Object apply(String key) {
+            public Object transform(Object key) {
 
                 try {
-                    CmsDynamicFunctionBean dynamicFunction = readDynamicFunctionBean(key);
+                    CmsDynamicFunctionBean dynamicFunction = readDynamicFunctionBean((String)key);
                     CmsDynamicFunctionBeanWrapper wrapper = new CmsDynamicFunctionBeanWrapper(m_cms, dynamicFunction);
                     return wrapper;
 
@@ -273,7 +395,8 @@ public final class CmsJspStandardContextBean {
                     return new CmsDynamicFunctionBeanWrapper(m_cms, null);
                 }
             }
-        });
+        };
+        m_function = CmsCollectionsGenericWrapper.createLazyMap(transformer);
         return m_function;
 
     }
@@ -286,10 +409,9 @@ public final class CmsJspStandardContextBean {
      */
     public Map<String, String> getFunctionDetail() {
 
-        MapMaker mm = new MapMaker();
-        return mm.makeComputingMap(new Function<String, String>() {
+        Transformer transformer = new Transformer() {
 
-            public String apply(String key) {
+            public Object transform(Object key) {
 
                 String detailType = CmsDetailPageInfo.FUNCTION_PREFIX + key;
                 CmsADEConfigData config = OpenCms.getADEManager().lookupConfiguration(
@@ -310,7 +432,8 @@ public final class CmsJspStandardContextBean {
                     return "";
                 }
             }
-        });
+        };
+        return CmsCollectionsGenericWrapper.createLazyMap(transformer);
     }
 
     /**
@@ -321,12 +444,11 @@ public final class CmsJspStandardContextBean {
      */
     public Map<CmsJspContentAccessBean, CmsDynamicFunctionFormatWrapper> getFunctionFormatFromContent() {
 
-        MapMaker mm = new MapMaker();
-        return mm.makeComputingMap(new Function<CmsJspContentAccessBean, CmsDynamicFunctionFormatWrapper>() {
+        Transformer transformer = new Transformer() {
 
-            public CmsDynamicFunctionFormatWrapper apply(CmsJspContentAccessBean contentAccess) {
+            public Object transform(Object contentAccess) {
 
-                CmsXmlContent content = (CmsXmlContent)(contentAccess.getRawContent());
+                CmsXmlContent content = (CmsXmlContent)(((CmsJspContentAccessBean)contentAccess).getRawContent());
                 CmsDynamicFunctionParser parser = new CmsDynamicFunctionParser();
                 CmsDynamicFunctionBean functionBean = null;
                 try {
@@ -346,8 +468,29 @@ public final class CmsJspStandardContextBean {
                 CmsDynamicFunctionFormatWrapper wrapper = new CmsDynamicFunctionFormatWrapper(m_cms, format);
                 return wrapper;
             }
-        });
+        };
+        return CmsCollectionsGenericWrapper.createLazyMap(transformer);
+    }
 
+    /**
+     * Checks if the current request should be direct edit enabled. 
+     * Online-, history-requests, previews and temporary files will not be editable.<p>
+     * 
+     * @return <code>true</code> if the current request should be direct edit enabled
+     */
+    public boolean getIsEditMode() {
+
+        return CmsJspTagEditable.isEditableRequest(m_request);
+    }
+
+    /**
+     * Returns if the current project is the online project.<p>
+     * 
+     * @return <code>true</code> if the current project is the online project
+     */
+    public boolean getIsOnlineProject() {
+
+        return m_cms.getRequestContext().getCurrentProject().isOnlineProject();
     }
 
     /**
@@ -371,6 +514,44 @@ public final class CmsJspStandardContextBean {
     }
 
     /**
+     * JSP EL accessor method for retrieving the preview formatters.<p>
+     * 
+     * @return a lazy map for accessing preview formatters 
+     */
+    public Map<String, String> getPreviewFormatter() {
+
+        Transformer transformer = new Transformer() {
+
+            public Object transform(Object uri) {
+
+                try {
+                    String rootPath = m_cms.getRequestContext().addSiteRoot((String)uri);
+                    CmsResource resource = m_cms.readResource((String)uri);
+                    CmsADEManager adeManager = OpenCms.getADEManager();
+                    CmsADEConfigData configData = adeManager.lookupConfiguration(m_cms, rootPath);
+                    CmsFormatterConfiguration formatterConfig = configData.getFormatters(m_cms, resource);
+                    if (formatterConfig == null) {
+                        return "";
+                    }
+                    I_CmsFormatterBean previewFormatter = formatterConfig.getPreviewFormatter();
+                    if (previewFormatter == null) {
+                        return "";
+                    }
+                    CmsUUID structureId = previewFormatter.getJspStructureId();
+                    m_cms.readResource(structureId);
+                    CmsResource formatterResource = m_cms.readResource(structureId);
+                    String formatterSitePath = m_cms.getRequestContext().removeSiteRoot(formatterResource.getRootPath());
+                    return formatterSitePath;
+                } catch (CmsException e) {
+                    LOG.warn(e.getLocalizedMessage(), e);
+                    return "";
+                }
+            }
+        };
+        return CmsCollectionsGenericWrapper.createLazyMap(transformer);
+    }
+
+    /**
      * Returns the request context.<p>
      * 
      * @return the request context
@@ -389,6 +570,62 @@ public final class CmsJspStandardContextBean {
 
         return m_cms.getRequestContext().removeSiteRoot(
             OpenCms.getADEManager().getSubSiteRoot(m_cms, m_cms.getRequestContext().getRootUri()));
+    }
+
+    /**
+     * Gets a bean containing information about the current template.<p>
+     * 
+     * @return the template information bean 
+     */
+    public TemplateBean getTemplate() {
+
+        TemplateBean templateBean = getRequestAttribute(CmsTemplateContextManager.ATTR_TEMPLATE_BEAN);
+        if (templateBean == null) {
+            templateBean = new TemplateBean("", "");
+        }
+        return templateBean;
+    }
+
+    /**
+     * Returns the title of a page delivered from OpenCms, usually used for the <code>&lt;title&gt;</code> tag of
+     * a HTML page.<p>
+     * 
+     * If no title information has been found, the empty String "" is returned.<p>
+     * 
+     * @return the title of the current page
+     */
+    public String getTitle() {
+
+        String result = null;
+        try {
+
+            if (isDetailRequest()) {
+                // this is a request to a detail page
+                CmsResource res = getDetailContent();
+                CmsFile file = m_cms.readFile(res);
+                CmsXmlContent content = CmsXmlContentFactory.unmarshal(m_cms, file);
+                result = content.getHandler().getTitleMapping(m_cms, content, m_cms.getRequestContext().getLocale());
+                if (result == null) {
+                    // title not found, maybe no mapping OR not available in the current locale
+                    // read the title of the detail resource as fall back (may contain mapping from another locale)
+                    result = m_cms.readPropertyObject(res, CmsPropertyDefinition.PROPERTY_TITLE, false).getValue();
+                }
+            }
+            if (result == null) {
+                // read the title of the requested resource as fall back
+                result = m_cms.readPropertyObject(
+                    m_cms.getRequestContext().getUri(),
+                    CmsPropertyDefinition.PROPERTY_TITLE,
+                    true).getValue();
+            }
+        } catch (CmsException e) {
+            // NOOP, result will be an empty string
+        }
+        if (CmsStringUtil.isEmptyOrWhitespaceOnly(result)) {
+            result = "";
+        }
+
+        return result;
     }
 
     /**
@@ -481,6 +718,16 @@ public final class CmsJspStandardContextBean {
     }
 
     /**
+     * Sets the detail only page.<p>
+     *
+     * @param detailOnlyPage the detail only page to set
+     */
+    public void setDetailOnlyPage(CmsContainerPageBean detailOnlyPage) {
+
+        m_detailOnlyPage = detailOnlyPage;
+    }
+
+    /**
      * Sets the flag to indicate if in drag and drop mode.<p>
      *
      * @param edited <code>true</code> if in drag and drop mode
@@ -526,6 +773,19 @@ public final class CmsJspStandardContextBean {
     }
 
     /**
+     * Updates the standard context bean from the request.<p>
+     * 
+     * @param cmsFlexRequest the request from which to update the data 
+     */
+    public void updateRequestData(CmsFlexRequest cmsFlexRequest) {
+
+        CmsResource detailRes = CmsDetailPageResourceHandler.getDetailResource(cmsFlexRequest);
+        m_detailContentResource = detailRes;
+        m_request = cmsFlexRequest;
+
+    }
+
+    /**
      * Reads a dynamic function bean, given its name in the module configuration.<p>
      * 
      * @param configuredName the name of the dynamic function in the module configuration  
@@ -546,6 +806,20 @@ public final class CmsJspStandardContextBean {
         CmsResource functionResource = m_cms.readResource(functionRef.getStructureId());
         CmsDynamicFunctionBean result = parser.parseFunctionBean(m_cms, functionResource);
         return result;
+    }
+
+    /**
+     * Convenience method for getting a request attribute without an explicit cast.<p>
+     * 
+     * @param name the attribute name 
+     * @return the request attribute 
+     */
+    @SuppressWarnings("unchecked")
+    private <A> A getRequestAttribute(String name) {
+
+        Object attribute = m_request.getAttribute(name);
+
+        return attribute != null ? (A)attribute : null;
     }
 
 }

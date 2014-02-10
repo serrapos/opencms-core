@@ -27,14 +27,14 @@
 
 package org.opencms.gwt.client.ui.css;
 
-import com.google.gwt.resources.client.CssResource;
+import org.opencms.gwt.client.ui.css.I_CmsLayoutBundle.I_CmsGlobalWidgetCss;
 
 /**
  * Css resource.<p>
  * 
  * @since 8.0.0
  */
-public interface I_CmsInputCss extends CssResource {
+public interface I_CmsInputCss extends I_CmsGlobalWidgetCss {
 
     /** 
      * Css class reader.<p>
@@ -42,6 +42,27 @@ public interface I_CmsInputCss extends CssResource {
      * @return the css class
      */
     String alignBottom();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String alignCheckboxBottom();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String categoryItem();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String categoryScrollPanel();
 
     /** Access method.<p>
      * 
@@ -82,7 +103,49 @@ public interface I_CmsInputCss extends CssResource {
      * 
      * @return the css class
      */
+    String colorPicker();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String comboBoxOpener();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String dataValue();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String disabled();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String disableTextArea();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
     String error();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String fader();
 
     /**
      * Css class reader.<p>
@@ -201,14 +264,14 @@ public interface I_CmsInputCss extends CssResource {
      * 
      * @return the css class
      */
-    String openerHover();
+    String multiCheckboxPanel();
 
     /**
      * Css class reader.<p>
      * 
      * @return the css class
      */
-    String openerNoHover();
+    String opener();
 
     /**
      * Css class reader.<p>
@@ -223,14 +286,8 @@ public interface I_CmsInputCss extends CssResource {
      * 
      * @return the css class
      */
-    String radioButtonGroup();
 
-    /**
-     * Css class reader.<p>
-     * 
-     * @return the css class
-     */
-    // String textAreaWidget();
+    String radioButtonGroup();
 
     /**
      * Css class reader.<p>
@@ -246,6 +303,13 @@ public interface I_CmsInputCss extends CssResource {
      * @return the css class
      */
     String selectBoxCell();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String selectBoxDisabled();
 
     /**
      * Css class reader.<p>
@@ -294,6 +358,13 @@ public interface I_CmsInputCss extends CssResource {
      * 
      * @return the css class
      */
+    String selectionInput();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
     String selectorPopup();
 
     /**
@@ -316,13 +387,6 @@ public interface I_CmsInputCss extends CssResource {
      * @return the css class
      */
     String textArea();
-
-    /**
-     * Css class reader.<p>
-     * 
-     * @return the css class
-     */
-    String textAreaContainer();
 
     /**
      * Css class reader. <p>
@@ -372,6 +436,41 @@ public interface I_CmsInputCss extends CssResource {
      * @return the css class
      */
     String textBoxWidget();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String transparentSelectBox();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String triState();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String triStateMedium();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String triStateOff();
+
+    /**
+     * Css class reader.<p>
+     * 
+     * @return the css class
+     */
+    String triStateOn();
 
     /**
      * Css class reader.<p>

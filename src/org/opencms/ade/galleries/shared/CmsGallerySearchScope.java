@@ -27,11 +27,18 @@
 
 package org.opencms.ade.galleries.shared;
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 /**
  * An enum that represents the possible search scope choices in the ADE gallery search tab.<p>
  */
 public enum CmsGallerySearchScope {
+
+    /** Search everything. */
+    everything(true, true, true, "GUI_SCOPE_EVERYTHING_0"),
+
     /** Search only in the shared folder. */
     shared(false, false, true, "GUI_SCOPE_SHARED_0"),
 
@@ -100,6 +107,7 @@ public enum CmsGallerySearchScope {
      * Returns if this search scope includes the shared folder.<p>
      * 
      * @return <code>true</code> if this search scope includes the shared folder
+<<<<<<< HEAD
      */
     public boolean isIncludeShared() {
 
@@ -111,6 +119,19 @@ public enum CmsGallerySearchScope {
      * 
      * @return <code>true</code> if this search scope includes the site folder
      */
+=======
+     */
+    public boolean isIncludeShared() {
+
+        return m_shared;
+    }
+
+    /**
+     * Returns if this search scope includes the site folder.<p>
+     * 
+     * @return <code>true</code> if this search scope includes the site folder
+     */
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     public boolean isIncludeSite() {
 
         return m_site;

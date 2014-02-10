@@ -32,9 +32,11 @@ import org.opencms.configuration.CmsVfsConfiguration;
 import org.opencms.configuration.I_CmsXmlConfiguration;
 import org.opencms.setup.xml.A_CmsXmlVfs;
 import org.opencms.setup.xml.CmsSetupXmlHelper;
+import org.opencms.widgets.CmsCategoryWidget;
 import org.opencms.widgets.CmsInputWidget;
 import org.opencms.widgets.CmsVfsFileWidget;
 import org.opencms.widgets.CmsVfsImageWidget;
+import org.opencms.xml.types.CmsXmlCategoryValue;
 import org.opencms.xml.types.CmsXmlPlainTextStringValue;
 import org.opencms.xml.types.CmsXmlVarLinkValue;
 import org.opencms.xml.types.CmsXmlVfsImageValue;
@@ -55,6 +57,7 @@ import org.dom4j.Node;
  */
 public class CmsXmlAddXmlSchemaTypes extends A_CmsXmlVfs {
 
+    /** The schema data. */
     private Map<String, String> m_schemaData;
 
     /** List of xpaths to update. */
@@ -151,6 +154,7 @@ public class CmsXmlAddXmlSchemaTypes extends A_CmsXmlVfs {
             m_schemaData.put(CmsXmlVarLinkValue.class.getName(), CmsVfsFileWidget.class.getName());
             m_schemaData.put(CmsXmlVfsImageValue.class.getName(), CmsVfsImageWidget.class.getName());
             m_schemaData.put(CmsXmlPlainTextStringValue.class.getName(), CmsInputWidget.class.getName());
+            m_schemaData.put(CmsXmlCategoryValue.class.getName(), CmsCategoryWidget.class.getName());
         }
         return m_schemaData;
     }

@@ -3,20 +3,25 @@
 <export>
 	<info>
 		<creator>Admin</creator>
-		<opencms_version>7.0.0</opencms_version>
+		<opencms_version>9.0.0</opencms_version>
 		<createdate>Mon, 25 Jun 2007 14:16:41 GMT</createdate>
 		<infoproject>Offline</infoproject>
 		<export_version>7</export_version>
 	</info>
 	<module>
 		<name>org.opencms.workplace.handler</name>
-		<nicename><![CDATA[OpenCms 8 Workplace handler]]></nicename>
+		<nicename><![CDATA[OpenCms 9 Workplace handler]]></nicename>
 		<group>OpenCms Workplace</group>
 		<class/>
 		<description><![CDATA[<p>This module contains the OpenCms Workplace handler files.</p>
 <p>It includes the 404 and 500 error handlers that are showed in case of an error of a frontend application.</p>
+<<<<<<< HEAD
 <p><i>(c) 2012 by Alkacon Software GmbH (http://www.alkacon.com).</i></p>]]></description>
 		<version>8.0.1</version>
+=======
+<p><i>&copy; 2014 by Alkacon Software GmbH (http://www.alkacon.com).</i></p>]]></description>
+		<version>9.0.0</version>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 		<authorname><![CDATA[Alkacon Software GmbH]]></authorname>
 		<authoremail><![CDATA[info@alkacon.com]]></authoremail>
 		<datecreated/>

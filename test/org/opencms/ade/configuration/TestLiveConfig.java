@@ -38,8 +38,6 @@ import org.opencms.test.OpenCmsTestCase;
 import org.opencms.test.OpenCmsTestLogAppender;
 import org.opencms.test.OpenCmsTestProperties;
 import org.opencms.util.CmsUUID;
-import org.opencms.xml.containerpage.CmsFormatterBean;
-import org.opencms.xml.containerpage.CmsFormatterConfiguration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -118,23 +116,6 @@ public class TestLiveConfig extends OpenCmsTestCase {
             "/sites/default/.content/a1/blarg.html",
             "/today/news");
         assertEquals("/sites/default/", detailPage);
-    }
-
-    /**
-     * Tests formatter configuration.<p>
-     * 
-     * @throws Exception
-     */
-    public void testFormatters() throws Exception {
-
-        CmsObject cms = rootCms();
-        CmsADEManager manager = OpenCms.getADEManager();
-        CmsADEConfigData config = manager.lookupConfiguration(cms, "/sites/default");
-        CmsFormatterConfiguration formatterConfig = config.getFormatters("a");
-        assertNotNull(formatterConfig);
-        List<CmsFormatterBean> formatters = formatterConfig.getAllFormatters();
-        assertEquals(1, formatters.size());
-        assertEquals("blah", formatters.get(0).getContainerType());
     }
 
     /**
@@ -332,6 +313,42 @@ public class TestLiveConfig extends OpenCmsTestCase {
             assertEquals(page2.getStructureId(), detailPages.get(1).getId());
         } finally {
             restoreFiles();
+        }
+    }
+
+    /**
+     * Tests that sitmeap folder types override module folder types.<p>
+     * @throws Exception
+     */
+    public void testSitemapFolderTypesOverrideModuleFolderTypes() throws Exception {
+
+        CmsObject cms = rootCms();
+        String filename = "/system/modules/org.opencms.ade.config/.config";
+        try {
+            String data = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
+                + "<SitemapConfigurationsV2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"opencms://system/modules/org.opencms.ade.config/schemas/sitemap_config.xsd\">\r\n"
+                + "  <SitemapConfigurationV2 language=\"en\">\r\n"
+                + "      <ResourceType>\r\n"
+                + "      <TypeName><![CDATA[m]]></TypeName>\r\n"
+                + "      <Disabled>false</Disabled>\r\n"
+                + "      <Folder>\r\n"
+                + "        <Name><![CDATA[a1]]></Name>\r\n"
+                + "      </Folder>\r\n"
+                + "      <NamePattern><![CDATA[asdf]]></NamePattern>\r\n"
+                + "    </ResourceType>\r\n"
+                + "  </SitemapConfigurationV2>\r\n"
+                + "</SitemapConfigurationsV2>\r\n";
+            cms.createResource(
+                filename,
+                OpenCms.getADEManager().getModuleConfigurationType().getTypeId(),
+                data.getBytes(),
+                Collections.<CmsProperty> emptyList());
+            String parentFolderType = OpenCms.getADEManager().getOfflineCache().getParentFolderType(
+                "/sites/default/.content/a1/foo");
+            assertEquals("a", parentFolderType);
+        } finally {
+            cms.lockResource(filename);
+            cms.deleteResource(filename, CmsResource.DELETE_PRESERVE_SIBLINGS);
         }
     }
 

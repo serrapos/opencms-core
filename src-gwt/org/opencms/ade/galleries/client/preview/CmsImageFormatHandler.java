@@ -30,6 +30,7 @@ package org.opencms.ade.galleries.client.preview;
 import org.opencms.ade.galleries.client.Messages;
 import org.opencms.ade.galleries.client.preview.ui.CmsCroppingDialog;
 import org.opencms.ade.galleries.client.preview.ui.CmsImageFormatsForm;
+import org.opencms.ade.galleries.client.ui.CmsGalleryDialog;
 import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants.GalleryMode;
 import org.opencms.gwt.client.util.CmsClientStringUtil;
 import org.opencms.util.CmsStringUtil;
@@ -56,7 +57,16 @@ public class CmsImageFormatHandler implements HasValueChangeHandlers<CmsCropping
 
     /** Default image formats. */
     private enum DefaultRestriction {
-        big, free, original, small, user
+        /** Big image format. */
+        big,
+        /** Free image format. */
+        free,
+        /** Original format. */
+        original,
+        /** Small image format. */
+        small,
+        /** User defined image format. */
+        user
     }
 
     /** Default format configuration. */
@@ -75,6 +85,7 @@ public class CmsImageFormatHandler implements HasValueChangeHandlers<CmsCropping
         DefaultRestriction.small.name(),
         DefaultRestriction.big.name()};
 
+    /** The cropping dialog instance. */
     private CmsCroppingDialog m_croppingDialog;
 
     /** The current cropping parameter. */
@@ -120,11 +131,17 @@ public class CmsImageFormatHandler implements HasValueChangeHandlers<CmsCropping
      * Constructor.<p>
      * 
      * @param galleryMode the gallery mode
+     * @param dialog the gallery dialog
      * @param selectedPath the selected gallery path
      * @param imageHeight the image height
      * @param imageWidth the image width
      */
-    public CmsImageFormatHandler(GalleryMode galleryMode, String selectedPath, int imageHeight, int imageWidth) {
+    public CmsImageFormatHandler(
+        GalleryMode galleryMode,
+        CmsGalleryDialog dialog,
+        String selectedPath,
+        int imageHeight,
+        int imageWidth) {
 
         m_originalHeight = imageHeight;
         m_originalWidth = imageWidth;
@@ -132,7 +149,16 @@ public class CmsImageFormatHandler implements HasValueChangeHandlers<CmsCropping
         m_croppingParam.setOrgHeight(imageHeight);
         m_croppingParam.setOrgWidth(imageWidth);
         m_ratioLocked = true;
-        readFormatsConfig(galleryMode);
+        m_useFormats = dialog.isUseFormats();
+        if (m_useFormats) {
+            if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(dialog.getImageFormats())) {
+                m_formatValues = dialog.getImageFormats().split(",");
+            }
+            if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(dialog.getImageFormatNames())) {
+                m_formatNames = dialog.getImageFormatNames().split(",");
+            }
+        }
+        readFormatsConfig(galleryMode, dialog.isNativeWidget());
         if (m_useFormats) {
             generateFormats();
         }
@@ -305,7 +331,9 @@ public class CmsImageFormatHandler implements HasValueChangeHandlers<CmsCropping
             m_croppingParam.setTargetWidth((value * m_originalWidth) / m_originalHeight);
             m_formatForm.setWidthInput(m_croppingParam.getTargetWidth());
         }
-        if (!m_currentFormat.isHeightEditable() && hasUserFormatRestriction()) {
+        // in case the width and height parameter don't match the current format any longer, switch to user defined format
+        if ((!m_currentFormat.isHeightEditable() || (m_ratioLocked && !m_currentFormat.isWidthEditable()))
+            && hasUserFormatRestriction()) {
             m_formatForm.setFormatSelectValue(m_userFormatKey);
         } else {
             fireValueChangedEvent();
@@ -364,7 +392,9 @@ public class CmsImageFormatHandler implements HasValueChangeHandlers<CmsCropping
             m_croppingParam.setTargetHeight((value * m_originalHeight) / m_originalWidth);
             m_formatForm.setHeightInput(m_croppingParam.getTargetHeight());
         }
-        if (!m_currentFormat.isWidthEditable() && hasUserFormatRestriction()) {
+        // in case the width and height parameter don't match the current format any longer, switch to user defined format
+        if ((!m_currentFormat.isWidthEditable() || (m_ratioLocked && !m_currentFormat.isHeightEditable()))
+            && hasUserFormatRestriction()) {
             m_formatForm.setFormatSelectValue(m_userFormatKey);
         } else {
             fireValueChangedEvent();
@@ -433,6 +463,55 @@ public class CmsImageFormatHandler implements HasValueChangeHandlers<CmsCropping
     protected void fireValueChangedEvent() {
 
         ValueChangeEvent.fire(this, m_croppingParam);
+    }
+
+    /**
+     * Adjusts the current format to the cropping parameter.<p>
+     */
+    private void adjustToCurrentFormat() {
+
+        // in case of a locked or fixed image ratio height and width need to be reset
+        int height = m_croppingParam.getOrgHeight();
+        int width = m_croppingParam.getOrgWidth();
+        if (m_croppingParam.isScaled()) {
+            if (m_croppingParam.getTargetHeight() == -1) {
+                height = (int)Math.floor(((1.00 * m_croppingParam.getOrgHeight()) / m_croppingParam.getOrgWidth())
+                    * m_croppingParam.getTargetWidth());
+            } else {
+                height = m_croppingParam.getTargetHeight();
+            }
+            if (m_croppingParam.getTargetWidth() == -1) {
+                width = (int)Math.floor(((1.00 * m_croppingParam.getOrgWidth()) / m_croppingParam.getOrgHeight())
+                    * m_croppingParam.getTargetHeight());
+            } else {
+                width = m_croppingParam.getTargetWidth();
+            }
+
+        } else {
+            m_croppingParam.setTargetHeight(height);
+            m_croppingParam.setTargetWidth(width);
+        }
+        m_formatForm.setHeightInput(height);
+        m_formatForm.setWidthInput(width);
+        // enabling/disabling ratio lock button
+        if (m_currentFormat.isFixedRatio()) {
+            m_formatForm.setRatioButton(false, false, Messages.get().key(Messages.GUI_PRIVIEW_BUTTON_RATIO_FIXED_0));
+            m_ratioLocked = true;
+        } else {
+            if (!m_currentFormat.isHeightEditable() && !m_currentFormat.isWidthEditable()) {
+                // neither height nor width are editable, disable ratio lock button
+                m_formatForm.setRatioButton(
+                    false,
+                    false,
+                    Messages.get().key(Messages.GUI_PRIVIEW_BUTTON_NOT_EDITABLE_0));
+            } else {
+                m_formatForm.setRatioButton(false, true, null);
+            }
+            m_ratioLocked = true;
+        }
+        // enabling/disabling height and width input
+        m_formatForm.setHeightInputEnabled(m_currentFormat.isHeightEditable() || hasUserFormatRestriction());
+        m_formatForm.setWidthInputEnabled(m_currentFormat.isWidthEditable() || hasUserFormatRestriction());
     }
 
     /**
@@ -552,8 +631,9 @@ public class CmsImageFormatHandler implements HasValueChangeHandlers<CmsCropping
      * Reads the format configuration for the given gallery mode.<p>
      * 
      * @param mode the gallery mode
+     * @param isNativeWidget if the dialog is used as a native widget
      */
-    private void readFormatsConfig(GalleryMode mode) {
+    private void readFormatsConfig(GalleryMode mode, boolean isNativeWidget) {
 
         switch (mode) {
             case editor:
@@ -562,65 +642,28 @@ public class CmsImageFormatHandler implements HasValueChangeHandlers<CmsCropping
                 m_formatValues = DEFAULT_FORMAT_VALUES;
                 break;
             case widget:
-                m_useFormats = CmsPreviewUtil.isShowFormats();
-                if (m_useFormats) {
-                    m_formatValues = CmsPreviewUtil.getFormats();
-                    if (m_formatValues == null) {
-                        m_formatNames = DEFAULT_FORMAT_NAMES;
-                        m_formatValues = DEFAULT_FORMAT_VALUES;
-                    } else {
-                        m_formatNames = CmsPreviewUtil.getFormatNames();
+                if (!isNativeWidget) {
+                    m_useFormats = CmsPreviewUtil.isShowFormats();
+                    if (m_useFormats) {
+                        m_formatValues = CmsPreviewUtil.getFormats();
+                        if (m_formatValues == null) {
+                            m_formatNames = DEFAULT_FORMAT_NAMES;
+                            m_formatValues = DEFAULT_FORMAT_VALUES;
+                        } else {
+                            m_formatNames = CmsPreviewUtil.getFormatNames();
+                        }
                     }
+                } else if (m_useFormats && (m_formatValues == null)) {
+                    m_formatNames = DEFAULT_FORMAT_NAMES;
+                    m_formatValues = DEFAULT_FORMAT_VALUES;
                 }
                 break;
             case ade:
             case view:
+            case adeView:
                 m_useFormats = false;
                 break;
             default:
         }
-    }
-
-    private void adjustToCurrentFormat() {
-
-        // in case of a locked or fixed image ratio height and width need to be reset
-        int height = m_croppingParam.getOrgHeight();
-        int width = m_croppingParam.getOrgWidth();
-        if (m_croppingParam.isScaled()) {
-            if (m_croppingParam.getTargetHeight() == -1) {
-                height = (int)Math.floor(((1.00 * m_croppingParam.getOrgHeight()) / m_croppingParam.getOrgWidth())
-                    * m_croppingParam.getTargetWidth());
-            } else {
-                height = m_croppingParam.getTargetHeight();
-            }
-            if (m_croppingParam.getTargetWidth() == -1) {
-                width = (int)Math.floor(((1.00 * m_croppingParam.getOrgWidth()) / m_croppingParam.getOrgHeight())
-                    * m_croppingParam.getTargetHeight());
-            } else {
-                width = m_croppingParam.getTargetWidth();
-            }
-
-        }
-        m_formatForm.setHeightInput(height);
-        m_formatForm.setWidthInput(width);
-        // enabling/disabling ratio lock button
-        if (m_currentFormat.isFixedRatio()) {
-            m_formatForm.setRatioButton(false, false, Messages.get().key(Messages.GUI_PRIVIEW_BUTTON_RATIO_FIXED_0));
-            m_ratioLocked = true;
-        } else {
-            if (!m_currentFormat.isHeightEditable() && !m_currentFormat.isWidthEditable()) {
-                // neither height nor width are editable, disable ratio lock button
-                m_formatForm.setRatioButton(
-                    false,
-                    false,
-                    Messages.get().key(Messages.GUI_PRIVIEW_BUTTON_NOT_EDITABLE_0));
-            } else {
-                m_formatForm.setRatioButton(false, true, null);
-            }
-            m_ratioLocked = true;
-        }
-        // enabling/disabling height and width input
-        m_formatForm.setHeightInputEnabled(m_currentFormat.isHeightEditable() || hasUserFormatRestriction());
-        m_formatForm.setWidthInputEnabled(m_currentFormat.isWidthEditable() || hasUserFormatRestriction());
     }
 }

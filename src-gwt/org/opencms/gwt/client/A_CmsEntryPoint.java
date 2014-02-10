@@ -30,6 +30,7 @@ package org.opencms.gwt.client;
 import org.opencms.gwt.client.rpc.CmsLog;
 import org.opencms.gwt.client.ui.CmsAlertDialog;
 import org.opencms.gwt.client.ui.CmsNotification;
+import org.opencms.gwt.client.ui.css.I_CmsCellTableResources;
 import org.opencms.gwt.client.ui.css.I_CmsImageBundle;
 import org.opencms.gwt.client.ui.css.I_CmsInputLayoutBundle;
 import org.opencms.gwt.client.ui.css.I_CmsLayoutBundle;
@@ -39,6 +40,8 @@ import org.opencms.gwt.client.util.CmsCollectionUtil;
 import org.opencms.gwt.shared.CmsCoreData;
 
 import java.util.Map;
+
+import org.timepedia.exporter.client.ExporterUtil;
 
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
@@ -82,7 +85,6 @@ public abstract class A_CmsEntryPoint implements EntryPoint {
         bundle.dragdropCss().ensureInjected();
         bundle.floatDecoratedPanelCss().ensureInjected();
         bundle.generalCss().ensureInjected();
-        bundle.headerCss().ensureInjected();
         bundle.highlightCss().ensureInjected();
         bundle.linkWarningCss().ensureInjected();
         bundle.listItemWidgetCss().ensureInjected();
@@ -100,14 +102,17 @@ public abstract class A_CmsEntryPoint implements EntryPoint {
         bundle.menuButtonCss().ensureInjected();
         bundle.progressBarCss().ensureInjected();
         bundle.propertiesCss().ensureInjected();
+        bundle.globalWidgetCss().ensureInjected();
+        bundle.categoryDialogCss().ensureInjected();
+        bundle.colorSelectorCss().ensureInjected();
+        ExporterUtil.exportAll();
 
         I_CmsInputLayoutBundle.INSTANCE.inputCss().ensureInjected();
 
         I_CmsImageBundle.INSTANCE.style().ensureInjected();
-        I_CmsImageBundle.INSTANCE.contextMenuIcons().ensureInjected();
 
         I_CmsToolbarButtonLayoutBundle.INSTANCE.toolbarButtonCss().ensureInjected();
-
+        I_CmsCellTableResources.INSTANCE.cellTableStyle().ensureInjected();
         initClasses();
     }
 

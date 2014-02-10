@@ -42,6 +42,7 @@ import org.opencms.gwt.shared.CmsListInfoBean;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.shared.HandlerRegistration;
 
 /**
  * Draggable menu element. Needed for favorite list.<p>
@@ -49,6 +50,12 @@ import com.google.gwt.event.dom.client.ClickHandler;
  * @since 8.0.0
  */
 public class CmsMenuListItem extends CmsListItem {
+
+    /** The element edit button. */
+    protected CmsPushButton m_editButton;
+
+    /** The edit click handler registration. */
+    private HandlerRegistration m_editHandlerRegistration;
 
     /** The element delete button. */
     private CmsPushButton m_removeButton;
@@ -60,16 +67,14 @@ public class CmsMenuListItem extends CmsListItem {
      */
     public CmsMenuListItem(CmsContainerElementData element) {
 
-        super(new CmsListItemWidget(new CmsListInfoBean(
-            element.getTitle(),
-            element.getSitePath(),
-            element.getFormatedIndividualSettings())));
+        super(new CmsListItemWidget(new CmsListInfoBean(element.getTitle(), element.getSitePath(), null)));
         if (!m_listItemWidget.hasAdditionalInfo()) {
             m_listItemWidget.addAdditionalInfo(new CmsAdditionalInfoBean("", Messages.get().key(
                 Messages.GUI_NO_SETTINGS_TITLE_0), null));
         }
         setId(element.getClientId());
         getListItemWidget().setIcon(CmsIconUtil.getResourceIconClasses(element.getResourceType(), false));
+
         m_removeButton = new CmsPushButton();
         m_removeButton.setImageClass(I_CmsImageBundle.INSTANCE.style().removeIcon());
         m_removeButton.setButtonStyle(ButtonStyle.TRANSPARENT, null);
@@ -85,6 +90,13 @@ public class CmsMenuListItem extends CmsListItem {
 
             }
         });
+        m_editButton = new CmsPushButton();
+        m_editButton.setImageClass(I_CmsImageBundle.INSTANCE.style().editIcon());
+        m_editButton.setButtonStyle(ButtonStyle.TRANSPARENT, null);
+        m_editButton.setTitle(org.opencms.gwt.client.Messages.get().key(
+            org.opencms.gwt.client.Messages.GUI_BUTTON_ELEMENT_EDIT_0));
+        m_editButton.setEnabled(false);
+        getListItemWidget().addButton(m_editButton);
     }
 
     /**
@@ -93,6 +105,44 @@ public class CmsMenuListItem extends CmsListItem {
     public void deleteElement() {
 
         removeFromParent();
+    }
+
+    /**
+     * Disables the edit button with the given reason.<p>
+     * 
+     * @param reason the disable reason
+     * @param locked <code>true</code> if the resource is locked
+     */
+    public void disableEdit(String reason, boolean locked) {
+
+        m_editButton.disable(reason);
+        if (locked) {
+            m_editButton.setImageClass(I_CmsImageBundle.INSTANCE.style().lockIcon());
+        }
+    }
+
+    /**
+     * Enables the edit button with the given click handler.<p>
+     * 
+     * @param editClickHandler the edit click handler
+     */
+    public void enableEdit(ClickHandler editClickHandler) {
+
+        if (m_editHandlerRegistration != null) {
+            m_editHandlerRegistration.removeHandler();
+        }
+        m_editHandlerRegistration = m_editButton.addClickHandler(editClickHandler);
+        m_editButton.enable();
+    }
+
+    /**
+     * Hides the edit button.<p>
+     */
+    public void hideEditButton() {
+
+        if (m_editButton != null) {
+            getListItemWidget().removeButton(m_editButton);
+        }
     }
 
     /**
@@ -134,26 +184,21 @@ public class CmsMenuListItem extends CmsListItem {
     }
 
     /**
+     * Shows the element edit button.<p>
+     */
+    public void showEditButton() {
+
+        if (m_editButton != null) {
+            getListItemWidget().addButton(m_editButton);
+        }
+    }
+
+    /**
      * Shows the element delete button.<p>
      */
     public void showRemoveButton() {
 
         getListItemWidget().addButton(m_removeButton);
-    }
-
-    /**
-     * Sets the icon style.<p>
-     * 
-     * @param imageClass the image class to set
-     * @param title the title (tool-tip) to set
-     */
-    protected void setMoveIconStyle(String imageClass, String title) {
-
-        if (getMoveHandle() instanceof CmsPushButton) {
-            CmsPushButton button = (CmsPushButton)getMoveHandle();
-            button.setImageClass(imageClass);
-            button.setTitle(title);
-        }
     }
 
     /**

@@ -27,8 +27,10 @@
 
 package org.opencms.widgets;
 
+import org.opencms.ade.galleries.shared.I_CmsGalleryProviderConstants;
 import org.opencms.file.CmsObject;
 import org.opencms.file.types.CmsResourceTypeImage;
+import org.opencms.i18n.CmsMessages;
 import org.opencms.json.JSONArray;
 import org.opencms.json.JSONException;
 import org.opencms.json.JSONObject;
@@ -42,14 +44,11 @@ import org.opencms.util.CmsStringUtil;
  */
 public class CmsAdeImageGalleryWidget extends A_CmsAdeGalleryWidget {
 
-    private CmsVfsImageWidgetConfiguration m_widgetConfiguration;
-
-    private enum ImageWidgetInfo {
-        imageFormatNames, imageFormats, useFormats
-    }
-
     /** The gallery name. */
     private static final String GALLERY_NAME = "image";
+
+    /** The widget configuration. */
+    private CmsVfsImageWidgetConfiguration m_widgetConfiguration;
 
     /**
      * Constructor.<p>
@@ -79,6 +78,15 @@ public class CmsAdeImageGalleryWidget extends A_CmsAdeGalleryWidget {
     }
 
     /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    @Override
+    public String getWidgetName() {
+
+        return CmsAdeImageGalleryWidget.class.getName();
+    }
+
+    /**
      * @see org.opencms.widgets.I_CmsWidget#newInstance()
      */
     public I_CmsWidget newInstance() {
@@ -87,41 +95,34 @@ public class CmsAdeImageGalleryWidget extends A_CmsAdeGalleryWidget {
     }
 
     /**
-     * @throws JSONException 
-     * @see org.opencms.widgets.A_CmsAdeGalleryWidget#getAdditionalGalleryInfo(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog, org.opencms.widgets.I_CmsWidgetParameter)
+     * @see org.opencms.widgets.A_CmsAdeGalleryWidget#getAdditionalGalleryInfo(org.opencms.file.CmsObject, java.lang.String, org.opencms.i18n.CmsMessages, org.opencms.widgets.I_CmsWidgetParameter)
      */
     @Override
     protected JSONObject getAdditionalGalleryInfo(
         CmsObject cms,
-        I_CmsWidgetDialog widgetDialog,
+        String resource,
+        CmsMessages messages,
         I_CmsWidgetParameter param) throws JSONException {
 
-        CmsVfsImageWidgetConfiguration config = getWidgetConfiguration(cms, widgetDialog, param);
+        CmsVfsImageWidgetConfiguration config = getWidgetConfiguration(cms, messages, param);
         JSONObject result = new JSONObject();
-        result.put(ImageWidgetInfo.useFormats.name(), config.isShowFormat());
-        result.put(ImageWidgetInfo.imageFormats.name(), new JSONArray(config.getFormatValues()));
+        result.put(I_CmsGalleryProviderConstants.CONFIG_USE_FORMATS, config.isShowFormat());
+        result.put(I_CmsGalleryProviderConstants.CONFIG_IMAGE_FORMATS, new JSONArray(config.getFormatValues()));
         String temp = config.getSelectFormatString();
         String[] formatNames = new String[0];
         if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(temp)) {
             formatNames = config.getSelectFormatString().split("\\|");
         }
-        result.put(ImageWidgetInfo.imageFormatNames.name(), new JSONArray(formatNames));
-        return result;
-    }
-
-    /**
-     * @see org.opencms.widgets.A_CmsAdeGalleryWidget#getWidgetConfiguration(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog, org.opencms.widgets.I_CmsWidgetParameter)
-     */
-    @Override
-    protected CmsVfsImageWidgetConfiguration getWidgetConfiguration(
-        CmsObject cms,
-        I_CmsWidgetDialog widgetDialog,
-        I_CmsWidgetParameter param) {
-
-        if (m_widgetConfiguration == null) {
-            m_widgetConfiguration = new CmsVfsImageWidgetConfiguration(cms, widgetDialog, param, getConfiguration());
+        result.put(I_CmsGalleryProviderConstants.CONFIG_IMAGE_FORMAT_NAMES, new JSONArray(formatNames));
+        result.put(I_CmsGalleryProviderConstants.CONFIG_TAB_CONFIG, "selectDoc");
+        String uploadFolder = OpenCms.getWorkplaceManager().getRepositoryFolderHandler().getRepositoryFolder(
+            cms,
+            resource,
+            GALLERY_NAME + "gallery");
+        if (uploadFolder != null) {
+            result.put(I_CmsGalleryProviderConstants.CONFIG_UPLOAD_FOLDER, uploadFolder);
         }
-        return m_widgetConfiguration;
+        return result;
     }
 
     /**
@@ -148,5 +149,20 @@ public class CmsAdeImageGalleryWidget extends A_CmsAdeGalleryWidget {
         sb.append("', '").append(id);
         sb.append("'); return false;");
         return sb.toString();
+    }
+
+    /**
+     * @see org.opencms.widgets.A_CmsAdeGalleryWidget#getWidgetConfiguration(org.opencms.file.CmsObject, org.opencms.i18n.CmsMessages, org.opencms.widgets.I_CmsWidgetParameter)
+     */
+    @Override
+    protected CmsVfsImageWidgetConfiguration getWidgetConfiguration(
+        CmsObject cms,
+        CmsMessages messages,
+        I_CmsWidgetParameter param) {
+
+        if (m_widgetConfiguration == null) {
+            m_widgetConfiguration = new CmsVfsImageWidgetConfiguration(cms, messages, param, getConfiguration());
+        }
+        return m_widgetConfiguration;
     }
 }

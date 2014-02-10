@@ -74,13 +74,14 @@ public class CmsDeleteSearchIndexDialog extends A_CmsEditSearchIndexDialog {
     /**
      * Commits the edited search index to the search manager.<p>
      */
+    @Override
     public void actionCommit() {
 
-        List errors = new ArrayList();
+        List<Throwable> errors = new ArrayList<Throwable>();
 
         try {
 
-            m_searchManager.removeSearchIndex(m_index);
+            m_searchManager.removeSearchIndex(getSearchIndexIndex());
             clearDialogObject();
             writeConfiguration();
             // if we go back to /searchindex/singleindex (overview) the deleted searchindex is not 
@@ -102,6 +103,7 @@ public class CmsDeleteSearchIndexDialog extends A_CmsEditSearchIndexDialog {
      * @param dialog the dialog (page) to get the HTML for
      * @return the dialog HTML for all defined widgets of the named dialog (page)
      */
+    @Override
     protected String createDialogHtml(String dialog) {
 
         StringBuffer result = new StringBuffer(512);
@@ -114,7 +116,9 @@ public class CmsDeleteSearchIndexDialog extends A_CmsEditSearchIndexDialog {
             // create the widgets for the first dialog page
             result.append(dialogBlockStart(key(Messages.GUI_LIST_SEARCHINDEX_MACTION_DELETE_NAME_0)));
             result.append(createWidgetTableStart());
-            result.append(key(Messages.GUI_LIST_SEARCHINDEX_ACTION_DELETE_CONF_1, new Object[] {m_index.getName()}));
+            result.append(key(
+                Messages.GUI_LIST_SEARCHINDEX_ACTION_DELETE_CONF_1,
+                new Object[] {getSearchIndexIndex().getName()}));
             result.append(createWidgetTableEnd());
             result.append(dialogBlockEnd());
         }

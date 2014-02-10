@@ -28,13 +28,14 @@
 package org.opencms.ade.containerpage;
 
 import org.opencms.ade.containerpage.shared.CmsCntPageData;
-import org.opencms.ade.containerpage.shared.CmsContainer;
 import org.opencms.ade.containerpage.shared.rpc.I_CmsContainerpageService;
+import org.opencms.ade.contenteditor.CmsContentEditorActionElement;
 import org.opencms.ade.galleries.CmsGalleryActionElement;
 import org.opencms.ade.publish.CmsPublishActionElement;
 import org.opencms.ade.upload.CmsUploadActionElement;
 import org.opencms.gwt.CmsGwtActionElement;
 import org.opencms.gwt.CmsRpcException;
+import org.opencms.main.OpenCms;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -47,8 +48,11 @@ import javax.servlet.jsp.PageContext;
  */
 public class CmsContainerpageActionElement extends CmsGwtActionElement {
 
-    /** The module name. */
-    public static final String MODULE_NAME = "containerpage";
+    /** The OpenCms module name. */
+    public static final String CMS_MODULE_NAME = "org.opencms.ade.containerpage";
+
+    /** The GWT module name. */
+    public static final String GWT_MODULE_NAME = "containerpage";
 
     /** The current container page data. */
     private CmsCntPageData m_cntPageData;
@@ -72,11 +76,16 @@ public class CmsContainerpageActionElement extends CmsGwtActionElement {
     public String export() throws Exception {
 
         StringBuffer sb = new StringBuffer();
+        sb.append(CmsCntPageData.KEY_CONTAINER_DATA).append("= new Array();");
+        wrapScript(sb);
         sb.append(ClientMessages.get().export(getRequest()));
-        String prefetchedData = serialize(I_CmsContainerpageService.class.getMethod("prefetch"), getCntPageData());
-        sb.append(CmsCntPageData.DICT_NAME).append("='").append(prefetchedData).append("';");
-        sb.append(CmsContainer.KEY_CONTAINER_DATA).append("= new Array();");
-        return wrapScript(sb).toString();
+        sb.append(org.opencms.gwt.seo.ClientMessages.get().export(getRequest()));
+        String prefetchedData = exportDictionary(
+            CmsCntPageData.DICT_NAME,
+            I_CmsContainerpageService.class.getMethod("prefetch"),
+            getCntPageData());
+        sb.append(prefetchedData);
+        return sb.toString();
     }
 
     /**
@@ -91,7 +100,10 @@ public class CmsContainerpageActionElement extends CmsGwtActionElement {
         sb.append(new CmsGalleryActionElement(null, getRequest(), null).exportForContainerpage());
         sb.append(export());
         sb.append(new CmsUploadActionElement(getJspContext(), getRequest(), getResponse()).export());
-        sb.append(createNoCacheScript(MODULE_NAME));
+        sb.append(new CmsContentEditorActionElement(getJspContext(), getRequest(), getResponse()).export());
+        sb.append(createNoCacheScript(
+            GWT_MODULE_NAME,
+            OpenCms.getModuleManager().getModule(CMS_MODULE_NAME).getVersion().toString()));
         return sb.toString();
     }
 
@@ -104,7 +116,7 @@ public class CmsContainerpageActionElement extends CmsGwtActionElement {
 
         if (m_cntPageData == null) {
             try {
-                m_cntPageData = CmsContainerpageService.newInstance(getRequest()).prefetch();
+                m_cntPageData = CmsContainerpageService.prefetch(getRequest());
             } catch (CmsRpcException e) {
                 // ignore, should never happen, and it is already logged
             }

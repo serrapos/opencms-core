@@ -56,6 +56,9 @@ public final class CmsDirectEditButtonSelection {
         true,
         true);
 
+    /** Constant to indicate "show only the new button" used on empty lists. */
+    public static final CmsDirectEditButtonSelection NEW = new CmsDirectEditButtonSelection(false, false, true);
+
     /** String value that indicates the "delete" button should be displayed. */
     public static final String VALUE_DELETE = "delete";
 
@@ -126,6 +129,7 @@ public final class CmsDirectEditButtonSelection {
      * 
      * @return the selected edit options as a String
      */
+    @Override
     public String toString() {
 
         if (m_stringValue == null) {

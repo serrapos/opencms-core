@@ -35,8 +35,6 @@ import org.opencms.ade.sitemap.client.control.I_CmsSitemapChangeHandler;
 import org.opencms.ade.sitemap.client.control.I_CmsSitemapLoadHandler;
 import org.opencms.ade.sitemap.client.hoverbar.CmsSitemapHoverbar;
 import org.opencms.ade.sitemap.client.toolbar.CmsSitemapToolbar;
-import org.opencms.ade.sitemap.client.ui.CmsPage;
-import org.opencms.ade.sitemap.client.ui.CmsSitemapHeader;
 import org.opencms.ade.sitemap.client.ui.CmsStatusIconUpdateHandler;
 import org.opencms.ade.sitemap.client.ui.css.I_CmsImageBundle;
 import org.opencms.ade.sitemap.client.ui.css.I_CmsSitemapLayoutBundle;
@@ -44,9 +42,18 @@ import org.opencms.ade.sitemap.shared.CmsClientSitemapEntry;
 import org.opencms.ade.sitemap.shared.CmsDetailPageTable;
 import org.opencms.ade.sitemap.shared.CmsSitemapChange;
 import org.opencms.ade.sitemap.shared.CmsSitemapData;
+<<<<<<< HEAD
 import org.opencms.gwt.client.A_CmsEntryPoint;
 import org.opencms.gwt.client.CmsPingTimer;
 import org.opencms.gwt.client.dnd.CmsDNDHandler;
+=======
+import org.opencms.ade.sitemap.shared.CmsSitemapInfo;
+import org.opencms.gwt.client.A_CmsEntryPoint;
+import org.opencms.gwt.client.CmsPingTimer;
+import org.opencms.gwt.client.dnd.CmsDNDHandler;
+import org.opencms.gwt.client.ui.CmsErrorDialog;
+import org.opencms.gwt.client.ui.CmsInfoHeader;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 import org.opencms.gwt.client.ui.CmsListItemWidget.Background;
 import org.opencms.gwt.client.ui.CmsNotification;
 import org.opencms.gwt.client.ui.tree.CmsLazyTree;
@@ -69,6 +76,10 @@ import java.util.Map;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.event.logical.shared.OpenEvent;
+<<<<<<< HEAD
+=======
+import com.google.gwt.user.client.ui.FlowPanel;
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 
@@ -149,15 +160,21 @@ public final class CmsSitemapView extends A_CmsEntryPoint implements I_CmsSitema
     /** Style variable which keeps track of whether we are in VFS mode or navigation mode. */
     private CmsStyleVariable m_inNavigationStyle;
 
+    /** The tree open handler. */
+    private TreeOpenHandler m_openHandler;
+
     /** The sitemap toolbar. */
     private CmsSitemapToolbar m_toolbar;
 
     /** The registered tree items. */
     private Map<CmsUUID, CmsSitemapTreeItem> m_treeItems;
 
+<<<<<<< HEAD
     /** The tree open handler. */
     private TreeOpenHandler m_openHandler;
 
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     /**
      * Returns the instance.<p>
      *
@@ -254,6 +271,9 @@ public final class CmsSitemapView extends A_CmsEntryPoint implements I_CmsSitema
      */
     public String getIconForEntry(CmsClientSitemapEntry entry) {
 
+        if (!entry.isSubSitemapType() && entry.isNavigationLevelType()) {
+            return "cms_type_icon " + I_CmsSitemapLayoutBundle.INSTANCE.sitemapItemCss().navigationLevelIcon();
+        }
         String iconClass = CmsIconUtil.getResourceIconClasses(entry.getResourceTypeName(), entry.getSitePath(), false);
         if (isNavigationMode()) {
             if (m_controller.isDetailPage(entry.getId())) {
@@ -288,6 +308,16 @@ public final class CmsSitemapView extends A_CmsEntryPoint implements I_CmsSitema
         }
         return new CmsPair<List<CmsClientSitemapEntry>, List<CmsClientSitemapEntry>>(openDescendants, closedDescendants);
 
+    }
+
+    /**
+     * Gets the sitemap toolbar.<p>
+     * 
+     * @return the sitemap toolbar
+     */
+    public CmsSitemapToolbar getToolbar() {
+
+        return m_toolbar;
     }
 
     /**
@@ -460,22 +490,31 @@ public final class CmsSitemapView extends A_CmsEntryPoint implements I_CmsSitema
         m_treeItems = new HashMap<CmsUUID, CmsSitemapTreeItem>();
         // controller 
         m_controller = new CmsSitemapController();
+        if (m_controller.getData() == null) {
+            CmsErrorDialog dialog = new CmsErrorDialog(Messages.get().key(Messages.GUI_ERROR_ON_SITEMAP_LOAD_0), null);
+            dialog.center();
+            return;
+        }
         m_controller.addChangeHandler(this);
         m_controller.addLoadHandler(this);
 
         // toolbar
         m_toolbar = new CmsSitemapToolbar(m_controller);
         rootPanel.add(m_toolbar);
-
+        CmsSitemapInfo info = m_controller.getData().getSitemapInfo();
         // header
-        CmsSitemapHeader title = new CmsSitemapHeader(m_controller.getData().getSitemapInfo());
-        title.addStyleName(I_CmsSitemapLayoutBundle.INSTANCE.sitemapCss().pageCenter());
-        rootPanel.add(title);
-
-        // content page
-        final CmsPage page = new CmsPage();
+        CmsInfoHeader header = new CmsInfoHeader(
+            info.getTitle(),
+            info.getDescription(),
+            info.getSiteHost(),
+            info.getSiteLocale(),
+            CmsIconUtil.getResourceIconClasses(m_controller.getData().getRoot().getResourceTypeName(), false));
+        header.addStyleName(I_CmsSitemapLayoutBundle.INSTANCE.sitemapCss().pageCenter());
+        rootPanel.add(header);
+        final FlowPanel page = new FlowPanel();
+        page.setStyleName(I_CmsSitemapLayoutBundle.INSTANCE.sitemapCss().page());
+        page.addStyleName(I_CmsSitemapLayoutBundle.INSTANCE.generalCss().cornerAll());
         rootPanel.add(page);
-
         // initial content
         final Label loadingLabel = new Label(org.opencms.gwt.client.Messages.get().key(
             org.opencms.gwt.client.Messages.GUI_LOADING_0));
@@ -484,6 +523,10 @@ public final class CmsSitemapView extends A_CmsEntryPoint implements I_CmsSitema
         // initialize the tree
         m_openHandler = new TreeOpenHandler();
         m_tree = new CmsLazyTree<CmsSitemapTreeItem>(m_openHandler);
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         m_inNavigationStyle = new CmsStyleVariable(m_tree);
 
         if (m_controller.isEditable()) {
@@ -497,6 +540,7 @@ public final class CmsSitemapView extends A_CmsEntryPoint implements I_CmsSitema
         m_tree.truncate(TM_SITEMAP, 920);
         m_tree.setAnimationEnabled(true);
         page.add(m_tree);
+<<<<<<< HEAD
 
         // draw tree items 
         Scheduler.get().scheduleDeferred(new ScheduledCommand() {
@@ -522,11 +566,13 @@ public final class CmsSitemapView extends A_CmsEntryPoint implements I_CmsSitema
         rootItem.setOpen(true);
         m_tree.addItem(rootItem);
         setEditorMode(EditorMode.navigation);
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
-        m_controller.addPropertyUpdateHandler(new CmsStatusIconUpdateHandler());
-        m_controller.recomputeProperties();
-        rootItem.updateSitePath();
+        // draw tree items 
+        Scheduler.get().scheduleDeferred(new ScheduledCommand() {
 
+<<<<<<< HEAD
         // check if editable
         if (!m_controller.isEditable()) {
             // notify user
@@ -554,6 +600,25 @@ public final class CmsSitemapView extends A_CmsEntryPoint implements I_CmsSitema
         for (CmsClientSitemapEntry child : entry.getSubEntries()) {
             removeDeleted(child);
         }
+=======
+            public void execute() {
+
+                initiateTreeItems(page, loadingLabel);
+            }
+        });
+    }
+
+    /**
+     * Removes deleted entry widget reference.<p>
+     * 
+     * @param entry the entry being deleted
+     */
+    public void removeDeleted(CmsClientSitemapEntry entry) {
+
+        for (CmsClientSitemapEntry child : entry.getSubEntries()) {
+            removeDeleted(child);
+        }
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         m_treeItems.remove(entry.getId());
     }
 
@@ -614,6 +679,39 @@ public final class CmsSitemapView extends A_CmsEntryPoint implements I_CmsSitema
     protected CmsSitemapTreeItem getRootItem() {
 
         return (CmsSitemapTreeItem)(m_tree.getWidget(0));
+    }
+
+    /**
+     * Builds the tree items initially.<p>
+     * 
+     * @param page the page
+     * @param loadingLabel the loading label, will be removed when finished
+     */
+    void initiateTreeItems(FlowPanel page, Label loadingLabel) {
+
+        CmsClientSitemapEntry root = m_controller.getData().getRoot();
+        CmsSitemapTreeItem rootItem = createSitemapItem(root);
+        rootItem.onFinishLoading();
+        rootItem.setOpen(true);
+        m_tree.addItem(rootItem);
+        setEditorMode(EditorMode.navigation);
+        m_controller.addPropertyUpdateHandler(new CmsStatusIconUpdateHandler());
+        m_controller.recomputeProperties();
+        rootItem.updateSitePath();
+        // check if editable
+        if (!m_controller.isEditable()) {
+            // notify user
+            CmsNotification.get().sendSticky(
+                CmsNotification.Type.WARNING,
+                Messages.get().key(Messages.GUI_NO_EDIT_NOTIFICATION_1, m_controller.getData().getNoEditReason()));
+        }
+        String openPath = m_controller.getData().getOpenPath();
+        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(openPath)) {
+            m_openHandler.setInitializing(true);
+            openItemsOnPath(openPath);
+            m_openHandler.setInitializing(false);
+        }
+        page.remove(loadingLabel);
     }
 
     /**

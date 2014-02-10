@@ -38,10 +38,34 @@ import org.opencms.i18n.I_CmsMessageBundle;
 public final class Messages extends A_CmsMessageBundle {
 
     /** Message constant for key in the resource bundle. */
+    public static final String ERR_ALIAS_ALREADY_USED_1 = "ERR_ALIAS_ALREADY_USED_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_ALIAS_ALREADY_USED_UNKNOWN_0 = "ERR_ALIAS_ALREADY_USED_UNKNOWN_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_ALIAS_DUPLICATE_PATH_0 = "ERR_ALIAS_DUPLICATE_PATH_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_ALIAS_INVALID_PATH_0 = "ERR_ALIAS_INVALID_PATH_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_ALIAS_IS_VFS_0 = "ERR_ALIAS_IS_VFS_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_INHERITANCE_GROUP_NOT_FOUND_1 = "ERR_INHERITANCE_GROUP_NOT_FOUND_1";
+
+    /** Message constant for key in the resource bundle. */
     public static final String ERR_INSTANTIATION_FAILED_1 = "ERR_INSTANTIATION_FAILED_1";
 
     /** Message constant for key in the resource bundle. */
     public static final String ERR_INSTANTIATION_INCORRECT_TYPE_2 = "ERR_INSTANTIATION_INCORRECT_TYPE_2";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_NO_PERMUTATION_AVAILABLE_0 = "ERR_NO_PERMUTATION_AVAILABLE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_RESOURCE_HAS_BLOCKING_LOCKED_CHILDREN_1 = "ERR_RESOURCE_HAS_BLOCKING_LOCKED_CHILDREN_1";
 
     /** Message constant for key in the resource bundle. */
     public static final String ERR_RESOURCE_MODIFIED_AFTER_OPEN_1 = "ERR_RESOURCE_MODIFIED_AFTER_OPEN_1";
@@ -50,22 +74,64 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String ERR_SESSION_EXPIRED_0 = "ERR_SESSION_EXPIRED_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String ERR_URL_NAME_ALREADY_EXISTS_1 = "ERR_URL_NAME_ALREADY_EXISTS_1";
+
+    /** Message constant for key in the resource bundle. */
     public static final String ERR_VALIDATOR_INCORRECT_TYPE_1 = "ERR_VALIDATOR_INCORRECT_TYPE_1";
 
     /** Message constant for key in the resource bundle. */
     public static final String ERR_VALIDATOR_INSTANTIATION_FAILED_1 = "ERR_VALIDATOR_INSTANTIATION_FAILED_1";
 
     /** Message constant for key in the resource bundle. */
-    public static final String ERR_RESOURCE_HAS_BLOCKING_LOCKED_CHILDREN_1 = "ERR_RESOURCE_HAS_BLOCKING_LOCKED_CHILDREN_1";
+    public static final String GUI_ALIAS_0 = "GUI_ALIAS_0";
 
     /** Message constant for key in the resource bundle. */
-    public static final String LOG_CLIENT_WITH_TICKET_4 = "LOG_CLIENT_WITH_TICKET_4";
+    public static final String GUI_DEPENDENCY_PAGE_PATH_0 = "GUI_DEPENDENCY_PAGE_PATH_0";
 
     /** Message constant for key in the resource bundle. */
-    public static final String ERR_URL_NAME_ALREADY_EXISTS_1 = "ERR_URL_NAME_ALREADY_EXISTS_1";
+    public static final String GUI_DEPENDENCY_PAGE_TITLE_0 = "GUI_DEPENDENCY_PAGE_TITLE_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String GUI_LOCKED_BY_1 = "GUI_LOCKED_BY_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_LOCKED_OWNER_0 = "GUI_LOCKED_OWNER_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_NO_PREVIEW_CAN_T_READ_CONTENT_0 = "GUI_NO_PREVIEW_CAN_T_READ_CONTENT_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_NO_PREVIEW_DELETED_0 = "GUI_NO_PREVIEW_DELETED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_NO_PREVIEW_FOLDER_0 = "GUI_NO_PREVIEW_FOLDER_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_NO_PREVIEW_OTHER_SITE_0 = "GUI_NO_PREVIEW_OTHER_SITE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_NO_PREVIEW_WRONG_MIME_TYPE_0 = "GUI_NO_PREVIEW_WRONG_MIME_TYPE_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_STATUS_TAB_FROM_CP_0 = "GUI_STATUS_TAB_FROM_CP_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_STATUS_TAB_FROM_XML_0 = "GUI_STATUS_TAB_FROM_XML_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_STATUS_TAB_STATUS_0 = "GUI_STATUS_TAB_STATUS_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_STATUS_TAB_TO_CP_0 = "GUI_STATUS_TAB_TO_CP_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_STATUS_TAB_TO_OTHER_0 = "GUI_STATUS_TAB_TO_OTHER_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String GUI_STATUS_TAB_TO_XML_0 = "GUI_STATUS_TAB_TO_XML_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String LOG_CLIENT_WITH_TICKET_4 = "LOG_CLIENT_WITH_TICKET_4";
 
     /** Message constant for key in the resource bundle. */
     public static final String LOG_CLIENT_WITHOUT_TICKET_3 = "LOG_CLIENT_WITHOUT_TICKET_3";

@@ -68,9 +68,19 @@ import java.io.StringReader;
  */
 public class JSONTokener {
 
+    /** The index. */
     private int m_index;
+
+    /** The last character. */
     private char m_lastChar;
+
+    /** Flag which controls whether JSONObjects created by this tokener are ordered. */
+    private boolean m_ordered;
+
+    /** The reader. */
     private Reader m_reader;
+
+    /** Flag indicating if the last character should be used. */
     private boolean m_useLastChar;
 
     /**
@@ -413,7 +423,7 @@ public class JSONTokener {
                 return nextString(c);
             case '{':
                 back();
-                return new JSONObject(this);
+                return new JSONObject(this, m_ordered);
             case '[':
             case '(':
                 back();
@@ -498,6 +508,16 @@ public class JSONTokener {
     }
 
     /**
+     * Sets a flag which makes JSONObjects created by this tokener ordered.<p>
+     * 
+     * @param ordered true if JSONObjects created by this should be ordered 
+     */
+    public void setOrdered(boolean ordered) {
+
+        m_ordered = ordered;
+    }
+
+    /**
      * Skip characters until the next character is the requested character.
      * If the requested character is not found, no characters are skipped.<p>
      * 
@@ -544,6 +564,7 @@ public class JSONTokener {
      *
      * @return " at character [this.index]"
      */
+    @Override
     public String toString() {
 
         return " at character " + m_index;

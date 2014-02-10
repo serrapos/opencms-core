@@ -28,10 +28,16 @@
 package org.opencms.widgets;
 
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsResource;
 import org.opencms.i18n.CmsEncoder;
+import org.opencms.i18n.CmsMessages;
 import org.opencms.main.OpenCms;
 import org.opencms.util.CmsStringUtil;
+import org.opencms.xml.content.I_CmsXmlContentHandler.DisplayType;
+import org.opencms.xml.types.A_CmsXmlContentValue;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -39,7 +45,7 @@ import java.util.Set;
  * 
  * @since 6.0.0 
  */
-public class CmsDisplayWidget extends A_CmsWidget {
+public class CmsDisplayWidget extends A_CmsWidget implements I_CmsADEWidget {
 
     /** Key post fix, so you can display different help text if used a "normal" widget, and a display widget. */
     private static final String DISABLED_POSTFIX = ".disabled";
@@ -61,6 +67,35 @@ public class CmsDisplayWidget extends A_CmsWidget {
     public CmsDisplayWidget(String configuration) {
 
         super(configuration);
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getConfiguration(org.opencms.file.CmsObject, org.opencms.xml.types.A_CmsXmlContentValue, org.opencms.i18n.CmsMessages, org.opencms.file.CmsResource, java.util.Locale)
+     */
+    public String getConfiguration(
+        CmsObject cms,
+        A_CmsXmlContentValue schemaType,
+        CmsMessages messages,
+        CmsResource resource,
+        Locale contentLocale) {
+
+        return getConfiguration();
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getCssResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getCssResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getDefaultDisplayType()
+     */
+    public DisplayType getDefaultDisplayType() {
+
+        return DisplayType.singleline;
     }
 
     /**
@@ -126,9 +161,10 @@ public class CmsDisplayWidget extends A_CmsWidget {
             if (widgetDialog.useNewStyle()) {
                 result.append(getJsHelpMouseHandler(widgetDialog, locKey, null));
             } else {
-                result.append(getJsHelpMouseHandler(widgetDialog, locKey, CmsEncoder.escape(
-                    locValue,
-                    cms.getRequestContext().getEncoding())));
+                result.append(getJsHelpMouseHandler(
+                    widgetDialog,
+                    locKey,
+                    CmsEncoder.escape(locValue, cms.getRequestContext().getEncoding())));
             }
             result.append("></td>");
             return result.toString();
@@ -169,6 +205,38 @@ public class CmsDisplayWidget extends A_CmsWidget {
                 return "";
             }
         }
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getInitCall()
+     */
+    public String getInitCall() {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getJavaScriptResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getJavaScriptResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    public String getWidgetName() {
+
+        return CmsDisplayWidget.class.getName();
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#isInternal()
+     */
+    public boolean isInternal() {
+
+        return true;
     }
 
     /**

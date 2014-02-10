@@ -28,18 +28,27 @@
 package org.opencms.widgets;
 
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsResource;
 import org.opencms.i18n.CmsEncoder;
+import org.opencms.i18n.CmsMessages;
 import org.opencms.json.JSONArray;
+import org.opencms.json.JSONException;
+import org.opencms.json.JSONObject;
 import org.opencms.util.CmsStringUtil;
 import org.opencms.workplace.CmsWorkplace;
 import org.opencms.workplace.galleries.A_CmsAjaxGallery;
+import org.opencms.xml.content.I_CmsXmlContentHandler.DisplayType;
+import org.opencms.xml.types.A_CmsXmlContentValue;
+
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Base class for all gallery widget implementations.<p>
  * 
  * @since 6.0.0 
  */
-public abstract class A_CmsGalleryWidget extends A_CmsWidget {
+public abstract class A_CmsGalleryWidget extends A_CmsWidget implements I_CmsADEWidget {
 
     /**
      * Creates a new gallery widget.<p>
@@ -58,6 +67,51 @@ public abstract class A_CmsGalleryWidget extends A_CmsWidget {
     protected A_CmsGalleryWidget(String configuration) {
 
         super(configuration);
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getConfiguration(org.opencms.file.CmsObject, org.opencms.xml.types.A_CmsXmlContentValue, org.opencms.i18n.CmsMessages, org.opencms.file.CmsResource, java.util.Locale)
+     */
+    public String getConfiguration(
+        CmsObject cms,
+        A_CmsXmlContentValue schemaType,
+        CmsMessages messages,
+        CmsResource resource,
+        Locale contentLocale) {
+
+        CmsGalleryWidgetConfiguration config = new CmsGalleryWidgetConfiguration(
+            cms,
+            messages,
+            schemaType,
+            getConfiguration());
+        JSONObject linkGalleryInfo = new JSONObject();
+        try {
+            linkGalleryInfo.put("startupfolder", config.getStartup());
+            linkGalleryInfo.put("startuptype", config.getType());
+            linkGalleryInfo.put("editedresource", resource.getRootPath());
+        } catch (JSONException e) {
+            // TODO: Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return "&params=" + linkGalleryInfo.toString();
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getCssResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getCssResourceLinks(CmsObject cms) {
+
+        // TODO: Auto-generated method stub
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getDefaultDisplayType()
+     */
+    public DisplayType getDefaultDisplayType() {
+
+        return DisplayType.wide;
     }
 
     /**
@@ -184,7 +238,7 @@ public abstract class A_CmsGalleryWidget extends A_CmsWidget {
             // reads the configuration String for this widget
             CmsVfsImageWidgetConfiguration configuration = new CmsVfsImageWidgetConfiguration(
                 cms,
-                widgetDialog,
+                widgetDialog.getMessages(),
                 param,
                 getConfiguration());
 
@@ -223,7 +277,7 @@ public abstract class A_CmsGalleryWidget extends A_CmsWidget {
             // reads the configuration String for this widget
             CmsGalleryWidgetConfiguration configuration = new CmsGalleryWidgetConfiguration(
                 cms,
-                widgetDialog,
+                widgetDialog.getMessages(),
                 param,
                 getConfiguration());
 
@@ -246,6 +300,22 @@ public abstract class A_CmsGalleryWidget extends A_CmsWidget {
     }
 
     /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getInitCall()
+     */
+    public String getInitCall() {
+
+        return null;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getJavaScriptResourceLinks(org.opencms.file.CmsObject)
+     */
+    public List<String> getJavaScriptResourceLinks(CmsObject cms) {
+
+        return null;
+    }
+
+    /**
      * Returns the lower case name of the gallery, for example <code>"html"</code>.<p>
      * 
      * @return the lower case name of the gallery
@@ -260,10 +330,36 @@ public abstract class A_CmsGalleryWidget extends A_CmsWidget {
     public abstract String getNameUpper();
 
     /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    public String getWidgetName() {
+
+        return A_CmsGalleryWidget.class.getName();
+    }
+
+    /**
+     * @see org.opencms.widgets.A_CmsWidget#isCompactViewEnabled()
+     */
+    @Override
+    public boolean isCompactViewEnabled() {
+
+        return false;
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#isInternal()
+     */
+    public boolean isInternal() {
+
+        return true;
+    }
+
+    /**
      * Returns <code>true</code> if the preview button should be shown.<p>
      * 
      * @param value the current widget value
      * @return <code>true</code> if the preview button should be shown
      */
     public abstract boolean showPreview(String value);
+
 }

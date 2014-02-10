@@ -109,7 +109,7 @@ public class TestCmsSearchSpecialFeatures extends OpenCmsTestCase {
     public void testSearchIndexSetup() throws Exception {
 
         CmsSearchIndex searchIndex = new CmsSearchIndex(INDEX_SPECIAL);
-        searchIndex.setProjectName("Online");
+        searchIndex.setProject("Online");
         searchIndex.setLocale(Locale.ENGLISH);
         searchIndex.setRebuildMode(CmsSearchIndex.REBUILD_MODE_AUTO);
         // available pre-configured in the test configuration files opencms-search.xml
@@ -163,7 +163,7 @@ public class TestCmsSearchSpecialFeatures extends OpenCmsTestCase {
             "org/opencms/search/extractors/test1.pdf",
             fileName,
             CmsResourceTypeBinary.getStaticTypeId(),
-            Collections.EMPTY_LIST);
+            Collections.<CmsProperty> emptyList());
 
         // create 5 siblings
         for (int i = 0; i < 5; i++) {
@@ -199,12 +199,18 @@ public class TestCmsSearchSpecialFeatures extends OpenCmsTestCase {
         String fileName = "/sites/default/test/master.pdf";
 
         CmsSearchIndex searchIndex = OpenCms.getSearchManager().getIndex(INDEX_SPECIAL);
+<<<<<<< HEAD
         Document doc = searchIndex.getDocument(CmsSearchField.FIELD_PATH, fileName);
+=======
+        Document doc = (Document)searchIndex.getDocument(CmsSearchField.FIELD_PATH, fileName).getDocument();
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
 
         assertNotNull("Document '" + fileName + "' not found", doc);
-        assertNotNull("No 'content' field available", doc.getFieldable(CmsSearchField.FIELD_CONTENT));
-        assertTrue("Content field not lazy", doc.getFieldable(CmsSearchField.FIELD_CONTENT).isLazy());
-        assertNotNull("No 'content blob' field available", doc.getFieldable(CmsSearchField.FIELD_CONTENT_BLOB));
-        assertTrue("Content blob field not lazy", doc.getFieldable(CmsSearchField.FIELD_CONTENT_BLOB).isLazy());
+        assertNotNull("No 'title' field available", doc.getField(CmsSearchField.FIELD_TITLE));
+        // assertFalse("title must not be lazy loaded", doc.getField(CmsSearchField.FIELD_TITLE). isLazy());
+        assertNotNull("No 'content' field available", doc.getField(CmsSearchField.FIELD_CONTENT));
+        // assertTrue("Content field not lazy", doc.getField(CmsSearchField.FIELD_CONTENT).isLazy());
+        assertNotNull("No 'content blob' field available", doc.getField(CmsSearchField.FIELD_CONTENT_BLOB));
+        // assertTrue("Content blob field not lazy", doc.getField(CmsSearchField.FIELD_CONTENT_BLOB).isLazy());
     }
 }

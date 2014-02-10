@@ -31,6 +31,7 @@ import org.opencms.file.CmsFile;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsResource;
 import org.opencms.file.CmsResourceFilter;
+import org.opencms.file.types.CmsResourceTypeXmlContainerPage;
 import org.opencms.i18n.CmsEncoder;
 import org.opencms.i18n.CmsLocaleManager;
 import org.opencms.main.CmsException;
@@ -196,6 +197,18 @@ public class CmsXmlGroupContainer extends CmsXmlContent {
     }
 
     /**
+     * Removes all locales from the element group XML.<p>
+     * 
+     * @throws CmsXmlException if something goes wrong 
+     */
+    public void clearLocales() throws CmsXmlException {
+
+        for (Locale locale : getLocales()) {
+            removeLocale(locale);
+        }
+    }
+
+    /**
      * Returns the group container bean for the given locale.<p>
      *
      * @param cms the cms context
@@ -207,20 +220,23 @@ public class CmsXmlGroupContainer extends CmsXmlContent {
 
         Locale theLocale = locale;
         if (!m_groupContainers.containsKey(theLocale)) {
-            LOG.warn(Messages.get().container(
+            LOG.info(Messages.get().container(
             // TODO: change message
                 Messages.LOG_CONTAINER_PAGE_LOCALE_NOT_FOUND_2,
                 cms.getSitePath(getFile()),
                 theLocale.toString()).key());
-            theLocale = OpenCms.getLocaleManager().getDefaultLocales(cms, getFile()).get(0);
+            theLocale = Locale.ENGLISH;
             if (!m_groupContainers.containsKey(theLocale)) {
-                // locale not found!!
-                LOG.error(Messages.get().container(
-                // TODO: change message
-                    Messages.LOG_CONTAINER_PAGE_LOCALE_NOT_FOUND_2,
-                    cms.getSitePath(getFile()),
-                    theLocale).key());
-                return null;
+                theLocale = OpenCms.getLocaleManager().getDefaultLocales(cms, getFile()).get(0);
+                if (!m_groupContainers.containsKey(theLocale)) {
+                    // locale not found!!
+                    LOG.error(Messages.get().container(
+                    // TODO: change message
+                        Messages.LOG_CONTAINER_PAGE_LOCALE_NOT_FOUND_2,
+                        cms.getSitePath(getFile()),
+                        theLocale).key());
+                    return null;
+                }
             }
         }
         return m_groupContainers.get(theLocale);
@@ -255,6 +271,7 @@ public class CmsXmlGroupContainer extends CmsXmlContent {
         if (hasLocale(locale)) {
             removeLocale(locale);
         }
+
         addLocale(cms, locale);
 
         // add the nodes to the raw XML structure
@@ -274,13 +291,9 @@ public class CmsXmlGroupContainer extends CmsXmlContent {
      * 
      * @param cms the current CMS context
      * @param element the XML element to fill
-     * @param resourceId the ID identifying the resource to use
-     * 
-     * @return the resource 
-     * 
-     * @throws CmsException if the resource can not be read
+     * @param res the resource to use
      */
-    protected CmsResource fillResource(CmsObject cms, Element element, CmsUUID resourceId) throws CmsException {
+    protected void fillResource(CmsObject cms, Element element, CmsResource res) {
 
         String xpath = element.getPath();
         int pos = xpath.lastIndexOf("/" + XmlNode.GroupContainers.name() + "/");
@@ -288,9 +301,7 @@ public class CmsXmlGroupContainer extends CmsXmlContent {
             xpath = xpath.substring(pos + 1);
         }
         CmsRelationType type = getHandler().getRelationType(xpath);
-        CmsResource res = cms.readResource(resourceId, CmsResourceFilter.IGNORE_EXPIRATION);
         CmsXmlVfsFileValue.fillEntry(element, res.getStructureId(), res.getRootPath(), type);
-        return res;
     }
 
     /**
@@ -350,16 +361,12 @@ public class CmsXmlGroupContainer extends CmsXmlContent {
 
                 List<CmsContainerElementBean> elements = new ArrayList<CmsContainerElementBean>();
                 // Elements
-                for (Iterator<Element> itElems = CmsXmlGenericWrapper.elementIterator(
-                    groupContainer,
-                    XmlNode.Element.name()); itElems.hasNext();) {
-                    Element element = itElems.next();
-
+                for (Element element : CmsXmlGenericWrapper.elementIterable(groupContainer, XmlNode.Element.name())) {
                     // element itself
                     int elemIndex = CmsXmlUtils.getXpathIndexInt(element.getUniquePath(groupContainer));
-                    String elemPath = CmsXmlUtils.concatXpath(cntPath, CmsXmlUtils.createXpathElement(
-                        element.getName(),
-                        elemIndex));
+                    String elemPath = CmsXmlUtils.concatXpath(
+                        cntPath,
+                        CmsXmlUtils.createXpathElement(element.getName(), elemIndex));
                     I_CmsXmlSchemaType elemSchemaType = cntDef.getSchemaType(element.getName());
                     I_CmsXmlContentValue elemValue = elemSchemaType.createValue(this, element, locale);
                     addBookmark(elemPath, locale, true, elemValue);
@@ -399,8 +406,10 @@ public class CmsXmlGroupContainer extends CmsXmlContent {
                     elements,
                     types));
             } catch (NullPointerException e) {
-                LOG.error(org.opencms.xml.content.Messages.get().getBundle().key(
-                    org.opencms.xml.content.Messages.LOG_XMLCONTENT_INIT_BOOKMARKS_0), e);
+                LOG.error(
+                    org.opencms.xml.content.Messages.get().getBundle().key(
+                        org.opencms.xml.content.Messages.LOG_XMLCONTENT_INIT_BOOKMARKS_0),
+                    e);
             }
         }
     }
@@ -429,17 +438,23 @@ public class CmsXmlGroupContainer extends CmsXmlContent {
 
         // the elements
         for (CmsContainerElementBean element : groupContainer.getElements()) {
+            CmsResource res = cms.readResource(element.getId(), CmsResourceFilter.IGNORE_EXPIRATION);
+            if (OpenCms.getResourceManager().getResourceType(res.getTypeId()).getTypeName().equals(
+                CmsResourceTypeXmlContainerPage.GROUP_CONTAINER_TYPE_NAME)) {
+                LOG.warn(Messages.get().container(Messages.LOG_WARN_ELEMENT_GROUP_INSIDE_ELEMENT_GROUP_0));
+                continue;
+            }
             Element elemElement = groupContainerElem.addElement(XmlNode.Element.name());
 
             // the element
             Element uriElem = elemElement.addElement(XmlNode.Uri.name());
-            CmsResource uriRes = fillResource(cms, uriElem, element.getId());
+            fillResource(cms, uriElem, res);
 
             // the properties
             Map<String, String> properties = element.getIndividualSettings();
-            Map<String, CmsXmlContentProperty> propertiesConf = OpenCms.getADEManager().getElementSettings(cms, uriRes);
+            Map<String, CmsXmlContentProperty> propertiesConf = OpenCms.getADEManager().getElementSettings(cms, res);
 
-            CmsXmlContentPropertyHelper.saveProperties(cms, elemElement, properties, uriRes, propertiesConf);
+            CmsXmlContentPropertyHelper.saveProperties(cms, elemElement, properties, propertiesConf);
         }
     }
 

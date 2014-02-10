@@ -27,14 +27,27 @@
 
 package org.opencms.ade.containerpage.client.ui;
 
+import org.opencms.ade.containerpage.client.CmsContainerpageController;
 import org.opencms.ade.containerpage.client.CmsContainerpageHandler;
+import org.opencms.ade.containerpage.client.Messages;
 import org.opencms.ade.containerpage.client.ui.css.I_CmsLayoutBundle;
 import org.opencms.ade.galleries.client.CmsGalleryFactory;
+import org.opencms.ade.galleries.client.I_CmsGalleryHandler;
+import org.opencms.ade.galleries.client.ui.CmsResultListItem;
+import org.opencms.ade.galleries.shared.CmsResultItemBean;
 import org.opencms.gwt.client.dnd.CmsDNDHandler;
 import org.opencms.gwt.client.ui.A_CmsToolbarMenu;
+import org.opencms.gwt.client.ui.CmsListItemWidget.Background;
+import org.opencms.gwt.client.ui.CmsPopup;
+import org.opencms.gwt.client.ui.I_CmsAutoHider;
 import org.opencms.gwt.client.ui.I_CmsButton;
+import org.opencms.gwt.client.ui.input.CmsLabel;
+import org.opencms.gwt.shared.CmsListInfoBean.StateIcon;
 
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Style.FontStyle;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 
@@ -77,7 +90,48 @@ public class CmsToolbarGalleryMenu extends A_CmsToolbarMenu<CmsContainerpageHand
         if (!m_initialized) {
             SimplePanel tabsContainer = new SimplePanel();
             tabsContainer.addStyleName(I_CmsLayoutBundle.INSTANCE.containerpageCss().menuTabContainer());
-            tabsContainer.add(CmsGalleryFactory.createDialog(m_dragHandler, m_popup));
+            Predicate<CmsResultItemBean> resultDndFilter = Predicates.alwaysTrue();
+            if (CmsContainerpageController.get().getData().getTemplateContextInfo().getCurrentContext() != null) {
+                resultDndFilter = new CmsTemplateContextResultDndFilter();
+            }
+            final Predicate<CmsResultItemBean> finalDndFilter = resultDndFilter;
+            //tabsContainer.add(CmsGalleryFactory.createDialog(m_dragHandler, m_popup, resultDndFilter));
+            tabsContainer.add(CmsGalleryFactory.createDialog(new I_CmsGalleryHandler() {
+
+                public boolean filterDnd(CmsResultItemBean resultBean) {
+
+                    if (finalDndFilter != null) {
+                        return finalDndFilter.apply(resultBean);
+                    } else {
+                        return true;
+                    }
+                }
+
+                public I_CmsAutoHider getAutoHideParent() {
+
+                    return getPopup();
+                }
+
+                public CmsDNDHandler getDndHandler() {
+
+                    return getDragHandler();
+                }
+
+                public void processResultItem(CmsResultListItem item) {
+
+                    if (item.getResult().isCopyModel()) {
+                        item.getListItemWidget().setBackground(Background.YELLOW);
+                        CmsLabel titleWidget = item.getListItemWidget().getTitleWidget();
+                        titleWidget.getElement().getStyle().setFontStyle(FontStyle.OBLIQUE);
+                        String newText = Messages.get().key(
+                            Messages.GUI_COPY_MODEL_TITLE_WRAPPER_1,
+                            titleWidget.getText());
+                        titleWidget.setText(newText);
+                        item.getListItemWidget().setStateIcon(StateIcon.copy);
+                    }
+                }
+
+            }));
             m_contentPanel.add(tabsContainer);
             m_initialized = true;
         }
@@ -89,6 +143,25 @@ public class CmsToolbarGalleryMenu extends A_CmsToolbarMenu<CmsContainerpageHand
     public void onToolbarDeactivate() {
 
         Document.get().getBody().removeClassName(I_CmsButton.ButtonData.ADD.getIconClass());
+    }
+
+    /**
+     * Gets the drag handler.<p>
+     * 
+     * @return the drag handler 
+     */
+    protected CmsDNDHandler getDragHandler() {
+
+        return m_dragHandler;
+    }
+
+    /**
+     * @see org.opencms.gwt.client.ui.CmsMenuButton#getPopup()
+     */
+    @Override
+    protected CmsPopup getPopup() {
+
+        return super.getPopup();
     }
 
 }

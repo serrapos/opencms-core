@@ -69,6 +69,7 @@ public class CmsDatabaseImportThread extends A_CmsReportThread {
     /**
      * @see org.opencms.report.A_CmsReportThread#getReportUpdate()
      */
+    @Override
     public String getReportUpdate() {
 
         return getReport().getReportUpdate();
@@ -77,16 +78,24 @@ public class CmsDatabaseImportThread extends A_CmsReportThread {
     /**
      * @see java.lang.Runnable#run()
      */
+    @Override
     public void run() {
 
         CmsImportParameters parameters = new CmsImportParameters(m_importFile, "/", m_keepPermissions);
-
+        boolean indexingAlreadyPaused = OpenCms.getSearchManager().isOfflineIndexingPaused();
         try {
+            if (!indexingAlreadyPaused) {
+                OpenCms.getSearchManager().pauseOfflineIndexing();
+            }
             OpenCms.getImportExportManager().importData(getCms(), getReport(), parameters);
         } catch (Throwable e) {
             getReport().println(e);
             if (LOG.isErrorEnabled()) {
                 LOG.error(Messages.get().getBundle().key(Messages.ERR_DB_IMPORT_0), e);
+            }
+        } finally {
+            if (!indexingAlreadyPaused) {
+                OpenCms.getSearchManager().resumeOfflineIndexing();
             }
         }
     }

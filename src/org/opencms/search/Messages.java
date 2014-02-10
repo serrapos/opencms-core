@@ -65,9 +65,6 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String ERR_EVENT_REBUILD_SEARCHINDEX_1 = "ERR_EVENT_REBUILD_SEARCHINDEX_1";
 
     /** Message constant for key in the resource bundle. */
-    public static final String ERR_FIELD_CONFIGURATION_IS_EMPTY_1 = "ERR_FIELD_CONFIGURATION_IS_EMPTY_1";
-
-    /** Message constant for key in the resource bundle. */
     public static final String ERR_FIELD_CONFIGURATION_UNKNOWN_2 = "ERR_FIELD_CONFIGURATION_UNKNOWN_2";
 
     /** Message constant for key in the resource bundle. */
@@ -149,6 +146,15 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String ERR_SEARCHINDEX_CREATE_MISSING_NAME_0 = "ERR_SEARCHINDEX_CREATE_MISSING_NAME_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String ERR_SOLR_CORE_CONTAINER_NOT_CREATED_1 = "ERR_SOLR_CORE_CONTAINER_NOT_CREATED_1";
+
+    /** Name of the used resource bundle. */
+    public static final String ERR_SOLR_NOT_ENABLED_0 = "ERR_SOLR_NOT_ENABLED_0";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String ERR_SOLR_SERVER_NOT_CREATED_3 = "ERR_SOLR_SERVER_NOT_CREATED_3";
+
+    /** Message constant for key in the resource bundle. */
     public static final String GUI_HELP_BUTTON_BACK_0 = "GUI_HELP_BUTTON_BACK_0";
 
     /** Message constant for key in the resource bundle. */
@@ -206,6 +212,18 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String INIT_SHUTDOWN_MANAGER_0 = "INIT_SHUTDOWN_MANAGER_0";
 
     /** Message constant for key in the resource bundle. */
+    public static final String INIT_SOLR_CORE_CONTAINER_CREATED_2 = "INIT_SOLR_CORE_CONTAINER_CREATED_2";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String INIT_SOLR_INDEX_DIR_CREATED_2 = "INIT_SOLR_INDEX_DIR_CREATED_2";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String INIT_SOLR_SERVER_CREATED_1 = "INIT_SOLR_SERVER_CREATED_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String INIT_SOLR_SHUTDOWN_SUCCESS_0 = "INIT_SOLR_SHUTDOWN_SUCCESS_0";
+
+    /** Message constant for key in the resource bundle. */
     public static final String INIT_START_SEARCH_CONFIG_0 = "INIT_START_SEARCH_CONFIG_0";
 
     /** Message constant for key in the resource bundle. */
@@ -236,7 +254,16 @@ public final class Messages extends A_CmsMessageBundle {
     public static final String LOG_EVENT_REBUILD_SEARCHINDEX_1 = "LOG_EVENT_REBUILD_SEARCHINDEX_1";
 
     /** Message constant for key in the resource bundle. */
+    public static final String LOG_FIELD_CONFIGURATION_IS_EMPTY_1 = "LOG_FIELD_CONFIGURATION_IS_EMPTY_1";
+
+    /** Message constant for key in the resource bundle. */
     public static final String LOG_FIELDS_QUERY_1 = "LOG_FIELDS_QUERY_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String LOG_GALLERIES_COULD_NOT_EVALUATE_SUBSITE_1 = "LOG_GALLERIES_COULD_NOT_EVALUATE_SUBSITE_1";
+
+    /** Message constant for key in the resource bundle. */
+    public static final String LOG_GALLERIES_NO_REFERENCE_PATH_PROVIDED_0 = "LOG_GALLERIES_NO_REFERENCE_PATH_PROVIDED_0";
 
     /** Message constant for key in the resource bundle. */
     public static final String LOG_INDEX_ACCESS_FAILED_1 = "LOG_INDEX_ACCESS_FAILED_1";
@@ -267,6 +294,9 @@ public final class Messages extends A_CmsMessageBundle {
 
     /** Message constant for key in the resource bundle. */
     public static final String LOG_INDEXING_WITH_FACTORY_2 = "LOG_INDEXING_WITH_FACTORY_2";
+
+    /** Name of the used resource bundle. */
+    public static final String LOG_INVALID_FIELD_CLASS_1 = "LOG_INVALID_FIELD_CLASS_1";
 
     /** Message constant for key in the resource bundle. */
     public static final String LOG_INVALID_PARAM_3 = "LOG_INVALID_PARAM_3";

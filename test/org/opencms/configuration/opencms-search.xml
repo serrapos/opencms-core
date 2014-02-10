@@ -168,7 +168,7 @@
 				<name>Online project (VFS)</name>
 				<rebuild>manual</rebuild>
 				<project>Online</project>
-				<locale>en</locale>			
+				<locale>en</locale>
 				<sources>
 					<source>source1</source>
 				</sources>		
@@ -178,14 +178,11 @@
 				<name>Offline project (VFS)</name>
 				<rebuild>manual</rebuild>
 				<project>Offline</project>
-				<locale>en</locale>		
+				<locale>en</locale>
 				<configuration>standard</configuration>	
 				<sources>
 					<source>source1</source>
 				</sources>
-				<param name="lucene.MergeFactor">20</param>				
-				<param name="lucene.RAMBufferSizeMB">20.5</param>				
-				<param name="lucene.UseCompoundFile">true</param>				
 				<param name="org.opencms.search.CmsSearchIndex.checkPermissions">false</param>				
 				<param name="org.opencms.search.CmsSearchIndex.checkTimeRange">false</param>				
 				<param name="org.opencms.search.CmsSearchIndex.createExcerpt">false</param>				

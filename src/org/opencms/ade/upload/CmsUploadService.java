@@ -27,21 +27,17 @@
 
 package org.opencms.ade.upload;
 
-import org.opencms.ade.upload.shared.CmsUploadData;
-import org.opencms.ade.upload.shared.CmsUploadFileBean;
-import org.opencms.ade.upload.shared.CmsUploadProgessInfo;
-import org.opencms.ade.upload.shared.CmsUploadProgessInfo.UPLOAD_STATE;
-import org.opencms.ade.upload.shared.rpc.I_CmsUploadService;
+import org.opencms.file.CmsObject;
 import org.opencms.file.CmsResourceFilter;
-import org.opencms.flex.CmsFlexController;
 import org.opencms.gwt.CmsGwtService;
-import org.opencms.main.OpenCms;
+import org.opencms.gwt.shared.CmsUploadFileBean;
+import org.opencms.gwt.shared.CmsUploadProgessInfo;
+import org.opencms.gwt.shared.CmsUploadProgessInfo.UPLOAD_STATE;
+import org.opencms.gwt.shared.rpc.I_CmsUploadService;
 import org.opencms.util.CmsUUID;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.InvalidFileNameException;
 import org.apache.commons.fileupload.util.Streams;
@@ -52,8 +48,8 @@ import org.apache.commons.fileupload.util.Streams;
  * @since 8.0.0
  * 
  * @see org.opencms.ade.upload.CmsUploadService
- * @see org.opencms.ade.upload.shared.rpc.I_CmsUploadService
- * @see org.opencms.ade.upload.shared.rpc.I_CmsUploadServiceAsync
+ * @see org.opencms.gwt.shared.rpc.I_CmsUploadService
+ * @see org.opencms.gwt.shared.rpc.I_CmsUploadServiceAsync
  */
 public class CmsUploadService extends CmsGwtService implements I_CmsUploadService {
 
@@ -61,22 +57,7 @@ public class CmsUploadService extends CmsGwtService implements I_CmsUploadServic
     private static final long serialVersionUID = -2235662141861687012L;
 
     /**
-     * Returns a new configured service instance.<p>
-     * 
-     * @param request the current request
-     * 
-     * @return a new service instance
-     */
-    public static CmsUploadService newInstance(HttpServletRequest request) {
-
-        CmsUploadService srv = new CmsUploadService();
-        srv.setCms(CmsFlexController.getCmsObject(request));
-        srv.setRequest(request);
-        return srv;
-    }
-
-    /**
-     * @see org.opencms.ade.upload.shared.rpc.I_CmsUploadService#cancelUpload()
+     * @see org.opencms.gwt.shared.rpc.I_CmsUploadService#cancelUpload()
      */
     public Boolean cancelUpload() {
 
@@ -94,7 +75,7 @@ public class CmsUploadService extends CmsGwtService implements I_CmsUploadServic
     }
 
     /**
-     * @see org.opencms.ade.upload.shared.rpc.I_CmsUploadService#checkUploadFiles(java.util.List, java.lang.String)
+     * @see org.opencms.gwt.shared.rpc.I_CmsUploadService#checkUploadFiles(java.util.List, java.lang.String)
      */
     public CmsUploadFileBean checkUploadFiles(List<String> fileNames, String targetFolder) {
 
@@ -111,7 +92,7 @@ public class CmsUploadService extends CmsGwtService implements I_CmsUploadServic
                 try {
                     Streams.checkFileName(fileName);
                     String newResName = CmsUploadBean.getNewResourceName(getCmsObject(), fileName, targetFolder);
-                    if (getCmsObject().existsResource(newResName, CmsResourceFilter.ALL)) {
+                    if (existsResource(newResName)) {
                         existingResourceNames.add(fileName);
                     }
                 } catch (InvalidFileNameException e) {
@@ -125,7 +106,7 @@ public class CmsUploadService extends CmsGwtService implements I_CmsUploadServic
     }
 
     /**
-     * @see org.opencms.ade.upload.shared.rpc.I_CmsUploadService#getUploadProgressInfo()
+     * @see org.opencms.gwt.shared.rpc.I_CmsUploadService#getUploadProgressInfo()
      */
     public CmsUploadProgessInfo getUploadProgressInfo() {
 
@@ -142,12 +123,27 @@ public class CmsUploadService extends CmsGwtService implements I_CmsUploadServic
     }
 
     /**
-     * @see org.opencms.ade.upload.shared.rpc.I_CmsUploadService#prefetch()
+     * Checks if a resource already exists for the given path.<p>
+     * 
+     * @param path the path
+     *  
+     * @return true if a resource already exists 
      */
-    public CmsUploadData prefetch() {
+    private boolean existsResource(String path) {
 
-        long uploadFileSizeLimit = OpenCms.getWorkplaceManager().getFileBytesMaxUploadSize(getCmsObject());
-        CmsUploadData data = new CmsUploadData(uploadFileSizeLimit);
-        return data;
+        CmsObject cms = getCmsObject();
+        if (cms.existsResource(path, CmsResourceFilter.ALL)) {
+            return true;
+        }
+        String origSiteRoot = cms.getRequestContext().getSiteRoot();
+        try {
+            cms.getRequestContext().setSiteRoot("");
+            if (cms.existsResource(path, CmsResourceFilter.ALL)) {
+                return true;
+            }
+        } finally {
+            cms.getRequestContext().setSiteRoot(origSiteRoot);
+        }
+        return false;
     }
 }

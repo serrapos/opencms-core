@@ -27,8 +27,8 @@
 
 package org.opencms.ade.upload;
 
-import org.opencms.ade.upload.shared.CmsUploadProgessInfo;
-import org.opencms.ade.upload.shared.CmsUploadProgessInfo.UPLOAD_STATE;
+import org.opencms.gwt.shared.CmsUploadProgessInfo;
+import org.opencms.gwt.shared.CmsUploadProgessInfo.UPLOAD_STATE;
 import org.opencms.main.CmsLog;
 import org.opencms.util.CmsUUID;
 
@@ -294,10 +294,7 @@ public class CmsUploadListener implements ProgressListener, Serializable {
                 m_watcher = new CmsUploadTimeoutWatcher(this);
                 m_watcher.start();
             } catch (Exception e) {
-                LOG.info(Messages.get().getBundle().key(
-                    Messages.LOG_UPLOAD_CREATE_WATCH_DOG_2,
-                    getId(),
-                    e.getMessage()));
+                LOG.info(Messages.get().getBundle().key(Messages.LOG_UPLOAD_CREATE_WATCH_DOG_2, getId(), e.getMessage()));
             }
         }
     }

@@ -128,7 +128,7 @@ public abstract class A_CmsHtmlGalleryWidget extends A_CmsGalleryWidget {
         // reads the configuration String for this widget
         CmsGalleryWidgetConfiguration configuration = new CmsGalleryWidgetConfiguration(
             cms,
-            widgetDialog,
+            widgetDialog.getMessages(),
             param,
             getConfiguration());
 
@@ -142,6 +142,15 @@ public abstract class A_CmsHtmlGalleryWidget extends A_CmsGalleryWidget {
     }
 
     /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    @Override
+    public String getWidgetName() {
+
+        return A_CmsHtmlGalleryWidget.class.getName();
+    }
+
+    /**
      * @see org.opencms.widgets.A_CmsGalleryWidget#showPreview(java.lang.String)
      */
     @Override
@@ -150,4 +159,5 @@ public abstract class A_CmsHtmlGalleryWidget extends A_CmsGalleryWidget {
         // not required for HTML display galleries
         return false;
     }
+
 }

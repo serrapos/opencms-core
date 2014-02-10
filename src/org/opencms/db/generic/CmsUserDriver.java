@@ -90,6 +90,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 
@@ -168,7 +169,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 CmsResourceFilter.ALL);
 
             // get the associated resources
-            List vfsPaths = new ArrayList(internalResourcesForOrgUnit(dbc, ouResource));
+            List<String> vfsPaths = new ArrayList<String>(internalResourcesForOrgUnit(dbc, ouResource));
 
             // check resource scope for non root ous
             if (orgUnit.getParentFqn() != null) {
@@ -578,17 +579,6 @@ public class CmsUserDriver implements I_CmsUserDriver {
     }
 
     /**
-     * @see org.opencms.db.I_CmsUserDriver#deleteAccessControlEntries(org.opencms.db.CmsDbContext, org.opencms.file.CmsProject, org.opencms.util.CmsUUID)
-     * 
-     * @deprecated use {@link #removeAccessControlEntries(CmsDbContext, CmsProject, CmsUUID)} instead
-     */
-    public void deleteAccessControlEntries(CmsDbContext dbc, CmsProject project, CmsUUID resource)
-    throws CmsDataAccessException {
-
-        removeAccessControlEntries(dbc, project, resource);
-    }
-
-    /**
      * @see org.opencms.db.I_CmsUserDriver#deleteGroup(org.opencms.db.CmsDbContext, java.lang.String)
      */
     public void deleteGroup(CmsDbContext dbc, String groupFqn) throws CmsDataAccessException {
@@ -835,8 +825,11 @@ public class CmsUserDriver implements I_CmsUserDriver {
     /**
      * @see org.opencms.db.I_CmsUserDriver#getGroups(org.opencms.db.CmsDbContext, org.opencms.security.CmsOrganizationalUnit, boolean, boolean)
      */
-    public List getGroups(CmsDbContext dbc, CmsOrganizationalUnit orgUnit, boolean includeSubOus, boolean readRoles)
-    throws CmsDataAccessException {
+    public List<CmsGroup> getGroups(
+        CmsDbContext dbc,
+        CmsOrganizationalUnit orgUnit,
+        boolean includeSubOus,
+        boolean readRoles) throws CmsDataAccessException {
 
         // compose the query
         String sqlQuery = createRoleQuery("C_GROUPS_GET_GROUPS_0", includeSubOus, readRoles);
@@ -847,7 +840,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
         }
 
         // execute it
-        List groups = new ArrayList();
+        List<CmsGroup> groups = new ArrayList<CmsGroup>();
         ResultSet res = null;
         PreparedStatement stmt = null;
         Connection conn = null;
@@ -878,19 +871,21 @@ public class CmsUserDriver implements I_CmsUserDriver {
     /**
      * @see org.opencms.db.I_CmsUserDriver#getOrganizationalUnits(org.opencms.db.CmsDbContext, org.opencms.security.CmsOrganizationalUnit, boolean)
      */
-    public List getOrganizationalUnits(CmsDbContext dbc, CmsOrganizationalUnit parent, boolean includeChildren)
-    throws CmsDataAccessException {
+    public List<CmsOrganizationalUnit> getOrganizationalUnits(
+        CmsDbContext dbc,
+        CmsOrganizationalUnit parent,
+        boolean includeChildren) throws CmsDataAccessException {
 
-        List orgUnits = new ArrayList();
+        List<CmsOrganizationalUnit> orgUnits = new ArrayList<CmsOrganizationalUnit>();
         try {
             CmsResource parentFolder = internalOrgUnitFolder(dbc, parent);
-            Iterator itResources = m_driverManager.readResources(
+            Iterator<CmsResource> itResources = m_driverManager.readResources(
                 dbc,
                 parentFolder,
                 CmsResourceFilter.DEFAULT,
                 includeChildren).iterator();
             while (itResources.hasNext()) {
-                CmsResource resource = (CmsResource)itResources.next();
+                CmsResource resource = itResources.next();
                 orgUnits.add(internalCreateOrgUnitFromResource(dbc, resource));
             }
         } catch (CmsException e) {
@@ -902,18 +897,18 @@ public class CmsUserDriver implements I_CmsUserDriver {
     /**
      * @see org.opencms.db.I_CmsUserDriver#getResourcesForOrganizationalUnit(org.opencms.db.CmsDbContext, org.opencms.security.CmsOrganizationalUnit)
      */
-    public List getResourcesForOrganizationalUnit(CmsDbContext dbc, CmsOrganizationalUnit orgUnit)
+    public List<CmsResource> getResourcesForOrganizationalUnit(CmsDbContext dbc, CmsOrganizationalUnit orgUnit)
     throws CmsDataAccessException {
 
-        List result = new ArrayList();
+        List<CmsResource> result = new ArrayList<CmsResource>();
         try {
             CmsResource ouResource = m_driverManager.readResource(
                 dbc,
                 ORGUNIT_BASE_FOLDER + orgUnit.getName(),
                 CmsResourceFilter.ALL);
-            Iterator itPaths = internalResourcesForOrgUnit(dbc, ouResource).iterator();
+            Iterator<String> itPaths = internalResourcesForOrgUnit(dbc, ouResource).iterator();
             while (itPaths.hasNext()) {
-                String path = (String)itPaths.next();
+                String path = itPaths.next();
                 try {
                     result.add(m_driverManager.readResource(dbc, path, CmsResourceFilter.ALL));
                 } catch (CmsVfsResourceNotFoundException e) {
@@ -960,7 +955,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
     public void init(
         CmsDbContext dbc,
         CmsConfigurationManager configurationManager,
-        List successiveDrivers,
+        List<String> successiveDrivers,
         CmsDriverManager driverManager) {
 
         CmsParameterConfiguration config = configurationManager.getConfiguration();
@@ -1056,20 +1051,26 @@ public class CmsUserDriver implements I_CmsUserDriver {
     /**
      * @see org.opencms.db.I_CmsUserDriver#readAccessControlEntries(org.opencms.db.CmsDbContext, org.opencms.file.CmsProject, org.opencms.util.CmsUUID, boolean)
      */
-    public List readAccessControlEntries(CmsDbContext dbc, CmsProject project, CmsUUID resource, boolean inheritedOnly)
-    throws CmsDataAccessException {
+    public List<CmsAccessControlEntry> readAccessControlEntries(
+        CmsDbContext dbc,
+        CmsProject project,
+        CmsUUID resource,
+        boolean inheritedOnly) throws CmsDataAccessException {
 
-        List aceList = new ArrayList();
+        List<CmsAccessControlEntry> aceList = new ArrayList<CmsAccessControlEntry>();
         PreparedStatement stmt = null;
         Connection conn = null;
         ResultSet res = null;
 
         try {
             conn = m_sqlManager.getConnection(dbc);
-            stmt = m_sqlManager.getPreparedStatement(conn, project, "C_ACCESS_READ_ENTRIES_1");
-
-            String resId = resource.toString();
-            stmt.setString(1, resId);
+            if (resource.equals(CmsAccessControlEntry.PRINCIPAL_READALL_ID)) {
+                stmt = m_sqlManager.getPreparedStatement(conn, project, "C_ACCESS_READ_ENTRIES_0");
+            } else {
+                stmt = m_sqlManager.getPreparedStatement(conn, project, "C_ACCESS_READ_ENTRIES_1");
+                String resId = resource.toString();
+                stmt.setString(1, resId);
+            }
 
             res = stmt.executeQuery();
 
@@ -1146,9 +1147,9 @@ public class CmsUserDriver implements I_CmsUserDriver {
     /**
      * @see org.opencms.db.I_CmsUserDriver#readChildGroups(org.opencms.db.CmsDbContext, java.lang.String)
      */
-    public List readChildGroups(CmsDbContext dbc, String parentGroupFqn) throws CmsDataAccessException {
+    public List<CmsGroup> readChildGroups(CmsDbContext dbc, String parentGroupFqn) throws CmsDataAccessException {
 
-        List children = new ArrayList();
+        List<CmsGroup> children = new ArrayList<CmsGroup>();
         ResultSet res = null;
         PreparedStatement stmt = null;
         Connection conn = null;
@@ -1267,7 +1268,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
     /**
      * @see org.opencms.db.I_CmsUserDriver#readGroupsOfUser(CmsDbContext, CmsUUID, String, boolean, String, boolean)
      */
-    public List readGroupsOfUser(
+    public List<CmsGroup> readGroupsOfUser(
         CmsDbContext dbc,
         CmsUUID userId,
         String ouFqn,
@@ -1284,7 +1285,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
         }
 
         // execute it
-        List groups = new ArrayList();
+        List<CmsGroup> groups = new ArrayList<CmsGroup>();
 
         PreparedStatement stmt = null;
         ResultSet res = null;
@@ -1370,7 +1371,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             m_sqlManager.closeAll(dbc, conn, stmt, res);
         }
 
-        Map info = readUserInfos(dbc, user.getId());
+        Map<String, Object> info = readUserInfos(dbc, user.getId());
         user.setAdditionalInfo(info);
         return user;
     }
@@ -1415,7 +1416,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             m_sqlManager.closeAll(dbc, conn, stmt, res);
         }
 
-        Map info = readUserInfos(dbc, user.getId());
+        Map<String, Object> info = readUserInfos(dbc, user.getId());
         user.setAdditionalInfo(info);
         return user;
     }
@@ -1461,7 +1462,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             m_sqlManager.closeAll(dbc, conn, stmt, res);
         }
 
-        Map info = readUserInfos(dbc, user.getId());
+        Map<String, Object> info = readUserInfos(dbc, user.getId());
         user.setAdditionalInfo(info);
         return user;
     }
@@ -1469,9 +1470,9 @@ public class CmsUserDriver implements I_CmsUserDriver {
     /**
      * @see org.opencms.db.I_CmsUserDriver#readUserInfos(org.opencms.db.CmsDbContext, org.opencms.util.CmsUUID)
      */
-    public Map readUserInfos(CmsDbContext dbc, CmsUUID userId) throws CmsDataAccessException {
+    public Map<String, Object> readUserInfos(CmsDbContext dbc, CmsUUID userId) throws CmsDataAccessException {
 
-        Map infos = new HashMap();
+        Map<String, Object> infos = new HashMap<String, Object>();
 
         ResultSet res = null;
         PreparedStatement stmt = null;
@@ -1532,7 +1533,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
     /**
      * @see org.opencms.db.I_CmsUserDriver#readUsersOfGroup(CmsDbContext, String, boolean)
      */
-    public List readUsersOfGroup(CmsDbContext dbc, String groupFqn, boolean includeOtherOuUsers)
+    public List<CmsUser> readUsersOfGroup(CmsDbContext dbc, String groupFqn, boolean includeOtherOuUsers)
     throws CmsDataAccessException {
 
         String sqlQuery = "C_GROUPS_GET_USERS_OF_GROUP_2";
@@ -1566,7 +1567,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
         }
 
         for (CmsUser user : users) {
-            Map info = readUserInfos(dbc, user.getId());
+            Map<String, Object> info = readUserInfos(dbc, user.getId());
             user.setAdditionalInfo(info);
         }
         return users;
@@ -1688,7 +1689,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 CmsResourceFilter.ALL);
 
             // get the associated resources
-            List vfsPaths = new ArrayList(internalResourcesForOrgUnit(dbc, ouResource));
+            List<String> vfsPaths = new ArrayList<String>(internalResourcesForOrgUnit(dbc, ouResource));
 
             // check if associated
             if (!vfsPaths.contains(resource.getRootPath())) {
@@ -1763,7 +1764,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             m_sqlManager.closeAll(dbc, conn, stmt, res);
         }
         for (CmsUser user : users) {
-            Map info = readUserInfos(dbc, user.getId());
+            Map<String, Object> info = readUserInfos(dbc, user.getId());
             user.setAdditionalInfo(info);
         }
         return users;
@@ -2020,7 +2021,8 @@ public class CmsUserDriver implements I_CmsUserDriver {
             } finally {
                 m_sqlManager.closeAll(dbc, conn, stmt, null);
             }
-
+            // store user info values which may have been modified by the login code 
+            internalWriteUserInfos(dbc, user.getId(), user.getAdditionalInfo());
         } else {
 
             try {
@@ -2171,9 +2173,9 @@ public class CmsUserDriver implements I_CmsUserDriver {
             if ((CmsOrganizationalUnit.getParentFqn(ouFqn) != null)
                 || ((CmsOrganizationalUnit.getParentFqn(ouFqn) == null) && !existsGroup(dbc, rootAdminRole))) {
                 // create the roles in the given ou
-                Iterator itRoles = CmsRole.getSystemRoles().iterator();
+                Iterator<CmsRole> itRoles = CmsRole.getSystemRoles().iterator();
                 while (itRoles.hasNext()) {
-                    CmsRole role = (CmsRole)itRoles.next();
+                    CmsRole role = itRoles.next();
                     if (webuser && (role != CmsRole.ACCOUNT_MANAGER)) {
                         // if webuser ou and not account manager role
                         continue;
@@ -2661,7 +2663,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
         }
         if (readAdditionalInfos) {
             for (CmsUser user : users) {
-                Map info = readUserInfos(dbc, user.getId());
+                Map<String, Object> info = readUserInfos(dbc, user.getId());
                 user.setAdditionalInfo(info);
             }
         }
@@ -2740,7 +2742,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
             }
 
             // copy all users from the group to the role
-            Iterator it;
+            Iterator<CmsUser> it;
             try {
                 // read all users, also indirect assigned
                 it = m_driverManager.getUsersOfGroup(dbc, groupName, false, false, false).iterator();
@@ -2751,7 +2753,7 @@ public class CmsUserDriver implements I_CmsUserDriver {
                 it = readUsersOfGroup(dbc, groupName, false).iterator();
             }
             while (it.hasNext()) {
-                CmsUser user = (CmsUser)it.next();
+                CmsUser user = it.next();
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug(Messages.get().getBundle().key(Messages.LOG_DBG_UPDATE_ROLEGROUP_USER_1, user));
@@ -2816,10 +2818,10 @@ public class CmsUserDriver implements I_CmsUserDriver {
         // assume not in scope
         boolean found = false;
         // iterate parent paths
-        Iterator itParentPaths = internalResourcesForOrgUnit(dbc, parentResource).iterator();
+        Iterator<String> itParentPaths = internalResourcesForOrgUnit(dbc, parentResource).iterator();
         // until the given resource is found in scope
         while (!found && itParentPaths.hasNext()) {
-            String parentPath = (String)itParentPaths.next();
+            String parentPath = itParentPaths.next();
             // check the scope
             if (rootPath.startsWith(parentPath)) {
                 found = true;
@@ -2956,42 +2958,41 @@ public class CmsUserDriver implements I_CmsUserDriver {
      * 
      * @throws CmsDataAccessException if user data could not be written
      */
-    @SuppressWarnings("unchecked")
     protected void internalWriteUserInfos(CmsDbContext dbc, CmsUUID userId, Map<String, Object> additionalInfo)
     throws CmsDataAccessException {
 
         // get the map of existing additional infos to compare it new additional infos
-        Map existingInfos = readUserInfos(dbc, userId);
+        Map<String, Object> existingInfos = readUserInfos(dbc, userId);
 
         // loop over all entries of the existing additional infos
-        Iterator itEntries = existingInfos.entrySet().iterator();
+        Iterator<Entry<String, Object>> itEntries = existingInfos.entrySet().iterator();
         while (itEntries.hasNext()) {
-            Map.Entry entry = (Map.Entry)itEntries.next();
+            Entry<String, Object> entry = itEntries.next();
             if ((entry.getKey() != null) && (entry.getValue() != null)) {
                 // entry does not exist in new additional infos -> delete it
                 if (!additionalInfo.containsKey(entry.getKey())) {
                     dbc.setAttribute(ATTRIBUTE_USERADDINFO, ATTRIBUTE_USERADDINFO_VALUE_DELETE);
-                    writeUserInfo(dbc, userId, (String)entry.getKey(), entry.getValue());
+                    writeUserInfo(dbc, userId, entry.getKey(), entry.getValue());
                 } else {
                     Object newValue = additionalInfo.get(entry.getKey());
                     // entry does exist but has different value -> update it
                     if ((newValue != null) && !newValue.equals(entry.getValue())) {
                         dbc.setAttribute(ATTRIBUTE_USERADDINFO, ATTRIBUTE_USERADDINFO_VALUE_UPDATE);
-                        writeUserInfo(dbc, userId, (String)entry.getKey(), newValue);
+                        writeUserInfo(dbc, userId, entry.getKey(), newValue);
                     }
                 }
             }
         }
 
         // loop over all entries of the new additional infos
-        Iterator itNewEntries = additionalInfo.entrySet().iterator();
+        Iterator<Entry<String, Object>> itNewEntries = additionalInfo.entrySet().iterator();
         while (itNewEntries.hasNext()) {
-            Map.Entry entry = (Map.Entry)itNewEntries.next();
+            Entry<String, Object> entry = itNewEntries.next();
             if ((entry.getKey() != null) && (entry.getValue() != null)) {
                 // entry doews not exist in the existing additional infos -> create a new one
                 if (!existingInfos.containsKey(entry.getKey())) {
                     dbc.setAttribute(ATTRIBUTE_USERADDINFO, ATTRIBUTE_USERADDINFO_VALUE_INSERT);
-                    writeUserInfo(dbc, userId, (String)entry.getKey(), entry.getValue());
+                    writeUserInfo(dbc, userId, entry.getKey(), entry.getValue());
                 }
             }
         }

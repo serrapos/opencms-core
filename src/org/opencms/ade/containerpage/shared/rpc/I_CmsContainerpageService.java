@@ -33,6 +33,9 @@ import org.opencms.ade.containerpage.shared.CmsContainerElement;
 import org.opencms.ade.containerpage.shared.CmsContainerElementData;
 import org.opencms.ade.containerpage.shared.CmsCreateElementData;
 import org.opencms.ade.containerpage.shared.CmsGroupContainer;
+import org.opencms.ade.containerpage.shared.CmsGroupContainerSaveResult;
+import org.opencms.ade.containerpage.shared.CmsInheritanceContainer;
+import org.opencms.ade.containerpage.shared.CmsRemovedElementStatus;
 import org.opencms.gwt.CmsRpcException;
 import org.opencms.util.CmsUUID;
 
@@ -44,7 +47,7 @@ import com.google.gwt.user.client.rpc.RemoteService;
 
 /**
  * The RPC service interface used by the container-page editor.<p>
- * 
+ *  
  * @since 8.0.0
  */
 public interface I_CmsContainerpageService extends RemoteService {
@@ -68,6 +71,18 @@ public interface I_CmsContainerpageService extends RemoteService {
     void addToRecentList(String clientId) throws CmsRpcException;
 
     /**
+     * Check if a page or its elements have been changed.<p> 
+     * 
+     * @param structureId the structure id of the resource 
+     * @param detailContentId the structure id of the detail content (may be null)
+     * 
+     * @return true if there were changes in the page or its elements 
+     * 
+     * @throws CmsRpcException if the RPC call fails 
+     */
+    boolean checkContainerpageOrElementsChanged(CmsUUID structureId, CmsUUID detailContentId) throws CmsRpcException;
+
+    /**
      * To create a new element of the given type this method will check if a model resource needs to be selected, otherwise creates the new element.
      * Returns a bean containing either the new element data or a list of model resources to select.<p>
      * 
@@ -85,6 +100,27 @@ public interface I_CmsContainerpageService extends RemoteService {
         String clientId,
         String resourceType,
         String locale) throws CmsRpcException;
+
+    /**
+     * Checks whether the Acacia widgets are available for all fields of the content.<p>
+     * 
+     * @param structureId the structure id of the content 
+     * @return true if Acacia widgets are available for all fields 
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    boolean checkNewWidgetsAvailable(CmsUUID structureId) throws CmsRpcException;
+
+    /**
+     * Creates  a new element with a given model element and returns the copy'S structure id.<p>
+     * 
+     * @param pageId the container page id 
+     * @param originalElementId the model element id 
+     * @return the structure id of the copy 
+     * 
+     * @throws CmsRpcException if something goes wrong 
+     */
+    CmsUUID copyElement(CmsUUID pageId, CmsUUID originalElementId) throws CmsRpcException;
 
     /**
      * Creates a new element of the given type and returns the new element data containing structure id and site path.<p>
@@ -107,9 +143,17 @@ public interface I_CmsContainerpageService extends RemoteService {
         String locale) throws CmsRpcException;
 
     /**
+     * This method is used for serialization purposes only.<p>
+     * 
+     * @return element info
+     */
+    CmsContainerElement getElementInfo();
+
+    /**
      * Returns container element data by client id.<p>
      * 
      * @param  pageStructureId the container page structure id
+     * @param detailContentId the detail content structure id
      * @param reqParams optional request parameters
      * @param clientIds the requested element id's
      * @param containers the containers of the current page
@@ -121,6 +165,7 @@ public interface I_CmsContainerpageService extends RemoteService {
      */
     Map<String, CmsContainerElementData> getElementsData(
         CmsUUID pageStructureId,
+        CmsUUID detailContentId,
         String reqParams,
         Collection<String> clientIds,
         Collection<CmsContainer> containers,
@@ -130,6 +175,7 @@ public interface I_CmsContainerpageService extends RemoteService {
      * Gets the element data for an id and a map of settings.<p>
      * 
      * @param pageStructureId the container page structure id 
+     * @param detailContentId the detail content structure id
      * @param reqParams optional request parameters 
      * @param clientId the requested element ids 
      * @param settings the settings for which the element data should be loaded 
@@ -142,6 +188,7 @@ public interface I_CmsContainerpageService extends RemoteService {
      */
     CmsContainerElementData getElementWithSettings(
         CmsUUID pageStructureId,
+        CmsUUID detailContentId,
         String reqParams,
         String clientId,
         Map<String, String> settings,
@@ -152,6 +199,7 @@ public interface I_CmsContainerpageService extends RemoteService {
      * Returns the container element data of the favorite list.<p>
      * 
      * @param pageStructureId the container page structure id
+     * @param detailContentId the detail content structure id
      * @param containers the containers of the current page
      * @param locale the content locale
      * 
@@ -161,13 +209,15 @@ public interface I_CmsContainerpageService extends RemoteService {
      */
     List<CmsContainerElementData> getFavoriteList(
         CmsUUID pageStructureId,
+        CmsUUID detailContentId,
         Collection<CmsContainer> containers,
         String locale) throws CmsRpcException;
 
     /**
      * Returns new container element data for the given resource type name.<p>
      * 
-     * @param  pageStructureId the container page structure id
+     * @param pageStructureId the container page structure id
+     * @param detailContentId the detail content structure id
      * @param reqParams optional request parameters
      * @param resourceType the requested element resource type name
      * @param containers the containers of the current page
@@ -179,6 +229,7 @@ public interface I_CmsContainerpageService extends RemoteService {
      */
     CmsContainerElementData getNewElementData(
         CmsUUID pageStructureId,
+        CmsUUID detailContentId,
         String reqParams,
         String resourceType,
         Collection<CmsContainer> containers,
@@ -188,6 +239,7 @@ public interface I_CmsContainerpageService extends RemoteService {
      * Returns the container element data of the recent list.<p>
      * 
      * @param pageStructureId the container page structure id
+     * @param detailContentId the detail content structure id
      * @param containers the containers of the current page
      * @param locale the content locale
      * 
@@ -197,8 +249,21 @@ public interface I_CmsContainerpageService extends RemoteService {
      */
     List<CmsContainerElementData> getRecentList(
         CmsUUID pageStructureId,
+        CmsUUID detailContentId,
         Collection<CmsContainer> containers,
         String locale) throws CmsRpcException;
+
+    /**
+     * Gets the status of a removed element.<p>
+     * 
+     * @param id the client id of the removed element 
+     * @param containerpageId the id of the page which should be excluded from the relation check, or null if no page should be excluded 
+     *  
+     * @return the status of the removed element 
+     * 
+     * @throws CmsRpcException
+     */
+    CmsRemovedElementStatus getRemovedElementStatus(String id, CmsUUID containerpageId) throws CmsRpcException;
 
     /**
      * Returns the initialization data.<p>
@@ -222,6 +287,18 @@ public interface I_CmsContainerpageService extends RemoteService {
     throws CmsRpcException;
 
     /**
+     * Saves the detail containers.<p>
+     * 
+     * @param detailContainerResource the detail container resource path
+     * @param containers the container-page's containers
+     * @param locale the content locale
+     * 
+     * @throws CmsRpcException if something goes wrong processing the request
+     */
+    void saveDetailContainers(String detailContainerResource, List<CmsContainer> containers, String locale)
+    throws CmsRpcException;
+
+    /**
      * Saves the favorite list.<p>
      * 
      * @param clientIds favorite list element id's
@@ -234,6 +311,7 @@ public interface I_CmsContainerpageService extends RemoteService {
      * Saves a group-container element.<p>
      * 
      * @param pageStructureId the container page structure id
+     * @param detailContentId the detail content structure id
      * @param reqParams optional request parameters
      * @param groupContainer the group-container to save
      * @param containers the containers of the current page
@@ -243,10 +321,31 @@ public interface I_CmsContainerpageService extends RemoteService {
      * 
      * @throws CmsRpcException if something goes wrong processing the request
      */
-    Map<String, CmsContainerElementData> saveGroupContainer(
+    CmsGroupContainerSaveResult saveGroupContainer(
         CmsUUID pageStructureId,
+        CmsUUID detailContentId,
         String reqParams,
         CmsGroupContainer groupContainer,
+        Collection<CmsContainer> containers,
+        String locale) throws CmsRpcException;
+
+    /**
+     * Saves an inheritance container.<p>
+     * 
+     * @param pageStructureId the current page's structure id
+     * @param detailContentId the detail content structure id
+     * @param inheritanceContainer the inheritance container to save
+     * @param containers the containers of the current page
+     * @param locale the requested locale
+     * 
+     * @return the element data of the saved container
+     * 
+     * @throws CmsRpcException if something goes wrong
+     */
+    Map<String, CmsContainerElementData> saveInheritanceContainer(
+        CmsUUID pageStructureId,
+        CmsUUID detailContentId,
+        CmsInheritanceContainer inheritanceContainer,
         Collection<CmsContainer> containers,
         String locale) throws CmsRpcException;
 
@@ -259,6 +358,15 @@ public interface I_CmsContainerpageService extends RemoteService {
      */
     void saveRecentList(List<String> clientIds) throws CmsRpcException;
 
+    /** 
+     * Enables or disables editing for small elements on page load.<p>
+     * 
+     * @param editSmallElements the defautl setting for the small element editability
+     *  
+     * @throws CmsRpcException if something goes wrong 
+     */
+    void setEditSmallElements(boolean editSmallElements) throws CmsRpcException;
+
     /**
      * Saves the container-page in a synchronized RPC call.<p>
      * 
@@ -270,4 +378,17 @@ public interface I_CmsContainerpageService extends RemoteService {
      */
     void syncSaveContainerpage(CmsUUID pageStructureId, List<CmsContainer> containers, String locale)
     throws CmsRpcException;
+
+    /**
+     * Saves the detail containers.<p>
+     * 
+     * @param detailContainerResource the detail container resource path
+     * @param containers the container-page's containers
+     * @param locale the content locale
+     * 
+     * @throws CmsRpcException if something goes wrong processing the request
+     */
+    void syncSaveDetailContainers(String detailContainerResource, List<CmsContainer> containers, String locale)
+    throws CmsRpcException;
+
 }

@@ -28,10 +28,14 @@
 package org.opencms.ade.sitemap.client.toolbar;
 
 import org.opencms.ade.sitemap.client.control.CmsSitemapController;
+import org.opencms.gwt.client.ui.CmsPushButton;
 import org.opencms.gwt.client.ui.CmsToggleButton;
 import org.opencms.gwt.client.ui.CmsToolbar;
-import org.opencms.util.CmsStringUtil;
+import org.opencms.gwt.client.ui.CmsToolbarContextButton;
+import org.opencms.gwt.client.ui.I_CmsToolbarButton;
 
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.Widget;
 
 /**
@@ -40,6 +44,9 @@ import com.google.gwt.user.client.ui.Widget;
  * @since 8.0.0
  */
 public class CmsSitemapToolbar extends CmsToolbar {
+
+    /** The context menu button. */
+    private CmsToolbarContextButton m_contextMenuButton;
 
     /** The new menu button. */
     private CmsToolbarNewButton m_newMenuButton;
@@ -54,13 +61,28 @@ public class CmsSitemapToolbar extends CmsToolbar {
         addLeft(new CmsToolbarPublishButton(this, controller));
         m_newMenuButton = new CmsToolbarNewButton(this, controller);
         if (controller.isEditable() && (controller.getData().getDefaultNewElementInfo() != null)) {
-            addLeft(m_newMenuButton);
             addLeft(new CmsToolbarClipboardButton(this, controller));
+            addLeft(m_newMenuButton);
         }
         addLeft(new CmsToolbarShowNonNavigationButton());
-        if (CmsStringUtil.isNotEmptyOrWhitespaceOnly(controller.getData().getParentSitemap())) {
-            addRight(new CmsToolbarGoToParentButton(this, controller));
-        }
+        ClickHandler clickHandler = new ClickHandler() {
+
+            /**
+             * @see com.google.gwt.event.dom.client.ClickHandler#onClick(com.google.gwt.event.dom.client.ClickEvent)
+             */
+            public void onClick(ClickEvent event) {
+
+                I_CmsToolbarButton source = (I_CmsToolbarButton)event.getSource();
+                source.onToolbarClick();
+                if (source instanceof CmsPushButton) {
+                    ((CmsPushButton)source).clearHoverState();
+                }
+            }
+        };
+        m_contextMenuButton = new CmsToolbarContextButton(new CmsSitemapToolbarHandler(
+            controller.getData().getContextMenuEntries()));
+        m_contextMenuButton.addClickHandler(clickHandler);
+        addRight(m_contextMenuButton);
         addRight(new CmsToolbarGoBackButton(this, controller));
     }
 
@@ -76,6 +98,16 @@ public class CmsSitemapToolbar extends CmsToolbar {
                 ((CmsToggleButton)button).setEnabled(false);
             }
         }
+    }
+
+    /**
+     * Gets the context menu button.<p>
+     * 
+     * @return the context menu button 
+     */
+    public CmsToolbarContextButton getContextMenuButton() {
+
+        return m_contextMenuButton;
     }
 
     /**

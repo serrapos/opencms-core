@@ -28,6 +28,7 @@
 package org.opencms.widgets;
 
 import org.opencms.file.CmsObject;
+import org.opencms.xml.content.I_CmsXmlContentHandler.DisplayType;
 
 import java.util.Iterator;
 import java.util.List;
@@ -83,6 +84,15 @@ public class CmsRadioSelectWidget extends A_CmsSelectWidget {
     }
 
     /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getDefaultDisplayType()
+     */
+    @Override
+    public DisplayType getDefaultDisplayType() {
+
+        return DisplayType.wide;
+    }
+
+    /**
      * @see org.opencms.widgets.I_CmsWidget#getDialogWidget(org.opencms.file.CmsObject, org.opencms.widgets.I_CmsWidgetDialog, org.opencms.widgets.I_CmsWidgetParameter)
      */
     public String getDialogWidget(CmsObject cms, I_CmsWidgetDialog widgetDialog, I_CmsWidgetParameter param) {
@@ -115,6 +125,15 @@ public class CmsRadioSelectWidget extends A_CmsSelectWidget {
         result.append("</td>");
 
         return result.toString();
+    }
+
+    /**
+     * @see org.opencms.widgets.I_CmsADEWidget#getWidgetName()
+     */
+    @Override
+    public String getWidgetName() {
+
+        return CmsRadioSelectWidget.class.getName();
     }
 
     /**

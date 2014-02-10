@@ -1,27 +1,49 @@
+<<<<<<< HEAD
 <?xml version="1.0" encoding="UTF-8"?><export>
   <info>
     <creator>Admin</creator>
     <opencms_version>8.0.0</opencms_version>
+=======
+<?xml version="1.0" encoding="UTF-8"?>
+
+<export>
+  <info>
+    <creator>Admin</creator>
+    <opencms_version>9.0.0</opencms_version>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     <createdate>Mon, 15 Mar 2010 15:26:37 GMT</createdate>
     <infoproject>Offline</infoproject>
     <export_version>7</export_version>
   </info>
   <module>
     <name>org.opencms.ade.sitemap</name>
+<<<<<<< HEAD
     <nicename><![CDATA[OpenCms 8 Sitemap]]></nicename>
     <group>OpenCms ADE</group>
     <class/>
     <description><![CDATA[<p>This module provides a Sitemap Editor for OpenCms.</p>
 <p><i>(c) 2012 by Alkacon Software GmbH (http://www.alkacon.com).</i></p>]]></description>
     <version>8.0.4</version>
+=======
+    <nicename><![CDATA[OpenCms 9 Sitemap]]></nicename>
+    <group>OpenCms ADE</group>
+    <class/>
+    <description><![CDATA[<p>ADE Sitemap Editor.</p>
+<p><i>&copy; 2014 by Alkacon Software GmbH (http://www.alkacon.com).</i></p>]]></description>
+    <version>9.0.1</version>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     <authorname><![CDATA[Alkacon Software GmbH]]></authorname>
     <authoremail><![CDATA[info@alkacon.com]]></authoremail>
     <datecreated>Mon, 27 Jun 2005 08:00:00 GMT</datecreated>
     <userinstalled/>
     <dateinstalled/>
     <dependencies>
+<<<<<<< HEAD
       <dependency name="org.opencms.ade.config" version="8.0.2"/>
       <dependency name="org.opencms.gwt" version="8.0.0"/>
+=======
+      <dependency name="org.opencms.ade.config" version="9.0.0"/>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     </dependencies>
     <exportpoints>
       <exportpoint uri="/system/modules/org.opencms.ade.sitemap/resources/" destination="resources/ade/"/>
@@ -34,10 +56,13 @@
       <resource uri="/system/workplace/resources/filetypes/htmlredirect_big.png"/>
     </resources>
     <resourcetypes/>
+<<<<<<< HEAD
     <parameters>
       
     <param name="gwt.buildid">20120411</param>
 </parameters>
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
     <explorertypes/>
   </module>
   <files>
@@ -184,6 +209,112 @@
       <accesscontrol/>
     </file>
     <file>
+<<<<<<< HEAD
+      <source>system/modules/org.opencms.ade.sitemap/pages/sitemap.jsp</source>
+      <destination>system/modules/org.opencms.ade.sitemap/pages/sitemap.jsp</destination>
+      <type>jsp</type>
+      <uuidstructure>654be781-7735-11e0-89e5-d14bc4448678</uuidstructure>
+      <uuidresource>654be782-7735-11e0-89e5-d14bc4448678</uuidresource>
+=======
+      <source>system/modules/org.opencms.ade.sitemap/pages/render-seo-file.jsp</source>
+      <destination>system/modules/org.opencms.ade.sitemap/pages/render-seo-file.jsp</destination>
+      <type>jsp</type>
+      <uuidstructure>4a982d98-b3ec-4709-a5c3-2c57a9c670c5</uuidstructure>
+      <uuidresource>71b01b3d-207f-46b3-b7c0-d551782070ca</uuidresource>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
+      <datelastmodified>Thu, 05 May 2011 16:33:23 GMT</datelastmodified>
+      <userlastmodified>Admin</userlastmodified>
+      <datecreated>Thu, 05 May 2011 16:33:23 GMT</datecreated>
+      <usercreated>Admin</usercreated>
+      <flags>0</flags>
+      <properties>
+        <property>
+          <name>Title</name>
+<<<<<<< HEAD
+          <value><![CDATA[sitemap]]></value>
+=======
+          <value><![CDATA[render-seo-file]]></value>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
+        </property>
+        <property type="shared">
+          <name>export</name>
+          <value><![CDATA[false]]></value>
+        </property>
+<<<<<<< HEAD
+=======
+        <property>
+          <name>cache</name>
+          <value><![CDATA[uri]]></value>
+        </property>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
+      </properties>
+      <relations/>
+      <accesscontrol/>
+    </file>
+    <file>
+<<<<<<< HEAD
+      <destination>system/modules/org.opencms.ade.sitemap/schemas</destination>
+      <type>folder</type>
+      <uuidstructure>fa5f2992-7734-11e0-89e5-d14bc4448678</uuidstructure>
+      <datelastmodified>Thu, 05 May 2011 16:30:24 GMT</datelastmodified>
+      <userlastmodified>Admin</userlastmodified>
+      <datecreated>Thu, 05 May 2011 16:30:24 GMT</datecreated>
+      <usercreated>Admin</usercreated>
+      <flags>0</flags>
+      <properties/>
+=======
+      <source>system/modules/org.opencms.ade.sitemap/pages/download-aliases.jsp</source>
+      <destination>system/modules/org.opencms.ade.sitemap/pages/download-aliases.jsp</destination>
+      <type>jsp</type>
+      <uuidstructure>08bb7d11-23eb-4507-ab0e-b978d582a8bb</uuidstructure>
+      <uuidresource>08bb7d12-23eb-4507-ab0e-b978d582a8bb</uuidresource>
+      <datelastmodified>Thu, 05 May 2011 16:33:23 GMT</datelastmodified>
+      <userlastmodified>Admin</userlastmodified>
+      <datecreated>Thu, 05 May 2011 16:33:23 GMT</datecreated>
+      <usercreated>Admin</usercreated>
+      <flags>0</flags>
+      <properties>
+        <property>
+          <name>Title</name>
+          <value><![CDATA[download-aliases]]></value>
+        </property>
+        <property type="shared">
+          <name>export</name>
+          <value><![CDATA[false]]></value>
+        </property>
+        <property>
+          <name>cache</name>
+          <value><![CDATA[bypass]]></value>
+        </property>
+      </properties>
+      <relations/>
+      <accesscontrol/>
+    </file>
+    <file>
+      <source>system/modules/org.opencms.ade.sitemap/pages/import-aliases.jsp</source>
+      <destination>system/modules/org.opencms.ade.sitemap/pages/import-aliases.jsp</destination>
+      <type>jsp</type>
+      <uuidstructure>367b6c2f-2a6d-4b5d-b4a0-3f7b8519a8ac</uuidstructure>
+      <uuidresource>8c32fbcd-a5b5-49e6-8ab5-aa792e5cb592</uuidresource>
+      <datelastmodified>Thu, 05 May 2011 16:33:23 GMT</datelastmodified>
+      <userlastmodified>Admin</userlastmodified>
+      <datecreated>Thu, 05 May 2011 16:33:23 GMT</datecreated>
+      <usercreated>Admin</usercreated>
+      <flags>0</flags>
+      <properties>
+        <property>
+          <name>Title</name>
+          <value><![CDATA[import-aliases]]></value>
+        </property>
+        <property type="shared">
+          <name>export</name>
+          <value><![CDATA[false]]></value>
+        </property>
+      </properties>
+      <relations/>
+      <accesscontrol/>
+    </file>
+    <file>
       <source>system/modules/org.opencms.ade.sitemap/pages/sitemap.jsp</source>
       <destination>system/modules/org.opencms.ade.sitemap/pages/sitemap.jsp</destination>
       <type>jsp</type>
@@ -204,23 +335,12 @@
           <value><![CDATA[false]]></value>
         </property>
       </properties>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
       <relations/>
       <accesscontrol/>
     </file>
     <file>
-      <destination>system/modules/org.opencms.ade.sitemap/schemas</destination>
-      <type>folder</type>
-      <uuidstructure>fa5f2992-7734-11e0-89e5-d14bc4448678</uuidstructure>
-      <datelastmodified>Thu, 05 May 2011 16:30:24 GMT</datelastmodified>
-      <userlastmodified>Admin</userlastmodified>
-      <datecreated>Thu, 05 May 2011 16:30:24 GMT</datecreated>
-      <usercreated>Admin</usercreated>
-      <flags>0</flags>
-      <properties/>
-      <relations/>
-      <accesscontrol/>
-    </file>
-    <file>
+<<<<<<< HEAD
       <source>system/modules/org.opencms.ade.sitemap/schemas/redirect.xsd</source>
       <destination>system/modules/org.opencms.ade.sitemap/schemas/redirect.xsd</destination>
       <type>plain</type>
@@ -229,12 +349,30 @@
       <datelastmodified>Thu, 05 May 2011 16:33:41 GMT</datelastmodified>
       <userlastmodified>Admin</userlastmodified>
       <datecreated>Thu, 05 May 2011 16:33:41 GMT</datecreated>
+=======
+      <source>system/modules/org.opencms.ade.sitemap/pages/sub-level-redirect.html</source>
+      <destination>system/modules/org.opencms.ade.sitemap/pages/sub-level-redirect.html</destination>
+      <type>htmlredirect</type>
+      <uuidstructure>bba62bd0-7f0c-11e1-a2a6-b38ba2bad1b2</uuidstructure>
+      <uuidresource>bba62bd1-7f0c-11e1-a2a6-b38ba2bad1b2</uuidresource>
+      <datelastmodified>Thu, 05 Apr 2012 10:47:37 GMT</datelastmodified>
+      <userlastmodified>Admin</userlastmodified>
+      <datecreated>Thu, 05 Apr 2012 10:47:26 GMT</datecreated>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
       <usercreated>Admin</usercreated>
       <flags>0</flags>
       <properties>
         <property>
           <name>Title</name>
+<<<<<<< HEAD
           <value><![CDATA[redirect]]></value>
+=======
+          <value><![CDATA[Sub level redirect]]></value>
+        </property>
+        <property type="shared">
+          <name>template-elements</name>
+          <value><![CDATA[/system/modules/org.opencms.ade.sitemap/pages/redirect-detail.jsp]]></value>
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
         </property>
       </properties>
       <relations/>
@@ -415,6 +553,7 @@
       <relations/>
       <accesscontrol/>
     </file>
+<<<<<<< HEAD
     <file>
       <source>system/modules/org.opencms.ade.sitemap/resources/sitemap/07B79EDA917A4EB940EFF2814B61B238.cache.png</source>
       <destination>system/modules/org.opencms.ade.sitemap/resources/sitemap/07B79EDA917A4EB940EFF2814B61B238.cache.png</destination>
@@ -1345,5 +1484,7 @@
       <relations/>
       <accesscontrol/>
     </file>
+=======
+>>>>>>> 9b75d93687f3eb572de633d63889bf11e963a485
   </files>
 </export>
